@@ -1,0 +1,26 @@
+name: Validate workflows
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Validate public templates
+        run: ruby scripts/validate_workflows.rb
+      - name: Materialize example configuration
+        run: ruby scripts/materialize_workflows.rb config.example.yaml
+      - name: Parse materialized workflows
+        run: >-
+          ruby -ryaml -e 'Dir["build/workflows/*.yaml"].sort.each {
+            |file| YAML.safe_load(File.read(file), aliases: false)
+          }; puts "PASS materialized_workflows=10"'

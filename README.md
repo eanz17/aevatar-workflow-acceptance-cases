@@ -1,5 +1,7 @@
 # Aevatar workflow acceptance cases
 
+[![Validate workflows](https://github.com/eanz17/aevatar-workflow-acceptance-cases/actions/workflows/validate.yml/badge.svg)](https://github.com/eanz17/aevatar-workflow-acceptance-cases/actions/workflows/validate.yml)
+
 Ten public-safe Aevatar workflow examples that exercise the same workflow primitives and Lark integration shapes as a private acceptance suite, using different practical business cases.
 
 The committed YAML files contain placeholders rather than organization-specific Base, user, approval, or NyxID resource identifiers. They are templates: materialize them with your own Lark and NyxID resources before production preview or execution.
