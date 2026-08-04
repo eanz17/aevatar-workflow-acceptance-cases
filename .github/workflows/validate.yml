@@ -24,3 +24,10 @@ jobs:
           ruby -ryaml -e 'Dir["build/workflows/*.yaml"].sort.each {
             |file| YAML.safe_load(File.read(file), aliases: false)
           }; puts "通过 已生成工作流=11"'
+      - name: 验证报告一致性
+        run: ruby scripts/validate_report.rb
+      - name: 检查分析页脚本
+        run: >-
+          ruby -e 'html = File.read("report/index.html");
+          print html.scan(%r{<script>(.*?)</script>}m).flatten.join("\n")' |
+          node --check -

@@ -1,9 +1,17 @@
 name: saas_license_optimization_digest
-description: 汇聚六个 SaaS 数据源，覆盖逐源标准化、确定性聚合、预览和显式确认后的 Lark 摘要发送。
+description: 汇聚六个 SaaS 数据源，覆盖确定性标准化、聚合、预览和显式确认后的 Lark 摘要发送。
 roles:
   - id: analyst
     name: 许可证优化分析员
 steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ submit = get(data, 'submit', false); route = 'PREVIEW'; if submit == true || submit == 'true'; route = 'SUBMIT'; end ~}}
+      {{ json({ route: route }) }}
+    next: read_license_inventory
+
   - id: read_license_inventory
     type: tool_call
     capability:
@@ -18,14 +26,6 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
-    next: normalize_license_inventory
-
-  - id: normalize_license_inventory
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const response=${json(steps.read_license_inventory.output)}; const items=(response.data&&response.data.items)||[]; let seats=0,active=0,cost=0,reduce=0; for(const item of items){const f=item.fields||{}; const s=Number(f['Seats']||0),a=Number(f['Active Users']||0),c=Number(f['Monthly Cost USD']||0); const u=s>0?a/s*100:0; seats+=s; active+=a; cost+=c; if(u<50) reduce++;} console.log(JSON.stringify({ok:response.code===0,count:items.length,seats,active,cost,reduce}));"}
     next: read_asset_attestations
 
   - id: read_asset_attestations
@@ -42,14 +42,6 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"query":{"page_size":"100"}}'
-    next: normalize_asset_attestations
-
-  - id: normalize_asset_attestations
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const response=${json(steps.read_asset_attestations.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
     next: read_access_requests
 
   - id: read_access_requests
@@ -66,14 +58,6 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ACCESS_REQUESTS__"},"query":{"page_size":"100"}}'
-    next: normalize_access_requests
-
-  - id: normalize_access_requests
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const response=${json(steps.read_access_requests.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
     next: read_run_evidence
 
   - id: read_run_evidence
@@ -90,14 +74,6 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_RUN_EVIDENCE__"},"query":{"page_size":"100"}}'
-    next: normalize_run_evidence
-
-  - id: normalize_run_evidence
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const response=${json(steps.read_run_evidence.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
     next: read_table_catalog
 
   - id: read_table_catalog
@@ -114,14 +90,6 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__"},"query":{"page_size":"100"}}'
-    next: normalize_table_catalog
-
-  - id: normalize_table_catalog
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const response=${json(steps.read_table_catalog.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
     next: read_license_views
 
   - id: read_license_views
@@ -138,29 +106,25 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
-    next: normalize_license_views
+    next: assemble_live_sources
 
-  - id: normalize_license_views
-    type: tool_call
+  - id: assemble_live_sources
+    type: assign
     parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const response=${json(steps.read_license_views.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
+      target: live_sources
+      value: >-
+        {"request":${steps.normalize_context.output},"licenses":${steps.read_license_inventory.output},"assets":${steps.read_asset_attestations.output},"access_requests":${steps.read_access_requests.output},"run_evidence":${steps.read_run_evidence.output},"tables":${steps.read_table_catalog.output},"views":${steps.read_license_views.output}}
     next: build_digest
 
   - id: build_digest
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const raw=${json(input)}; let input=raw; if(typeof input==='string'){try{input=JSON.parse(input);}catch(_){input={};}} if(!input||typeof input!=='object')input={}; const license=JSON.parse(${json(steps.normalize_license_inventory.output)}.output.stdout); const assets=JSON.parse(${json(steps.normalize_asset_attestations.output)}.output.stdout); const access=JSON.parse(${json(steps.normalize_access_requests.output)}.output.stdout); const evidence=JSON.parse(${json(steps.normalize_run_evidence.output)}.output.stdout); const tables=JSON.parse(${json(steps.normalize_table_catalog.output)}.output.stdout); const views=JSON.parse(${json(steps.normalize_license_views.output)}.output.stdout); const allOk=[license,assets,access,evidence,tables,views].every(x=>x.ok); const card={config:{wide_screen_mode:true},header:{title:{tag:'plain_text',content:'SaaS 许可证优化摘要'},template:license.reduce>0?'orange':'green'},elements:[{tag:'div',text:{tag:'lark_md',content:'席位：'+license.seats+' | 活跃用户：'+license.active+' | 月成本：USD '+license.cost+' | 缩减候选：'+license.reduce}},{tag:'note',elements:[{tag:'plain_text',content:'这是手工验收数据；采取行动前请核对工作流终态证据。'}]}]}; const cardString=JSON.stringify(card); console.log(JSON.stringify({route:input.submit===true||input.submit==='true'?'SUBMIT':'PREVIEW',all_sources_ok:allOk,total_seats:license.seats,total_active_users:license.active,monthly_cost_usd:license.cost,reduce_candidates:license.reduce,source_counts:{licenses:license.count,assets:assets.count,access_requests:access.count,run_evidence:evidence.count,tables:tables.count,views:views.count},content_escaped:JSON.stringify(cardString).slice(1,-1)}));"}
-    next: parse_digest
-
-  - id: parse_digest
     type: transform
-    parameters:
-      op: json_parse
-      path: output.stdout
+    op: template
+    template: >-
+      {{~ license_items = get(data.licenses.data, 'items', []); asset_items = get(data.assets.data, 'items', []); access_items = get(data.access_requests.data, 'items', []); evidence_items = get(data.run_evidence.data, 'items', []); table_items = get(data.tables.data, 'items', []); view_items = get(data.views.data, 'items', []) ~}}
+      {{~ seats = 0; active = 0; cost = 0; reduce = 0 ~}}
+      {{~ for item in license_items; fields = item.fields; item_seats = number(get(fields, 'Seats', 0)); item_active = number(get(fields, 'Active Users', 0)); item_cost = number(get(fields, 'Monthly Cost USD', 0)); utilization = 0; if item_seats > 0; utilization = item_active / item_seats * 100; end; seats = seats + item_seats; active = active + item_active; cost = cost + item_cost; if utilization < 50; reduce = reduce + 1; end; end ~}}
+      {{~ all_ok = data.licenses.code == 0 && data.assets.code == 0 && data.access_requests.code == 0 && data.run_evidence.code == 0 && data.tables.code == 0 && data.views.code == 0 ~}}
+      {{ json({ route: data.request.route, all_sources_ok: all_ok, total_seats: seats, total_active_users: active, monthly_cost_usd: cost, reduce_candidates: reduce, source_counts: { licenses: license_items.size, assets: asset_items.size, access_requests: access_items.size, run_evidence: evidence_items.size, tables: table_items.size, views: view_items.size } }) }}
     next: extract_route
 
   - id: extract_route
@@ -174,21 +138,44 @@ steps:
     type: switch
     parameters:
       on: "${steps.extract_route.output}"
-      branch.SUBMIT: send_digest
-      branch.PREVIEW: preview
-      branch._default: preview
+      branch.SUBMIT: restore_submit_digest
+      branch.PREVIEW: restore_preview_digest
+      branch._default: restore_preview_digest
     branches:
-      SUBMIT: send_digest
-      PREVIEW: preview
-      _default: preview
+      SUBMIT: restore_submit_digest
+      PREVIEW: restore_preview_digest
+      _default: restore_preview_digest
 
-  - id: preview
-    type: tool_call
+  - id: restore_preview_digest
+    type: assign
     parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const payload=${json(steps.parse_digest.output)}; console.log(JSON.stringify({case:'saas_license_optimization_digest',mode:'preview',all_sources_ok:payload.all_sources_ok,total_seats:payload.total_seats,total_active_users:payload.total_active_users,monthly_cost_usd:payload.monthly_cost_usd,reduce_candidates:payload.reduce_candidates,message_sent:false}));"}
+      target: preview_digest
+      value: "${steps.build_digest.output}"
+    next: summarize_preview
+
+  - id: summarize_preview
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'saas_license_optimization_digest', mode: 'preview', all_sources_ok: data.all_sources_ok, total_seats: data.total_seats, total_active_users: data.total_active_users, monthly_cost_usd: data.monthly_cost_usd, reduce_candidates: data.reduce_candidates, source_counts: data.source_counts, message_sent: false }) }}
     next: done
+
+  - id: restore_submit_digest
+    type: assign
+    parameters:
+      target: submit_digest
+      value: "${steps.build_digest.output}"
+    next: build_send_request
+
+  - id: build_send_request
+    type: transform
+    op: template
+    template: >-
+      {{~ color = 'green'; if data.reduce_candidates > 0; color = 'orange'; end ~}}
+      {{~ summary = '席位：' + ('' + data.total_seats) + ' | 活跃用户：' + ('' + data.total_active_users) + ' | 月成本：USD ' + ('' + data.monthly_cost_usd) + ' | 缩减候选：' + ('' + data.reduce_candidates) ~}}
+      {{~ card = { config: { wide_screen_mode: true }, header: { title: { tag: 'plain_text', content: 'SaaS 许可证优化摘要' }, template: color }, elements: [{ tag: 'div', text: { tag: 'lark_md', content: summary } }, { tag: 'note', elements: [{ tag: 'plain_text', content: '这是手工验收数据；采取行动前请核对工作流终态证据。' }] }] } ~}}
+      {{ json({ query: { receive_id_type: 'user_id' }, body: { receive_id: '__LARK_MESSAGE_RECIPIENT_ID__', msg_type: 'interactive', content: json(card) } }) }}
+    next: send_digest
 
   - id: send_digest
     type: tool_call
@@ -204,7 +191,6 @@ steps:
         response_mode: text
     parameters:
       tool: nyxid_proxy
-      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"interactive","content":"${steps.parse_digest.json.content_escaped}"}}'
     next: combine_send_result
 
   - id: combine_send_result
@@ -212,14 +198,14 @@ steps:
     parameters:
       target: send_result
       value: >-
-        {"digest":${steps.parse_digest.output},"send":${steps.send_digest.output}}
+        {"digest":${steps.build_digest.output},"send":${steps.send_digest.output}}
     next: summarize_send
 
   - id: summarize_send
     type: transform
     op: template
     template: >-
-      {{ json({ case: 'saas_license_optimization_digest', mode: 'submit', message_sent: data.send.code == 0, downstream_code: data.send.code, total_seats: data.digest.total_seats, reduce_candidates: data.digest.reduce_candidates }) }}
+      {{ json({ case: 'saas_license_optimization_digest', mode: 'submit', success: data.digest.all_sources_ok && data.send.code == 0, message_sent: data.send.code == 0, downstream_code: data.send.code, total_seats: data.digest.total_seats, total_active_users: data.digest.total_active_users, monthly_cost_usd: data.digest.monthly_cost_usd, reduce_candidates: data.digest.reduce_candidates }) }}
     next: done
 
   - id: done

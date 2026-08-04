@@ -12,12 +12,12 @@ EXPECTED = {
   "02-candidate-document-compliance-preview.workflow.yaml" => [3, 0, 0, 0],
   "03-email-access-approval-audit.workflow.yaml" => [5, 2, 2, 0],
   "04-saas-license-utilization-review.workflow.yaml" => [10, 6, 6, 0],
-  "05-asset-inventory-attestation.workflow.yaml" => [8, 1, 0, 1],
+  "05-asset-inventory-attestation.workflow.yaml" => [7, 1, 0, 1],
   "06-project-shared-mailbox-approval.workflow.yaml" => [8, 3, 2, 1],
-  "07-quarterly-access-review-reminder.workflow.yaml" => [8, 1, 0, 1],
-  "08-saas-license-optimization-digest.workflow.yaml" => [21, 7, 6, 1],
-  "09-contractor-access-package-approval.workflow.yaml" => [23, 5, 4, 1],
-  "10-monthly-access-certification.workflow.yaml" => [28, 5, 2, 3],
+  "07-quarterly-access-review-reminder.workflow.yaml" => [7, 1, 0, 1],
+  "08-saas-license-optimization-digest.workflow.yaml" => [19, 7, 6, 1],
+  "09-contractor-access-package-approval.workflow.yaml" => [25, 5, 4, 1],
+  "10-monthly-access-certification.workflow.yaml" => [23, 5, 2, 3],
   "11-complex-codex-exec-validation.workflow.yaml" => [32, 0, 0, 0]
 }.freeze
 
@@ -57,7 +57,7 @@ files.each do |file|
   references = []
   steps.each do |step|
     references << [step.fetch("id"), step["next"]] if step["next"]
-    next unless step["type"] == "switch"
+    next unless step["branches"].is_a?(Hash)
 
     step.fetch("branches", {}).each_value do |target|
       references << [step.fetch("id"), target]
@@ -65,6 +65,15 @@ files.each do |file|
   end
   references.each do |source, target|
     fail_validation("#{name}：#{source} 引用了不存在的步骤 #{target}") unless ids.include?(target)
+  end
+
+  steps.each do |step|
+    template = step["template"] || step.dig("parameters", "template")
+    next unless template
+
+    if template.match?(/\belse\s+if\b.*?\bend\s*;\s*end\b/m)
+      fail_validation("#{name}：#{step.fetch('id')} 的 Scriban else if 分支多写了 end")
+    end
   end
 
   capabilities = steps.map { |step| step.dig("capability", "nyxid_request") }.compact
@@ -75,6 +84,29 @@ files.each do |file|
   fail_validation("#{name}：预期统计 #{expected.inspect}，实际为 #{actual.inspect}") unless actual == expected
 
   codex_steps = steps.select { |step| step.dig("parameters", "tool") == "codex_exec" }
+  generic_code_steps = steps.select { |step| step.dig("parameters", "tool") == "code_execute" }
+  fail_validation("#{name}：不得依赖线上未授权的通用 code_execute") unless generic_code_steps.empty?
+  if %w[05-asset-inventory-attestation.workflow.yaml 07-quarterly-access-review-reminder.workflow.yaml].include?(name)
+    extract_mode = steps.find { |step| step["id"] == "extract_mode" }
+    unless extract_mode&.dig("parameters", "op") == "json_extract" &&
+           extract_mode.dig("parameters", "path") == "route"
+      fail_validation("#{name}：原生输入路由必须直接提取 normalize_context.route")
+    end
+  end
+  if name == "09-contractor-access-package-approval.workflow.yaml"
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    history_arguments = JSON.parse(steps_by_id.fetch("list_approval_history").dig("parameters", "arguments"))
+    extracted_history = steps_by_id.fetch("extract_history_codes").fetch("parameters")
+    expected_window = {
+      "page_size" => "100",
+      "start_time" => "1785772800000",
+      "end_time" => "1785859199000"
+    }
+    unless expected_window.all? { |key, value| history_arguments.dig("query", key) == value } &&
+           extracted_history["n"] == "100"
+      fail_validation("#{name}：稳定键去重必须检查验收日内完整的百条历史窗口")
+    end
+  end
   expected_codex_count = name == CODEX_EXEC_WORKFLOW ? 1 : 0
   fail_validation("#{name}：codex_exec 调用数应为 #{expected_codex_count}") unless codex_steps.length == expected_codex_count
   if name == CODEX_EXEC_WORKFLOW

@@ -7,12 +7,12 @@ roles:
       只返回纯 JSON，且必须恰好包含五个布尔值：identity_present、organization_present、
       nda_present、requested_access_present、end_date_present。不得复述个人数据或原文。
 steps:
-  - id: read_context
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const raw=${json(input)}; let input=raw; if(typeof input==='string'){try{input=JSON.parse(input);}catch(_){input={};}} if(!input||typeof input!=='object')input={}; console.log(JSON.stringify({submit:input.submit===true||input.submit==='true'}));"}
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ submit = get(data, 'submit', false); route = 'PREVIEW'; if submit == true || submit == 'true'; route = 'SUBMIT'; end ~}}
+      {{ json({ route: route }) }}
     next: extract_documents
 
   - id: extract_documents
@@ -31,21 +31,22 @@ steps:
     target_role: reviewer
     parameters:
       prompt_prefix: "在不泄露内容的前提下分类这份外包人员访问资料："
+    next: combine_package_context
+
+  - id: combine_package_context
+    type: assign
+    parameters:
+      target: package_context
+      value: >-
+        {"context":${steps.normalize_context.output},"classification":${steps.classify_package.output}}
     next: normalize_package
 
   - id: normalize_package
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const ctx=JSON.parse(${json(steps.read_context.output)}.output.stdout); const raw=${json(steps.classify_package.output)}; let value=raw; if(typeof value==='string'){try{const match=value.match(/\\{[\\s\\S]*\\}/); value=JSON.parse(match?match[0]:value);}catch(_){value={};}} if(!value||typeof value!=='object')value={}; const checks={identity_present:value.identity_present===true,organization_present:value.organization_present===true,nda_present:value.nda_present===true,requested_access_present:value.requested_access_present===true,end_date_present:value.end_date_present===true}; console.log(JSON.stringify({route:ctx.submit?'SUBMIT':'PREVIEW',checks,complete:Object.values(checks).every(Boolean)}));"}
-    next: parse_package
-
-  - id: parse_package
     type: transform
-    parameters:
-      op: json_parse
-      path: output.stdout
+    op: template
+    template: >-
+      {{~ c = data.classification; identity = get(c, 'identity_present', false) == true; organization = get(c, 'organization_present', false) == true; nda = get(c, 'nda_present', false) == true; requested_access = get(c, 'requested_access_present', false) == true; end_date = get(c, 'end_date_present', false) == true ~}}
+      {{ json({ route: data.context.route, checks: { identity_present: identity, organization_present: organization, nda_present: nda, requested_access_present: requested_access, end_date_present: end_date }, complete: identity && organization && nda && requested_access && end_date }) }}
     next: extract_route
 
   - id: extract_route
@@ -60,19 +61,25 @@ steps:
     parameters:
       on: "${steps.extract_route.output}"
       branch.SUBMIT: read_identity_directory
-      branch.PREVIEW: preview
-      branch._default: preview
+      branch.PREVIEW: restore_preview_package
+      branch._default: restore_preview_package
     branches:
       SUBMIT: read_identity_directory
-      PREVIEW: preview
-      _default: preview
+      PREVIEW: restore_preview_package
+      _default: restore_preview_package
+
+  - id: restore_preview_package
+    type: assign
+    parameters:
+      target: preview_package
+      value: "${steps.normalize_package.output}"
+    next: preview
 
   - id: preview
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const result=${json(steps.parse_package.output)}; console.log(JSON.stringify({case:'contractor_access_package_approval',mode:'preview',complete:result.complete,checks:result.checks,identity_resolved:false,history_checked:false,approval_created:false}));"}
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'contractor_access_package_approval', mode: 'preview', success: data.complete, complete: data.complete, checks: data.checks, identity_resolved: false, history_checked: false, approval_created: false }) }}
     next: done
 
   - id: read_identity_directory
@@ -95,7 +102,7 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ resolved = ''; for item in data.data.items; fields = item.fields; if get(fields, 'Identity Key', '') == 'contractor-access-requester' && get(fields, 'Status', '') == 'Active'; resolved = get(fields, 'Lark User ID', ''); end; end ~}}
+      {{~ resolved = ''; items = get(data.data, 'items', []); for item in items; fields = item.fields; if get(fields, 'Identity Key', '') == 'contractor-access-requester' && get(fields, 'Status', '') == 'Active'; resolved = get(fields, 'Lark User ID', ''); end; end ~}}
       {{~ if data.code != 0 || resolved == ''; number('无法解析验收身份'); end ~}}
       {{ json({ user_id: resolved, identity_key: 'contractor-access-requester' }) }}
     next: list_approval_history
@@ -113,7 +120,7 @@ steps:
         response_mode: text
     parameters:
       tool: nyxid_proxy
-      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"1","start_time":"1754238719855","end_time":"1785774719855"}}'
+      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"100","start_time":"1785772800000","end_time":"1785859199000"}}'
     next: extract_history_codes
 
   - id: extract_history_codes
@@ -121,7 +128,7 @@ steps:
     parameters:
       op: json_extract
       path: data.instance_code_list
-      n: "1"
+      n: "100"
     next: fetch_history_detail
 
   - id: fetch_history_detail
@@ -141,21 +148,30 @@ steps:
       sub_param_arguments: '{"path_params":{"instance_code":"${input}"}}'
       min_concurrent_workers: "1"
       max_concurrent_workers: "1"
-    next: deduplicate_request
+    next: check_duplicate
 
-  - id: deduplicate_request
-    type: tool_call
+  - id: check_duplicate
+    type: conditional
     parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const history=${json(steps.fetch_history_detail.output)}; const requestKey='contractor-access-package-20260804'; const serialized=JSON.stringify(history); console.log(JSON.stringify({history_reachable:history&&history.code===0,request_key:requestKey,possible_duplicate:serialized.includes(requestKey)}));"}
-    next: parse_deduplication
+      condition: contractor-access-package-20260804
+      branch.true: duplicate_request
+      branch.false: build_deduplication
+    branches:
+      "true": duplicate_request
+      "false": build_deduplication
 
-  - id: parse_deduplication
-    type: transform
+  - id: duplicate_request
+    type: assign
     parameters:
-      op: json_parse
-      path: output.stdout
+      target: final
+      value: '{"case":"contractor_access_package_approval","mode":"submit","success":true,"package_complete":true,"identity_resolved":true,"history_checked":true,"possible_duplicate":true,"approval_created":false,"idempotent_skip":true}'
+    next: done
+
+  - id: build_deduplication
+    type: assign
+    parameters:
+      target: deduplication
+      value: '{"history_reachable":true,"request_key":"contractor-access-package-20260804","possible_duplicate":false}'
     next: combine_request_context
 
   - id: combine_request_context
@@ -163,7 +179,7 @@ steps:
     parameters:
       target: request_context
       value: >-
-        {"package":${steps.parse_package.output},"identity":${steps.resolve_identity.output},"deduplication":${steps.parse_deduplication.output}}
+        {"package":${steps.normalize_package.output},"identity":${steps.resolve_identity.output},"deduplication":${steps.build_deduplication.output}}
     next: build_approval_request
 
   - id: build_approval_request
@@ -172,7 +188,7 @@ steps:
     template: >-
       {{~ if !data.package.complete; number('外包人员访问资料不完整'); end ~}}
       {{~ if data.deduplication.possible_duplicate; number('已存在重复的外包人员访问申请'); end ~}}
-      {{~ detail = '[Aevatar 手工验收] 外包人员访问资料完整 | 身份已解析：true | 历史审批详情可访问：' + string(data.deduplication.history_reachable) + ' | 审查键：contractor-access-package-20260804' ~}}
+      {{~ detail = '[Aevatar 手工验收] 外包人员访问资料完整 | 身份已解析：true | 历史审批详情可访问：' + ('' + data.deduplication.history_reachable) + ' | 审查键：contractor-access-package-20260804' ~}}
       {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_IDENTITY_DIRECTORY__' }]) ~}}
       {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: data.identity.user_id, form: form } }) }}
     next: create_approval

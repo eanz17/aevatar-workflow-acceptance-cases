@@ -14,6 +14,16 @@
 
 默认不得执行会写 Base、创建 Lark 审批、发送消息或创建 schedule 的分支。只有用户明确要求、数据为可清理的验证数据、目标资源已复核且平台授权可见时，才能执行写入分支。
 
+## 生产验证入口
+
+使用 `scripts/production_validate.rb` 统一完成 production preview、绑定、执行、typed tool approval/resume 和 committed read model 查询。不得编写临时脚本绕过 NyxID，或把 SSE 文本、`202 Accepted`、模型文案当成成功证据。
+
+- 默认只做 preview；真实运行必须显式加 `--run`。
+- 有副作用的案例必须同时出现在 `--allow-side-effects`，并通过 `--approve` 才能依据 typed receipt 恢复。
+- SSE 必须逐行消费；收到 `aevatar.tool_approval.pending` 后立即使用其中的 `stepId`、`executionId`、`toolCallId`、`approvalRequestId` 和已取得的 run ID 调用 resume，禁止等 SSE 结束后再批准。
+- `--prompt` 只允许和单个 `--cases` 一起使用，用于验证同一定义的预览、提交、跳过或提醒分支。
+- 验证器仅保留有界诊断输出；不得把完整 SSE、业务 payload 或未脱敏 receipt 写入仓库。
+
 ## `codex_exec` 验证规则
 
 `workflows/11-complex-codex-exec-validation.workflow.yaml` 验证 operator-managed sandbox 全链路。它必须始终只调用一次 `codex_exec`，并拥有以下固定参数：
@@ -33,6 +43,8 @@
 
 五项证据名称必须通过一个并行 `foreach` 归一化。当前运行时使用四行 `---` 连接五个结果，所以汇总文本应为 9 个物理行，成功终态则必须继续报告 `parallel_check_count=5`。修改这段编排时必须同步更新并通过 `scripts/validate_workflows.rb`，不得只凭 preview 判断格式正确。
 
+除案例 11 外，01-10 禁止使用通用 `code_execute` 或 `codex_exec` 代替确定性工作流节点。业务解析、分支、聚合和格式化应使用原生 `assign`、`transform`、`switch`、`conditional`、`foreach` 或 bounded template。案例 11 也只能保留一次上述固定 `codex_exec` 探针。
+
 ## 新增验证专用工作流
 
 新增案例时按以下规则执行：
@@ -47,6 +59,8 @@
 8. 在 `scripts/validate_workflows.rb` 的 `EXPECTED` 中登记步骤数与 GET/POST 调用数；如使用非 NyxID 工具，增加该工具的精确契约断言。
 9. 在 `README.md` 更新能力矩阵、逐流程证据和限制；在 `validation/` 只提交已脱敏的验证摘要，不提交运行输入或原始业务响应。
 10. 本地校验、materialize 和生产 preview 都通过后，仍需按风险决定是否真实运行。README 必须分别陈述“静态校验”“preview”“真实终态”三类证据，禁止混写为一个 PASS。
+11. 真实验证状态变化后，同步更新 `validation/production-validation-YYYY-MM-DD.json`、`report/YYYY-MM-DD-workflow-coverage-report.md`、`report/index.html` 和 README。报告必须区分“覆盖”“语义替换”“部分覆盖”“未覆盖”。
+12. 对比源工作流时按版本族归并，不能把旧副本、Ornn 内嵌资产和独立业务定义当成同等的新增能力，也不能用文件覆盖率代替功能覆盖率。
 
 ## 提交前检查
 
@@ -54,8 +68,10 @@
 
 ```bash
 ruby scripts/validate_workflows.rb
+ruby -c scripts/production_validate.rb
 ruby scripts/materialize_workflows.rb config.example.yaml
 ruby -ryaml -e 'Dir["build/workflows/*.yaml"].sort.each { |f| YAML.safe_load(File.read(f), aliases: false) }'
+ruby scripts/validate_report.rb
 git diff --check
 ```
 

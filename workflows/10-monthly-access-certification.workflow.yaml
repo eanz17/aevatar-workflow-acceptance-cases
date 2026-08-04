@@ -1,37 +1,18 @@
 name: monthly_access_certification
-description: 受日历门禁保护的月度访问认证，覆盖 Base 聚合、预览、审批创建、验证、完成通知和提醒模式。
+description: 受 2026 年日历门禁保护的月度访问认证，覆盖 Base 聚合、预览、审批创建、验证、完成通知和提醒模式。
 roles:
   - id: coordinator
     name: 访问认证协调员
 steps:
-  - id: read_context
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const raw=${json(input)}; let input=raw; if(typeof input==='string'){try{input=JSON.parse(input);}catch(_){input={};}} if(!input||typeof input!=='object')input={}; const mode=['preview','submit','reminder_preview','reminder_send'].includes(input.mode)?input.mode:'preview'; const now=new Date(); const runDate=input.run_date||now.toISOString().slice(0,10); const period=input.period||runDate.slice(0,7); console.log(JSON.stringify({mode,run_date:runDate,period}));"}
-    next: parse_context
-
-  - id: parse_context
+  - id: normalize_context
     type: transform
-    parameters:
-      op: json_parse
-      path: output.stdout
-    next: determine_calendar_route
-
-  - id: determine_calendar_route
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const ctx=${json(steps.parse_context.output)}; const date=new Date(ctx.run_date+'T00:00:00Z'); const tomorrow=new Date(date.getTime()+86400000); const isLastDay=tomorrow.getUTCDate()===1; let route='SKIP'; if(ctx.mode==='reminder_preview')route='REMINDER_PREVIEW'; else if(ctx.mode==='reminder_send')route='REMINDER_SEND'; else if(ctx.mode==='preview')route='PROCESS'; else if(ctx.mode==='submit'&&isLastDay)route='PROCESS'; console.log(JSON.stringify({route,is_last_day:isLastDay,mode:ctx.mode,period:ctx.period,run_date:ctx.run_date}));"}
-    next: parse_calendar_route
-
-  - id: parse_calendar_route
-    type: transform
-    parameters:
-      op: json_parse
-      path: output.stdout
+    op: template
+    template: >-
+      {{~ mode = get(data, 'mode', 'preview'); run_date = date(get(data, 'run_date', '2026-08-31')); period = get(data, 'period', '2026-08') ~}}
+      {{~ if mode != 'preview' && mode != 'submit' && mode != 'reminder_preview' && mode != 'reminder_send'; number('不支持的月度访问认证模式'); end ~}}
+      {{~ month_ends = {}; month_ends['2026-01'] = '2026-01-31'; month_ends['2026-02'] = '2026-02-28'; month_ends['2026-03'] = '2026-03-31'; month_ends['2026-04'] = '2026-04-30'; month_ends['2026-05'] = '2026-05-31'; month_ends['2026-06'] = '2026-06-30'; month_ends['2026-07'] = '2026-07-31'; month_ends['2026-08'] = '2026-08-31'; month_ends['2026-09'] = '2026-09-30'; month_ends['2026-10'] = '2026-10-31'; month_ends['2026-11'] = '2026-11-30'; month_ends['2026-12'] = '2026-12-31' ~}}
+      {{~ expected_month_end = get(month_ends, period, ''); is_last_day = expected_month_end != '' && run_date == expected_month_end; route = 'SKIP'; if mode == 'reminder_preview'; route = 'REMINDER_PREVIEW'; else if mode == 'reminder_send'; route = 'REMINDER_SEND'; else if mode == 'preview'; route = 'PROCESS'; else if mode == 'submit' && is_last_day; route = 'PROCESS'; end ~}}
+      {{ json({ route: route, is_last_day: is_last_day, mode: mode, period: period, run_date: run_date }) }}
     next: extract_calendar_route
 
   - id: extract_calendar_route
@@ -58,11 +39,10 @@ steps:
       _default: skipped
 
   - id: reminder_preview
-    type: tool_call
+    type: assign
     parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const ctx=${json(steps.parse_context.output)}; console.log(JSON.stringify({case:'monthly_access_certification',mode:'reminder_preview',message_sent:false,period:ctx.period}));"}
+      target: final
+      value: '{"case":"monthly_access_certification","mode":"reminder_preview","message_sent":false,"period":"${steps.normalize_context.json.period}"}'
     next: done
 
   - id: send_reminder
@@ -79,7 +59,7 @@ steps:
         response_mode: text
     parameters:
       tool: nyxid_proxy
-      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar 手工验收] 月度访问审查提醒：请确认账户负责人、处理例外，并在月底前完成 ${steps.parse_context.json.period} 认证。\"}"}}'
+      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar 手工验收] 月度访问审查提醒：请确认账户负责人、处理例外，并在月底前完成 ${steps.normalize_context.json.period} 认证。\"}"}}'
     next: combine_reminder_result
 
   - id: combine_reminder_result
@@ -87,21 +67,22 @@ steps:
     parameters:
       target: reminder_result
       value: >-
-        {"context":${steps.parse_context.output},"send":${steps.send_reminder.output}}
+        {"context":${steps.normalize_context.output},"send":${steps.send_reminder.output}}
     next: summarize_reminder
 
   - id: summarize_reminder
     type: transform
     op: template
     template: >-
-      {{ json({ case: 'monthly_access_certification', mode: 'reminder_send', message_sent: data.send.code == 0, downstream_code: data.send.code, period: data.context.period }) }}
+      {{ json({ case: 'monthly_access_certification', mode: 'reminder_send', success: data.send.code == 0, message_sent: data.send.code == 0, downstream_code: data.send.code, period: data.context.period }) }}
     next: done
 
   - id: skipped
     type: assign
     parameters:
       target: final
-      value: '{"case":"monthly_access_certification","mode":"skipped","reason":"submit_requires_month_end","side_effects":false}'
+      value: '{"case":"monthly_access_certification","mode":"skipped","success":true,"reason":"submit_requires_month_end","run_date":"${steps.normalize_context.json.run_date}","side_effects":false}'
+    next: done
 
   - id: read_review_records
     type: tool_call
@@ -124,15 +105,15 @@ steps:
     parameters:
       target: review_source
       value: >-
-        {"context":${steps.parse_context.output},"records":${steps.read_review_records.output}}
+        {"context":${steps.normalize_context.output},"records":${steps.read_review_records.output}}
     next: aggregate_reviews
 
   - id: aggregate_reviews
     type: transform
     op: template
     template: >-
-      {{~ period = data.context.period; total = 0; complete = 0; pending = 0; exceptions = 0 ~}}
-      {{~ for item in data.records.data.items; fields = item.fields; if get(fields, 'Period', '') == period; total = total + 1; status = get(fields, 'Review Status', ''); if status == 'Complete'; complete = complete + 1; else; pending = pending + 1; end; exceptions = exceptions + number(get(fields, 'Exception Count', 0)); end; end ~}}
+      {{~ period = data.context.period; total = 0; complete = 0; pending = 0; exceptions = 0; items = get(data.records.data, 'items', []) ~}}
+      {{~ for item in items; fields = item.fields; if get(fields, 'Period', '') == period; total = total + 1; status = get(fields, 'Review Status', ''); if status == 'Complete'; complete = complete + 1; else; pending = pending + 1; end; exceptions = exceptions + number(get(fields, 'Exception Count', 0)); end; end ~}}
       {{~ if data.records.code != 0 || total == 0; number('月度访问审查记录不可用'); end ~}}
       {{ json({ period: period, total_accounts: total, completed_reviews: complete, pending_reviews: pending, exception_count: exceptions, source_ok: true }) }}
     next: build_certification_request
@@ -141,44 +122,29 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ detail = '[Aevatar 手工验收] 月度访问认证 ' + data.period + ' | 账户总数：' + string(data.total_accounts) + ' | 已完成：' + string(data.completed_reviews) + ' | 待处理：' + string(data.pending_reviews) + ' | 例外：' + string(data.exception_count) ~}}
+      {{~ detail = '[Aevatar 手工验收] 月度访问认证 ' + data.period + ' | 账户总数：' + ('' + data.total_accounts) + ' | 已完成：' + ('' + data.completed_reviews) + ' | 待处理：' + ('' + data.pending_reviews) + ' | 例外：' + ('' + data.exception_count) ~}}
       {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_MONTHLY_ACCESS_REVIEWS__' }]) ~}}
       {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: '__LARK_APPROVAL_USER_ID__', form: form } }) }}
     next: select_process_mode
 
   - id: select_process_mode
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const ctx=${json(steps.parse_context.output)}; console.log(ctx.mode==='submit'?'SUBMIT':'PREVIEW');"}
-    next: extract_process_mode
-
-  - id: extract_process_mode
-    type: transform
-    parameters:
-      op: json_extract
-      path: output.stdout
-    next: route_process_mode
-
-  - id: route_process_mode
     type: switch
     parameters:
-      on: "${steps.extract_process_mode.output}"
-      branch.SUBMIT: create_certification_approval
-      branch.PREVIEW: preview_certification
+      on: "${steps.normalize_context.json.mode}"
+      branch.submit: create_certification_approval
+      branch.preview: preview_certification
       branch._default: preview_certification
     branches:
-      SUBMIT: create_certification_approval
-      PREVIEW: preview_certification
+      submit: create_certification_approval
+      preview: preview_certification
       _default: preview_certification
 
   - id: preview_certification
-    type: tool_call
+    type: assign
     parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const summary=${json(steps.aggregate_reviews.output)}; console.log(JSON.stringify({case:'monthly_access_certification',mode:'preview',summary,approval_created:false,message_sent:false}));"}
+      target: final
+      value: >-
+        {"case":"monthly_access_certification","mode":"preview","success":true,"summary":${steps.aggregate_reviews.output},"approval_created":false,"message_sent":false}
     next: done
 
   - id: create_certification_approval
@@ -218,21 +184,22 @@ steps:
         response_mode: text
     parameters:
       tool: nyxid_proxy
+    next: combine_completion_context
+
+  - id: combine_completion_context
+    type: assign
+    parameters:
+      target: completion_context
+      value: >-
+        {"summary":${steps.aggregate_reviews.output},"created":${steps.create_certification_approval.output},"verified":${steps.verify_certification_approval.output}}
     next: build_completion_notice
 
   - id: build_completion_notice
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"const created=${json(steps.create_certification_approval.output)}; const summary=${json(steps.aggregate_reviews.output)}; const text='[Aevatar 手工验收] 月度访问认证 '+summary.period+' 已提交。账户：'+summary.total_accounts+'，待处理：'+summary.pending_reviews+'，例外：'+summary.exception_count+'，实例：'+created.data.instance_code; console.log(JSON.stringify({content:JSON.stringify({text})}));"}
-    next: parse_completion_notice
-
-  - id: parse_completion_notice
     type: transform
-    parameters:
-      op: json_parse
-      path: output.stdout
+    op: template
+    template: >-
+      {{~ text = '[Aevatar 手工验收] 月度访问认证 ' + data.summary.period + ' 已提交。账户：' + ('' + data.summary.total_accounts) + '，待处理：' + ('' + data.summary.pending_reviews) + '，例外：' + ('' + data.summary.exception_count) + '，审批实例已创建并回读验证。' ~}}
+      {{ json({ query: { receive_id_type: 'user_id' }, body: { receive_id: '__LARK_MESSAGE_RECIPIENT_ID__', msg_type: 'text', content: json({ text: text }) } }) }}
     next: send_completion_notice
 
   - id: send_completion_notice
@@ -249,7 +216,6 @@ steps:
         response_mode: text
     parameters:
       tool: nyxid_proxy
-      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"${steps.parse_completion_notice.json.content}"}}'
     next: combine_terminal_results
 
   - id: combine_terminal_results

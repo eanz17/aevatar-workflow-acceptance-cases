@@ -4,27 +4,19 @@ roles:
   - id: coordinator
     name: 访问审查协调员
 steps:
-  - id: read_context
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"(async () => { const raw = ${json(input)}; let value = raw; if (typeof value === 'string') { try { value = JSON.parse(value); } catch (_) { value = {}; } } if (!value || typeof value !== 'object') value = {}; console.log(JSON.stringify({ submit: value.submit === true || value.submit === 'true' })); })();"}
-    next: select_mode
-
-  - id: select_mode
-    type: tool_call
-    parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"(async () => { const envelope = ${json(steps.read_context.output)}; const context = JSON.parse(envelope.output.stdout); console.log(context.submit === true ? 'SUBMIT' : 'PREVIEW'); })();"}
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ submit = get(data, 'submit', false) ~}}
+      {{ json({ route: submit == true || submit == 'true' ? 'SUBMIT' : 'PREVIEW' }) }}
     next: extract_mode
 
   - id: extract_mode
     type: transform
     parameters:
       op: json_extract
-      path: output.stdout
+      path: route
     next: route_mode
 
   - id: route_mode
@@ -40,11 +32,10 @@ steps:
       _default: preview
 
   - id: preview
-    type: tool_call
+    type: assign
     parameters:
-      tool: code_execute
-      arguments: >-
-        {"language":"javascript","code":"console.log(JSON.stringify({case:'quarterly_access_review_reminder',mode:'preview',message_sent:false,period:'2026-Q3'}))"}
+      target: final
+      value: '{"case":"quarterly_access_review_reminder","mode":"preview","message_sent":false,"period":"2026-Q3"}'
     next: done
 
   - id: send_reminder

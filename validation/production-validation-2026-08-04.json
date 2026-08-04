@@ -1,0 +1,37 @@
+{
+  "date": "2026-08-04",
+  "ingress": "nyxid proxy request aevatar",
+  "scope": "已脱敏",
+  "larkUserServiceHash": "a623c5a302b9",
+  "staticValidation": {
+    "workflowCount": 11,
+    "passed": 11,
+    "genericCodeExecuteCount": 0,
+    "managedCodexExecCount": 1,
+    "placeholderCount": 14
+  },
+  "productionPreview": {
+    "passed": 11,
+    "failed": 0,
+    "executionMode": "interactive"
+  },
+  "runtime": [
+    {"case":"01","result":"通过","terminalStatus":"completed","stateVersion":80,"assertion":"ready_for_review=true","sideEffects":false},
+    {"case":"02","result":"通过","terminalStatus":"completed","stateVersion":35,"assertion":"五类材料字段均为 true","sideEffects":false},
+    {"case":"03","result":"通过","terminalStatus":"completed","stateVersion":42,"assertion":"instance_reachable=true","sideEffects":false},
+    {"case":"04","result":"通过","terminalStatus":"completed","stateVersion":67,"assertion":"185 席位、140 活跃用户、USD 6670、1 个缩减候选","sideEffects":false},
+    {"case":"05","result":"通过","terminalStatus":"completed","stateVersion":46,"assertion":"mutation_executed=true、accepted=true","sideEffects":"新增一条验收 Base 记录"},
+    {"case":"06","result":"通过","terminalStatus":"completed","stateVersion":58,"assertion":"审批创建并回读，状态 PENDING","sideEffects":"创建一条验收审批"},
+    {"case":"07","result":"通过","terminalStatus":"completed","stateVersion":46,"assertion":"message_sent=true","sideEffects":"发送一条验收私信"},
+    {"case":"08","result":"通过","terminalStatus":"completed","stateVersion":112,"assertion":"六源汇总正确且 message_sent=true","sideEffects":"发送一条验收卡片"},
+    {"case":"09","result":"通过","terminalStatus":"completed","stateVersion":157,"assertion":"审批创建并回读；修复版复跑返回 idempotent_skip=true","sideEffects":"诊断期间创建两条同键 PENDING 验收审批"},
+    {"case":"10","result":"通过","terminalStatus":"completed","stateVersion":115,"assertion":"审批创建、回读、完成私信均成功；跳过和提醒分支另行通过","sideEffects":"创建一条验收审批并发送两条验收私信"},
+    {"case":"11","result":"通过","terminalStatus":"completed","stateVersion":178,"assertion":"CODEX_EXEC_READY、五项检查为 true、parallel_check_count=5","sideEffects":false}
+  ],
+  "knownBoundaries": [
+    {"capability":"通用 code_execute","status":"未覆盖","reason":"生产返回 NYXID_PROXY_UNAUTHORIZED；业务逻辑已改用原生确定性节点"},
+    {"capability":"durable schedule","status":"未覆盖","reason":"历史验证返回 DURABLE_AUTHORIZATION_UNAVAILABLE 或 NYXID_EXPLICIT_REQUEST_INTERACTIVE_REQUIRED"},
+    {"capability":"Lark contact batch_get_id","status":"语义替换","reason":"绑定 Bot 缺少 contact:user.id:readonly，使用 Base 身份目录"},
+    {"capability":"Lark Bot 通过 Ornn 自然语言启动","status":"未覆盖","reason":"需要独立验证 skill 搜索、加载、启动的类型化回执；不能以 Bot 文案代替"}
+  ]
+}
