@@ -1,8 +1,8 @@
 name: project_shared_mailbox_approval
-description: Read a configured shared-mailbox request from Base, create its approval after tool approval, and verify the new Lark instance.
+description: 从 Base 读取已配置的共享邮箱请求，在工具授权后创建审批，并验证新的 Lark 审批实例。
 roles:
   - id: requester
-    name: Shared Mailbox Requester
+    name: 共享邮箱申请人
 steps:
   - id: read_reference_record
     type: tool_call
@@ -26,8 +26,8 @@ steps:
     op: template
     template: >-
       {{~ fields = data.data.record.fields; request_key = get(fields, 'Request Key', ''); request_type = get(fields, 'Request Type', ''); requester = get(fields, 'Requester', ''); department = get(fields, 'Department', ''); target = get(fields, 'Target', ''); review_date = get(fields, 'Review Date', ''); status = get(fields, 'Status', '') ~}}
-      {{~ if data.code != 0 || request_key == '' || target == '' || status != 'Ready for approval'; number('shared mailbox request is unavailable or not ready for approval'); end ~}}
-      {{~ detail = '[Aevatar manual acceptance] ' + request_type + ' | Target: ' + target + ' | Requester: ' + requester + ' | Department: ' + department + ' | Review date: ' + review_date + ' | Request key: ' + request_key ~}}
+      {{~ if data.code != 0 || request_key == '' || target == '' || status != 'Ready for approval'; number('共享邮箱申请不可用或尚未达到可审批状态'); end ~}}
+      {{~ detail = '[Aevatar 手工验收] ' + request_type + ' | 目标：' + target + ' | 申请人：' + requester + ' | 部门：' + department + ' | 审查日期：' + review_date + ' | 申请键：' + request_key ~}}
       {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_ACCESS_REQUESTS__' }]) ~}}
       {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: '__LARK_APPROVAL_USER_ID__', form: form } }) }}
     next: create_approval
@@ -53,7 +53,7 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('shared mailbox approval instance was not created'); end ~}}
+      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('共享邮箱审批实例创建失败'); end ~}}
       {{ json({ path_params: { instance_code: data.data.instance_code }, query: { user_id_type: 'user_id' } }) }}
     next: verify_approval
 

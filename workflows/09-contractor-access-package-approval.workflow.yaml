@@ -1,12 +1,11 @@
 name: contractor_access_package_approval
-description: Attachment-driven contractor access package review with identity resolution, approval-history verification, preview, and confirmed approval creation.
+description: 由附件驱动的外包人员访问资料审查，覆盖身份解析、审批历史验证、预览和确认后的审批创建。
 roles:
   - id: reviewer
-    name: Contractor Access Reviewer
+    name: 外包人员访问审核员
     system_prompt: >-
-      Return pure JSON with exactly five booleans: identity_present, organization_present,
-      nda_present, requested_access_present, end_date_present. Do not reproduce personal data
-      or source text.
+      只返回纯 JSON，且必须恰好包含五个布尔值：identity_present、organization_present、
+      nda_present、requested_access_present、end_date_present。不得复述个人数据或原文。
 steps:
   - id: read_context
     type: tool_call
@@ -31,7 +30,7 @@ steps:
     type: llm_call
     target_role: reviewer
     parameters:
-      prompt_prefix: "Classify this contractor access package without exposing its contents:"
+      prompt_prefix: "在不泄露内容的前提下分类这份外包人员访问资料："
     next: normalize_package
 
   - id: normalize_package
@@ -97,7 +96,7 @@ steps:
     op: template
     template: >-
       {{~ resolved = ''; for item in data.data.items; fields = item.fields; if get(fields, 'Identity Key', '') == 'contractor-access-requester' && get(fields, 'Status', '') == 'Active'; resolved = get(fields, 'Lark User ID', ''); end; end ~}}
-      {{~ if data.code != 0 || resolved == ''; number('acceptance identity could not be resolved'); end ~}}
+      {{~ if data.code != 0 || resolved == ''; number('无法解析验收身份'); end ~}}
       {{ json({ user_id: resolved, identity_key: 'contractor-access-requester' }) }}
     next: list_approval_history
 
@@ -171,9 +170,9 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ if !data.package.complete; number('contractor package is incomplete'); end ~}}
-      {{~ if data.deduplication.possible_duplicate; number('duplicate contractor access request is already present'); end ~}}
-      {{~ detail = '[Aevatar manual acceptance] Contractor access package complete | identity resolved: true | prior approval detail reachable: ' + string(data.deduplication.history_reachable) + ' | review key: contractor-access-package-20260804' ~}}
+      {{~ if !data.package.complete; number('外包人员访问资料不完整'); end ~}}
+      {{~ if data.deduplication.possible_duplicate; number('已存在重复的外包人员访问申请'); end ~}}
+      {{~ detail = '[Aevatar 手工验收] 外包人员访问资料完整 | 身份已解析：true | 历史审批详情可访问：' + string(data.deduplication.history_reachable) + ' | 审查键：contractor-access-package-20260804' ~}}
       {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_IDENTITY_DIRECTORY__' }]) ~}}
       {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: data.identity.user_id, form: form } }) }}
     next: create_approval
@@ -198,7 +197,7 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('contractor access approval was not created'); end ~}}
+      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('外包人员访问审批创建失败'); end ~}}
       {{ json({ path_params: { instance_code: data.data.instance_code }, query: { user_id_type: 'user_id' } }) }}
     next: verify_approval
 

@@ -1,14 +1,13 @@
 name: candidate_document_compliance_preview
-description: Side-effect-free candidate document completeness preview using file ingress, document extraction, and an LLM classifier.
+description: 无副作用的候选人材料完整性预览，覆盖文件输入、文档提取和 LLM 分类。
 roles:
   - id: reviewer
-    name: Candidate Document Reviewer
+    name: 候选人材料审核员
     system_prompt: >-
-      Inspect the supplied candidate document and return one compact JSON object
-      with these keys only: identity_present, experience_present,
-      education_present, contact_present, consent_present. Every value must be
-      a boolean. Do not reproduce names, email addresses, phone numbers,
-      employers, schools, identifiers, addresses, or free text.
+      检查提供的候选人材料，只返回一个紧凑的 JSON 对象，且只能包含
+      identity_present、experience_present、education_present、contact_present、
+      consent_present 五个键。每个值必须是布尔值。不得复述姓名、邮箱、电话、
+      雇主、学校、标识符、地址或任何自由文本。
 steps:
   - id: extract_documents
     type: foreach
@@ -26,8 +25,7 @@ steps:
     target_role: reviewer
     parameters:
       prompt_prefix: >-
-        Check whether the extracted candidate document contains the five
-        required categories. Return only the requested boolean JSON.
+        检查提取后的候选人材料是否包含五类必需信息，只返回指定的布尔 JSON。
     next: done
 
   - id: done

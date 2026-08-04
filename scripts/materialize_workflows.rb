@@ -3,7 +3,7 @@
 require "fileutils"
 require "yaml"
 
-abort "usage: ruby scripts/materialize_workflows.rb <config.yaml> [output-dir]" unless (1..2).cover?(ARGV.length)
+abort "用法：ruby scripts/materialize_workflows.rb <配置.yaml> [输出目录]" unless (1..2).cover?(ARGV.length)
 
 root = File.expand_path("..", __dir__)
 config_path = File.expand_path(ARGV[0])
@@ -12,20 +12,20 @@ config = YAML.safe_load(File.read(config_path), aliases: false)
 replacements = config.fetch("replacements")
 
 unless replacements.is_a?(Hash) && replacements.all? { |key, value| key.match?(/\A__[A-Z0-9_]+__\z/) && !value.to_s.strip.empty? }
-  abort "config replacements must map __PLACEHOLDER__ keys to non-empty values"
+  abort "配置中的 replacements 必须把 __PLACEHOLDER__ 键映射到非空值"
 end
 
 FileUtils.mkdir_p(output_dir)
 Dir[File.join(root, "workflows", "*.workflow.yaml")].sort.each do |source|
   content = File.read(source)
   content.scan(/__[A-Z0-9_]+__/).uniq.each do |placeholder|
-    abort "missing replacement for #{placeholder}" unless replacements.key?(placeholder)
+    abort "缺少占位符替换值：#{placeholder}" unless replacements.key?(placeholder)
     content = content.gsub(placeholder, replacements.fetch(placeholder).to_s)
   end
   unresolved = content.scan(/__[A-Z0-9_]+__/).uniq
-  abort "unresolved placeholders in #{File.basename(source)}: #{unresolved.join(', ')}" unless unresolved.empty?
+  abort "#{File.basename(source)} 中仍有未解析占位符：#{unresolved.join(', ')}" unless unresolved.empty?
 
   target = File.join(output_dir, File.basename(source))
   File.write(target, content)
-  puts "MATERIALIZED #{File.basename(source)}"
+  puts "已生成 #{File.basename(source)}"
 end

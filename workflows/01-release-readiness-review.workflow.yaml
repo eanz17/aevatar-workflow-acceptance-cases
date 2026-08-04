@@ -1,8 +1,8 @@
 name: release_readiness_review
-description: Side-effect-free release readiness review covering deterministic workflow primitives.
+description: 无副作用的发布就绪审查，覆盖确定性工作流基础能力。
 roles:
   - id: verifier
-    name: Release Verifier
+    name: 发布验证员
 steps:
   - id: seed_review_envelope
     type: assign

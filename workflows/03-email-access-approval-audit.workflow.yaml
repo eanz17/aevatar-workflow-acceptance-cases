@@ -1,8 +1,8 @@
 name: email_access_approval_audit
-description: Read-only sample audit of one existing Lark email-access approval and its detail endpoint.
+description: 只读审计一个现有 Lark 邮箱访问审批及其详情接口。
 roles:
   - id: auditor
-    name: Access Approval Auditor
+    name: 访问审批审计员
 steps:
   - id: list_email_approvals
     type: tool_call

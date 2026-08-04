@@ -1,16 +1,16 @@
-Synthetic candidate profile for workflow acceptance
+用于工作流验收的合成候选人资料
 
-Identity
-Candidate reference: CANDIDATE-SAMPLE-2026-08
+身份
+候选人引用：CANDIDATE-SAMPLE-2026-08
 
-Experience
-Five years of experience delivering backend services and production observability.
+经验
+具有五年后端服务交付和生产可观测性建设经验。
 
-Education
-Bachelor-level computer science education completed.
+教育
+已完成计算机科学本科层级教育。
 
-Contact
-The candidate supplied a contact channel through the recruiting system.
+联系方式
+候选人已通过招聘系统提供联系渠道。
 
-Consent
-The candidate consented to document processing for this manual workflow acceptance.
+同意
+候选人已同意为本次手工工作流验收处理该材料。

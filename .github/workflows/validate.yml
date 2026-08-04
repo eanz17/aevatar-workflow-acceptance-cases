@@ -1,4 +1,4 @@
-name: Validate workflows
+name: 验证工作流
 
 on:
   push:
@@ -15,12 +15,12 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-      - name: Validate public templates
+      - name: 验证公开模板
         run: ruby scripts/validate_workflows.rb
-      - name: Materialize example configuration
+      - name: 生成示例配置
         run: ruby scripts/materialize_workflows.rb config.example.yaml
-      - name: Parse materialized workflows
+      - name: 解析生成后的工作流
         run: >-
           ruby -ryaml -e 'Dir["build/workflows/*.yaml"].sort.each {
             |file| YAML.safe_load(File.read(file), aliases: false)
-          }; puts "PASS materialized_workflows=10"'
+          }; puts "通过 已生成工作流=11"'

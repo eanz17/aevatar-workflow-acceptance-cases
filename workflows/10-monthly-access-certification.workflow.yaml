@@ -1,8 +1,8 @@
 name: monthly_access_certification
-description: Calendar-gated monthly access review with Base aggregation, preview, approval creation, verification, completion notice, and reminder modes.
+description: 受日历门禁保护的月度访问认证，覆盖 Base 聚合、预览、审批创建、验证、完成通知和提醒模式。
 roles:
   - id: coordinator
-    name: Access Certification Coordinator
+    name: 访问认证协调员
 steps:
   - id: read_context
     type: tool_call
@@ -79,7 +79,7 @@ steps:
         response_mode: text
     parameters:
       tool: nyxid_proxy
-      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar manual acceptance] Monthly access review reminder: confirm account owners, resolve exceptions, and complete the ${steps.parse_context.json.period} certification before month end.\"}"}}'
+      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar 手工验收] 月度访问审查提醒：请确认账户负责人、处理例外，并在月底前完成 ${steps.parse_context.json.period} 认证。\"}"}}'
     next: combine_reminder_result
 
   - id: combine_reminder_result
@@ -133,7 +133,7 @@ steps:
     template: >-
       {{~ period = data.context.period; total = 0; complete = 0; pending = 0; exceptions = 0 ~}}
       {{~ for item in data.records.data.items; fields = item.fields; if get(fields, 'Period', '') == period; total = total + 1; status = get(fields, 'Review Status', ''); if status == 'Complete'; complete = complete + 1; else; pending = pending + 1; end; exceptions = exceptions + number(get(fields, 'Exception Count', 0)); end; end ~}}
-      {{~ if data.records.code != 0 || total == 0; number('monthly access review records are unavailable'); end ~}}
+      {{~ if data.records.code != 0 || total == 0; number('月度访问审查记录不可用'); end ~}}
       {{ json({ period: period, total_accounts: total, completed_reviews: complete, pending_reviews: pending, exception_count: exceptions, source_ok: true }) }}
     next: build_certification_request
 
@@ -141,7 +141,7 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ detail = '[Aevatar manual acceptance] Monthly access certification ' + data.period + ' | total accounts: ' + string(data.total_accounts) + ' | completed: ' + string(data.completed_reviews) + ' | pending: ' + string(data.pending_reviews) + ' | exceptions: ' + string(data.exception_count) ~}}
+      {{~ detail = '[Aevatar 手工验收] 月度访问认证 ' + data.period + ' | 账户总数：' + string(data.total_accounts) + ' | 已完成：' + string(data.completed_reviews) + ' | 待处理：' + string(data.pending_reviews) + ' | 例外：' + string(data.exception_count) ~}}
       {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_MONTHLY_ACCESS_REVIEWS__' }]) ~}}
       {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: '__LARK_APPROVAL_USER_ID__', form: form } }) }}
     next: select_process_mode
@@ -201,7 +201,7 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('monthly certification approval was not created'); end ~}}
+      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('月度认证审批创建失败'); end ~}}
       {{ json({ path_params: { instance_code: data.data.instance_code }, query: { user_id_type: 'user_id' } }) }}
     next: verify_certification_approval
 
@@ -225,7 +225,7 @@ steps:
     parameters:
       tool: code_execute
       arguments: >-
-        {"language":"javascript","code":"const created=${json(steps.create_certification_approval.output)}; const summary=${json(steps.aggregate_reviews.output)}; const text='[Aevatar manual acceptance] Monthly access certification '+summary.period+' submitted. Accounts: '+summary.total_accounts+', pending: '+summary.pending_reviews+', exceptions: '+summary.exception_count+', instance: '+created.data.instance_code; console.log(JSON.stringify({content:JSON.stringify({text})}));"}
+        {"language":"javascript","code":"const created=${json(steps.create_certification_approval.output)}; const summary=${json(steps.aggregate_reviews.output)}; const text='[Aevatar 手工验收] 月度访问认证 '+summary.period+' 已提交。账户：'+summary.total_accounts+'，待处理：'+summary.pending_reviews+'，例外：'+summary.exception_count+'，实例：'+created.data.instance_code; console.log(JSON.stringify({content:JSON.stringify({text})}));"}
     next: parse_completion_notice
 
   - id: parse_completion_notice

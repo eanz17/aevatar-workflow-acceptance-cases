@@ -1,8 +1,8 @@
 name: quarterly_access_review_reminder
-description: Guarded 2026 Q3 access review reminder that defaults to preview and sends one Lark DM only when submit is true.
+description: 受保护的 2026 年第三季度访问审查提醒，默认只预览，仅在 submit 为 true 时发送一条 Lark 私信。
 roles:
   - id: coordinator
-    name: Access Review Coordinator
+    name: 访问审查协调员
 steps:
   - id: read_context
     type: tool_call
@@ -63,7 +63,7 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: >-
-        {"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar manual acceptance] 2026 Q3 access review is ready. Please confirm owners, remove stale access, and record exceptions by 2026-08-14.\"}"}}
+        {"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar 手工验收] 2026 年第三季度访问审查已就绪。请在 2026-08-14 前确认负责人、移除过期权限并记录例外。\"}"}}
     next: summarize_send
 
   - id: summarize_send

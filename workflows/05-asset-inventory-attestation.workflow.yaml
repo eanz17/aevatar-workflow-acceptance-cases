@@ -1,8 +1,8 @@
 name: asset_inventory_attestation
-description: Guarded IT asset inventory attestation that defaults to preview and writes one disposable Base record only when submit is true.
+description: 受保护的 IT 资产盘点确认，默认只预览，仅在 submit 为 true 时写入一条可清理的 Base 记录。
 roles:
   - id: operator
-    name: Asset Operator
+    name: 资产操作员
 steps:
   - id: read_context
     type: tool_call
@@ -44,7 +44,7 @@ steps:
     parameters:
       tool: code_execute
       arguments: >-
-        {"language":"javascript","code":"console.log(JSON.stringify({case:'asset_inventory_attestation',mode:'preview',mutation_executed:false,target:'Asset Attestations'}))"}
+        {"language":"javascript","code":"console.log(JSON.stringify({case:'asset_inventory_attestation',mode:'preview',mutation_executed:false,target:'资产盘点确认'}))"}
     next: done
 
   - id: create_attestation
@@ -62,7 +62,7 @@ steps:
     parameters:
       tool: nyxid_proxy
       arguments: >-
-        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"body":{"fields":{"Attestation Key":"manual-asset-attestation-20260804","Control":"Quarterly device ownership review","Owner":"IT Operations","Status":"Reviewed","Sequence":20260804,"Reviewed At":"2026-08-04"}}}
+        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"body":{"fields":{"Attestation Key":"manual-asset-attestation-20260804","Control":"季度设备归属审查","Owner":"IT 运维","Status":"Reviewed","Sequence":20260804,"Reviewed At":"2026-08-04"}}}
     next: summarize_write
 
   - id: summarize_write

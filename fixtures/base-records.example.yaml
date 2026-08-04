@@ -3,30 +3,30 @@ base_contract:
   saas_license_view_count: 1
 
 saas_license_inventory:
-  - Product: Source Control Enterprise
+  - Product: 企业版源代码管理
     Seats: 100
     Active Users: 90
     Monthly Cost USD: 4000
-  - Product: Design Suite
+  - Product: 设计套件
     Seats: 50
     Active Users: 35
     Monthly Cost USD: 2000
-  - Product: Analytics Pro
+  - Product: 专业分析工具
     Seats: 35
     Active Users: 15
     Monthly Cost USD: 670
 
 asset_attestations:
   - Attestation Key: baseline-device-review
-    Control: Quarterly device ownership review
-    Owner: IT Operations
+    Control: 季度设备归属审查
+    Owner: IT 运维
     Status: Reviewed
 
 access_requests:
   - Request Key: shared-mailbox-project-atlas-20260804
-    Request Type: Shared mailbox access
-    Requester: Project Atlas Operations
-    Department: Platform Operations
+    Request Type: 共享邮箱访问
+    Requester: Atlas 项目运营
+    Department: 平台运营
     Target: project-atlas@example.com
     Review Date: 2026-08-04
     Status: Ready for approval
@@ -35,7 +35,7 @@ run_evidence: []
 
 identity_directory:
   - Identity Key: contractor-access-requester
-    Lark User ID: replace-with-user-id
+    Lark User ID: 替换为-user-id
     Status: Active
 
 monthly_access_reviews:

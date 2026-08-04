@@ -3,18 +3,49 @@
   "ingress": "nyxid proxy request aevatar",
   "endpoint": "/api/scopes/{scopeId}/workflows:explicit-request-preview",
   "executionMode": "interactive",
-  "target": "configured private materializations that normalize to the public templates",
+  "target": "经标识归一化后与公开模板一致的私有配置定义",
   "sideEffectsExecuted": false,
   "workflows": [
-    {"name":"release_readiness_review","callSites":0,"get":0,"post":0,"result":"passed"},
-    {"name":"candidate_document_compliance_preview","callSites":0,"get":0,"post":0,"result":"passed"},
-    {"name":"email_access_approval_audit","callSites":2,"get":2,"post":0,"result":"passed"},
-    {"name":"saas_license_utilization_review","callSites":6,"get":6,"post":0,"result":"passed"},
-    {"name":"asset_inventory_attestation","callSites":1,"get":0,"post":1,"result":"passed"},
-    {"name":"project_shared_mailbox_approval","callSites":3,"get":2,"post":1,"result":"passed"},
-    {"name":"quarterly_access_review_reminder","callSites":1,"get":0,"post":1,"result":"passed"},
-    {"name":"saas_license_optimization_digest","callSites":7,"get":6,"post":1,"result":"passed","durableResult":"DURABLE_AUTHORIZATION_UNAVAILABLE"},
-    {"name":"contractor_access_package_approval","callSites":5,"get":4,"post":1,"result":"passed"},
-    {"name":"monthly_access_certification","callSites":5,"get":2,"post":3,"result":"passed","durableResult":"NYXID_EXPLICIT_REQUEST_INTERACTIVE_REQUIRED"}
+    {"name":"release_readiness_review","callSites":0,"get":0,"post":0,"result":"通过"},
+    {"name":"candidate_document_compliance_preview","callSites":0,"get":0,"post":0,"result":"通过"},
+    {"name":"email_access_approval_audit","callSites":2,"get":2,"post":0,"result":"通过"},
+    {"name":"saas_license_utilization_review","callSites":6,"get":6,"post":0,"result":"通过"},
+    {"name":"asset_inventory_attestation","callSites":1,"get":0,"post":1,"result":"通过"},
+    {"name":"project_shared_mailbox_approval","callSites":3,"get":2,"post":1,"result":"通过"},
+    {"name":"quarterly_access_review_reminder","callSites":1,"get":0,"post":1,"result":"通过"},
+    {"name":"saas_license_optimization_digest","callSites":7,"get":6,"post":1,"result":"通过","durableResult":"DURABLE_AUTHORIZATION_UNAVAILABLE"},
+    {"name":"contractor_access_package_approval","callSites":5,"get":4,"post":1,"result":"通过"},
+    {"name":"monthly_access_certification","callSites":5,"get":2,"post":3,"result":"通过","durableResult":"NYXID_EXPLICIT_REQUEST_INTERACTIVE_REQUIRED"},
+    {
+      "name": "complex_codex_exec_validation",
+      "callSites": 0,
+      "get": 0,
+      "post": 0,
+      "result": "通过",
+      "preview": {
+        "workflowId": "wf-complex-codex-exec-validation-20260804-v4",
+        "revisionId": "rev-complex-codex-exec-validation-20260804-v4",
+        "callSiteCount": 0
+      },
+      "runtime": {
+        "result": "通过",
+        "ingress": "nyxid proxy request aevatar",
+        "runId": "workflow.definition:<已脱敏>:run:f9cac8b1…",
+        "commandId": "fabb3e9d…",
+        "codexExec": {
+          "status": "succeeded",
+          "target": "managed_sandbox",
+          "output": "CODEX_EXEC_READY",
+          "exitCode": 0,
+          "diagnosticId": "非空，已脱敏"
+        },
+        "terminalSuccess": true,
+        "parallelCheckCount": 5,
+        "projectionCompletionStatus": "WORKFLOW_PROJECTION_COMPLETION_STATUS_PAYLOAD_COMPLETED",
+        "projectionCompleted": true,
+        "stateVersion": 178,
+        "sideEffectsExecuted": false
+      }
+    }
   ]
 }
