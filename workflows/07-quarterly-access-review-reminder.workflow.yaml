@@ -1,0 +1,80 @@
+name: quarterly_access_review_reminder
+description: Guarded 2026 Q3 access review reminder that defaults to preview and sends one Lark DM only when submit is true.
+roles:
+  - id: coordinator
+    name: Access Review Coordinator
+steps:
+  - id: read_context
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"(async () => { const raw = ${json(input)}; let value = raw; if (typeof value === 'string') { try { value = JSON.parse(value); } catch (_) { value = {}; } } if (!value || typeof value !== 'object') value = {}; console.log(JSON.stringify({ submit: value.submit === true || value.submit === 'true' })); })();"}
+    next: select_mode
+
+  - id: select_mode
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"(async () => { const envelope = ${json(steps.read_context.output)}; const context = JSON.parse(envelope.output.stdout); console.log(context.submit === true ? 'SUBMIT' : 'PREVIEW'); })();"}
+    next: extract_mode
+
+  - id: extract_mode
+    type: transform
+    parameters:
+      op: json_extract
+      path: output.stdout
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_mode.output}"
+      branch.SUBMIT: send_reminder
+      branch.PREVIEW: preview
+      branch._default: preview
+    branches:
+      SUBMIT: send_reminder
+      PREVIEW: preview
+      _default: preview
+
+  - id: preview
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"console.log(JSON.stringify({case:'quarterly_access_review_reminder',mode:'preview',message_sent:false,period:'2026-Q3'}))"}
+    next: done
+
+  - id: send_reminder
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/im/v1/messages
+        query_parameters:
+          - receive_id_type
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar manual acceptance] 2026 Q3 access review is ready. Please confirm owners, remove stale access, and record exceptions by 2026-08-14.\"}"}}
+    next: summarize_send
+
+  - id: summarize_send
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'quarterly_access_review_reminder', mode: 'submit', message_sent: data.code == 0, downstream_code: data.code, period: '2026-Q3' }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

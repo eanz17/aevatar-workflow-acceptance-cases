@@ -1,0 +1,137 @@
+name: saas_license_utilization_review
+description: Read-only six-source Base fan-in followed by a deterministic utilization review over configured SaaS license inventory records.
+roles:
+  - id: analyst
+    name: License Analyst
+steps:
+  - id: read_license_inventory
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
+    next: read_asset_attestations
+
+  - id: read_asset_attestations
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"query":{"page_size":"100"}}'
+    next: read_access_requests
+
+  - id: read_access_requests
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ACCESS_REQUESTS__"},"query":{"page_size":"100"}}'
+    next: read_run_evidence
+
+  - id: read_run_evidence
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_RUN_EVIDENCE__"},"query":{"page_size":"100"}}'
+    next: read_table_catalog
+
+  - id: read_table_catalog
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__"},"query":{"page_size":"100"}}'
+    next: read_license_views
+
+  - id: read_license_views
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/views
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
+    next: assemble_live_reads
+
+  - id: assemble_live_reads
+    type: assign
+    parameters:
+      target: live_sources
+      value: >-
+        {"licenses":${steps.read_license_inventory.output},"assets":${steps.read_asset_attestations.output},"access_requests":${steps.read_access_requests.output},"run_evidence":${steps.read_run_evidence.output},"tables":${steps.read_table_catalog.output},"views":${steps.read_license_views.output}}
+    next: build_utilization_report
+
+  - id: build_utilization_report
+    type: transform
+    op: template
+    template: >-
+      {{~ live_ok = data.licenses.code == 0 && data.assets.code == 0 && data.access_requests.code == 0 && data.run_evidence.code == 0 && data.tables.code == 0 && data.views.code == 0 ~}}
+      {{~ rows = []; total_seats = 0; total_active = 0; total_cost = 0; reduce_count = 0 ~}}
+      {{~ for item in data.licenses.data.items ~}}
+      {{~ fields = item.fields; product = get(fields, 'Product', 'Unknown'); seats = number(get(fields, 'Seats', 0)); active = number(get(fields, 'Active Users', 0)); cost = number(get(fields, 'Monthly Cost USD', 0)); utilization = 0; if seats > 0; utilization = round(active / seats * 100, 1); end ~}}
+      {{~ if utilization < 50; action = 'reduce'; reduce_count = reduce_count + 1; else if utilization < 80; action = 'review'; else; action = 'keep'; end; end ~}}
+      {{~ rows = append(rows, { product: product, seats: seats, active_users: active, utilization_pct: utilization, monthly_cost_usd: cost, action: action }); total_seats = total_seats + seats; total_active = total_active + active; total_cost = total_cost + cost ~}}
+      {{~ end ~}}
+      {{ json({ schema: 'saas-license-utilization.v1', live_base_reads_ok: live_ok, source_counts: { licenses: data.licenses.data.items.size, assets: data.assets.data.items.size, access_requests: data.access_requests.data.items.size, run_evidence: data.run_evidence.data.items.size, tables: data.tables.data.items.size, views: data.views.data.items.size }, total_seats: total_seats, total_active_users: total_active, monthly_cost_usd: total_cost, reduce_candidates: reduce_count, rows: rows, side_effects: false }) }}
+    next: verify_report
+
+  - id: verify_report
+    type: transform
+    op: template
+    template: >-
+      {{~ feature_ok = data.live_base_reads_ok && data.source_counts.licenses == 3 && data.source_counts.tables == 6 && data.source_counts.views == 1 && data.total_seats == 185 && data.total_active_users == 140 && data.monthly_cost_usd == 6670 && data.reduce_candidates == 1 ~}}
+      {{ json({ case: 'saas_license_utilization', feature_ok: feature_ok, live_base_reads_ok: data.live_base_reads_ok, source_counts: data.source_counts, total_seats: data.total_seats, total_active_users: data.total_active_users, monthly_cost_usd: data.monthly_cost_usd, reduce_candidates: data.reduce_candidates, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "${steps.verify_report.output}"

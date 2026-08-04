@@ -1,0 +1,15 @@
+replacements:
+  __LARK_USER_SERVICE_ID__: replace-with-nyxid-user-service-id
+  __BASE_APP_TOKEN__: replace-with-lark-base-app-token
+  __TABLE_SAAS_LICENSE_INVENTORY__: replace-with-table-id
+  __TABLE_ASSET_ATTESTATIONS__: replace-with-table-id
+  __TABLE_ACCESS_REQUESTS__: replace-with-table-id
+  __TABLE_RUN_EVIDENCE__: replace-with-table-id
+  __TABLE_IDENTITY_DIRECTORY__: replace-with-table-id
+  __TABLE_MONTHLY_ACCESS_REVIEWS__: replace-with-table-id
+  __RECORD_SHARED_MAILBOX_REQUEST__: replace-with-record-id
+  __LARK_APPROVAL_CODE__: replace-with-approval-code
+  __LARK_APPROVAL_DETAIL_WIDGET_ID__: replace-with-textarea-widget-id
+  __LARK_APPROVAL_LINK_WIDGET_ID__: replace-with-input-widget-id
+  __LARK_APPROVAL_USER_ID__: replace-with-user-id
+  __LARK_MESSAGE_RECIPIENT_ID__: replace-with-user-id

@@ -1,0 +1,275 @@
+name: monthly_access_certification
+description: Calendar-gated monthly access review with Base aggregation, preview, approval creation, verification, completion notice, and reminder modes.
+roles:
+  - id: coordinator
+    name: Access Certification Coordinator
+steps:
+  - id: read_context
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const raw=${json(input)}; let input=raw; if(typeof input==='string'){try{input=JSON.parse(input);}catch(_){input={};}} if(!input||typeof input!=='object')input={}; const mode=['preview','submit','reminder_preview','reminder_send'].includes(input.mode)?input.mode:'preview'; const now=new Date(); const runDate=input.run_date||now.toISOString().slice(0,10); const period=input.period||runDate.slice(0,7); console.log(JSON.stringify({mode,run_date:runDate,period}));"}
+    next: parse_context
+
+  - id: parse_context
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: determine_calendar_route
+
+  - id: determine_calendar_route
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const ctx=${json(steps.parse_context.output)}; const date=new Date(ctx.run_date+'T00:00:00Z'); const tomorrow=new Date(date.getTime()+86400000); const isLastDay=tomorrow.getUTCDate()===1; let route='SKIP'; if(ctx.mode==='reminder_preview')route='REMINDER_PREVIEW'; else if(ctx.mode==='reminder_send')route='REMINDER_SEND'; else if(ctx.mode==='preview')route='PROCESS'; else if(ctx.mode==='submit'&&isLastDay)route='PROCESS'; console.log(JSON.stringify({route,is_last_day:isLastDay,mode:ctx.mode,period:ctx.period,run_date:ctx.run_date}));"}
+    next: parse_calendar_route
+
+  - id: parse_calendar_route
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: extract_calendar_route
+
+  - id: extract_calendar_route
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: select_calendar_route
+
+  - id: select_calendar_route
+    type: switch
+    parameters:
+      on: "${steps.extract_calendar_route.output}"
+      branch.PROCESS: read_review_records
+      branch.REMINDER_PREVIEW: reminder_preview
+      branch.REMINDER_SEND: send_reminder
+      branch.SKIP: skipped
+      branch._default: skipped
+    branches:
+      PROCESS: read_review_records
+      REMINDER_PREVIEW: reminder_preview
+      REMINDER_SEND: send_reminder
+      SKIP: skipped
+      _default: skipped
+
+  - id: reminder_preview
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const ctx=${json(steps.parse_context.output)}; console.log(JSON.stringify({case:'monthly_access_certification',mode:'reminder_preview',message_sent:false,period:ctx.period}));"}
+    next: done
+
+  - id: send_reminder
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/im/v1/messages
+        query_parameters: [receive_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar manual acceptance] Monthly access review reminder: confirm account owners, resolve exceptions, and complete the ${steps.parse_context.json.period} certification before month end.\"}"}}'
+    next: combine_reminder_result
+
+  - id: combine_reminder_result
+    type: assign
+    parameters:
+      target: reminder_result
+      value: >-
+        {"context":${steps.parse_context.output},"send":${steps.send_reminder.output}}
+    next: summarize_reminder
+
+  - id: summarize_reminder
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'monthly_access_certification', mode: 'reminder_send', message_sent: data.send.code == 0, downstream_code: data.send.code, period: data.context.period }) }}
+    next: done
+
+  - id: skipped
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"monthly_access_certification","mode":"skipped","reason":"submit_requires_month_end","side_effects":false}'
+
+  - id: read_review_records
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_MONTHLY_ACCESS_REVIEWS__"},"query":{"page_size":"100"}}'
+    next: combine_review_source
+
+  - id: combine_review_source
+    type: assign
+    parameters:
+      target: review_source
+      value: >-
+        {"context":${steps.parse_context.output},"records":${steps.read_review_records.output}}
+    next: aggregate_reviews
+
+  - id: aggregate_reviews
+    type: transform
+    op: template
+    template: >-
+      {{~ period = data.context.period; total = 0; complete = 0; pending = 0; exceptions = 0 ~}}
+      {{~ for item in data.records.data.items; fields = item.fields; if get(fields, 'Period', '') == period; total = total + 1; status = get(fields, 'Review Status', ''); if status == 'Complete'; complete = complete + 1; else; pending = pending + 1; end; exceptions = exceptions + number(get(fields, 'Exception Count', 0)); end; end ~}}
+      {{~ if data.records.code != 0 || total == 0; number('monthly access review records are unavailable'); end ~}}
+      {{ json({ period: period, total_accounts: total, completed_reviews: complete, pending_reviews: pending, exception_count: exceptions, source_ok: true }) }}
+    next: build_certification_request
+
+  - id: build_certification_request
+    type: transform
+    op: template
+    template: >-
+      {{~ detail = '[Aevatar manual acceptance] Monthly access certification ' + data.period + ' | total accounts: ' + string(data.total_accounts) + ' | completed: ' + string(data.completed_reviews) + ' | pending: ' + string(data.pending_reviews) + ' | exceptions: ' + string(data.exception_count) ~}}
+      {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_MONTHLY_ACCESS_REVIEWS__' }]) ~}}
+      {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: '__LARK_APPROVAL_USER_ID__', form: form } }) }}
+    next: select_process_mode
+
+  - id: select_process_mode
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const ctx=${json(steps.parse_context.output)}; console.log(ctx.mode==='submit'?'SUBMIT':'PREVIEW');"}
+    next: extract_process_mode
+
+  - id: extract_process_mode
+    type: transform
+    parameters:
+      op: json_extract
+      path: output.stdout
+    next: route_process_mode
+
+  - id: route_process_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_process_mode.output}"
+      branch.SUBMIT: create_certification_approval
+      branch.PREVIEW: preview_certification
+      branch._default: preview_certification
+    branches:
+      SUBMIT: create_certification_approval
+      PREVIEW: preview_certification
+      _default: preview_certification
+
+  - id: preview_certification
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const summary=${json(steps.aggregate_reviews.output)}; console.log(JSON.stringify({case:'monthly_access_certification',mode:'preview',summary,approval_created:false,message_sent:false}));"}
+    next: done
+
+  - id: create_certification_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/approval/v4/instances
+        query_parameters: [user_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: build_verify_request
+
+  - id: build_verify_request
+    type: transform
+    op: template
+    template: >-
+      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('monthly certification approval was not created'); end ~}}
+      {{ json({ path_params: { instance_code: data.data.instance_code }, query: { user_id_type: 'user_id' } }) }}
+    next: verify_certification_approval
+
+  - id: verify_certification_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters: [user_id_type]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: build_completion_notice
+
+  - id: build_completion_notice
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const created=${json(steps.create_certification_approval.output)}; const summary=${json(steps.aggregate_reviews.output)}; const text='[Aevatar manual acceptance] Monthly access certification '+summary.period+' submitted. Accounts: '+summary.total_accounts+', pending: '+summary.pending_reviews+', exceptions: '+summary.exception_count+', instance: '+created.data.instance_code; console.log(JSON.stringify({content:JSON.stringify({text})}));"}
+    next: parse_completion_notice
+
+  - id: parse_completion_notice
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: send_completion_notice
+
+  - id: send_completion_notice
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/im/v1/messages
+        query_parameters: [receive_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"${steps.parse_completion_notice.json.content}"}}'
+    next: combine_terminal_results
+
+  - id: combine_terminal_results
+    type: assign
+    parameters:
+      target: terminal_results
+      value: >-
+        {"summary":${steps.aggregate_reviews.output},"created":${steps.create_certification_approval.output},"verified":${steps.verify_certification_approval.output},"notified":${steps.send_completion_notice.output}}
+    next: summarize_terminal_results
+
+  - id: summarize_terminal_results
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.created.code == 0 && get(data.created.data, 'instance_code', '') != '' && data.verified.code == 0 && data.notified.code == 0 ~}}
+      {{ json({ case: 'monthly_access_certification', mode: 'submit', success: success, summary: data.summary, instance_code: get(data.created.data, 'instance_code', ''), approval_status: get(data.verified.data, 'status', 'UNKNOWN'), message_sent: data.notified.code == 0 }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

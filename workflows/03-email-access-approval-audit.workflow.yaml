@@ -1,0 +1,66 @@
+name: email_access_approval_audit
+description: Read-only sample audit of one existing Lark email-access approval and its detail endpoint.
+roles:
+  - id: auditor
+    name: Access Approval Auditor
+steps:
+  - id: list_email_approvals
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances
+        query_parameters:
+          - approval_code
+          - page_size
+          - start_time
+          - end_time
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"1","start_time":"1754238719855","end_time":"1785774719855"}}'
+    next: extract_instance_codes
+
+  - id: extract_instance_codes
+    type: transform
+    parameters:
+      op: json_extract
+      path: data.instance_code_list
+      n: "1"
+    next: fetch_one_detail
+
+  - id: fetch_one_detail
+    type: foreach
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters: []
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      sub_step_type: tool_call
+      sub_param_tool: nyxid_proxy
+      sub_param_arguments: '{"path_params":{"instance_code":"${input}"}}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "1"
+    next: verify_detail
+
+  - id: verify_detail
+    type: transform
+    op: template
+    template: >-
+      {{~ reachable = get(data, 'code', -1) == 0 ~}}
+      {{ json({ case: 'email_access_approval_audit', success: reachable, instance_reachable: reachable, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "${steps.verify_detail.output}"

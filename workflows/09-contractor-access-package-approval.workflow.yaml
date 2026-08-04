@@ -1,0 +1,240 @@
+name: contractor_access_package_approval
+description: Attachment-driven contractor access package review with identity resolution, approval-history verification, preview, and confirmed approval creation.
+roles:
+  - id: reviewer
+    name: Contractor Access Reviewer
+    system_prompt: >-
+      Return pure JSON with exactly five booleans: identity_present, organization_present,
+      nda_present, requested_access_present, end_date_present. Do not reproduce personal data
+      or source text.
+steps:
+  - id: read_context
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const raw=${json(input)}; let input=raw; if(typeof input==='string'){try{input=JSON.parse(input);}catch(_){input={};}} if(!input||typeof input!=='object')input={}; console.log(JSON.stringify({submit:input.submit===true||input.submit==='true'}));"}
+    next: extract_documents
+
+  - id: extract_documents
+    type: foreach
+    parameters:
+      items_source: input_file_refs
+      sub_step_type: tool_call
+      sub_param_tool: document_extract
+      sub_param_arguments: '{"maxChars":8000}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "3"
+    next: classify_package
+
+  - id: classify_package
+    type: llm_call
+    target_role: reviewer
+    parameters:
+      prompt_prefix: "Classify this contractor access package without exposing its contents:"
+    next: normalize_package
+
+  - id: normalize_package
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const ctx=JSON.parse(${json(steps.read_context.output)}.output.stdout); const raw=${json(steps.classify_package.output)}; let value=raw; if(typeof value==='string'){try{const match=value.match(/\\{[\\s\\S]*\\}/); value=JSON.parse(match?match[0]:value);}catch(_){value={};}} if(!value||typeof value!=='object')value={}; const checks={identity_present:value.identity_present===true,organization_present:value.organization_present===true,nda_present:value.nda_present===true,requested_access_present:value.requested_access_present===true,end_date_present:value.end_date_present===true}; console.log(JSON.stringify({route:ctx.submit?'SUBMIT':'PREVIEW',checks,complete:Object.values(checks).every(Boolean)}));"}
+    next: parse_package
+
+  - id: parse_package
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: extract_route
+
+  - id: extract_route
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_route.output}"
+      branch.SUBMIT: read_identity_directory
+      branch.PREVIEW: preview
+      branch._default: preview
+    branches:
+      SUBMIT: read_identity_directory
+      PREVIEW: preview
+      _default: preview
+
+  - id: preview
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const result=${json(steps.parse_package.output)}; console.log(JSON.stringify({case:'contractor_access_package_approval',mode:'preview',complete:result.complete,checks:result.checks,identity_resolved:false,history_checked:false,approval_created:false}));"}
+    next: done
+
+  - id: read_identity_directory
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_IDENTITY_DIRECTORY__"},"query":{"page_size":"100"}}'
+    next: resolve_identity
+
+  - id: resolve_identity
+    type: transform
+    op: template
+    template: >-
+      {{~ resolved = ''; for item in data.data.items; fields = item.fields; if get(fields, 'Identity Key', '') == 'contractor-access-requester' && get(fields, 'Status', '') == 'Active'; resolved = get(fields, 'Lark User ID', ''); end; end ~}}
+      {{~ if data.code != 0 || resolved == ''; number('acceptance identity could not be resolved'); end ~}}
+      {{ json({ user_id: resolved, identity_key: 'contractor-access-requester' }) }}
+    next: list_approval_history
+
+  - id: list_approval_history
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances
+        query_parameters: [approval_code, page_size, start_time, end_time]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"1","start_time":"1754238719855","end_time":"1785774719855"}}'
+    next: extract_history_codes
+
+  - id: extract_history_codes
+    type: transform
+    parameters:
+      op: json_extract
+      path: data.instance_code_list
+      n: "1"
+    next: fetch_history_detail
+
+  - id: fetch_history_detail
+    type: foreach
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters: []
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      sub_step_type: tool_call
+      sub_param_tool: nyxid_proxy
+      sub_param_arguments: '{"path_params":{"instance_code":"${input}"}}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "1"
+    next: deduplicate_request
+
+  - id: deduplicate_request
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const history=${json(steps.fetch_history_detail.output)}; const requestKey='contractor-access-package-20260804'; const serialized=JSON.stringify(history); console.log(JSON.stringify({history_reachable:history&&history.code===0,request_key:requestKey,possible_duplicate:serialized.includes(requestKey)}));"}
+    next: parse_deduplication
+
+  - id: parse_deduplication
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: combine_request_context
+
+  - id: combine_request_context
+    type: assign
+    parameters:
+      target: request_context
+      value: >-
+        {"package":${steps.parse_package.output},"identity":${steps.resolve_identity.output},"deduplication":${steps.parse_deduplication.output}}
+    next: build_approval_request
+
+  - id: build_approval_request
+    type: transform
+    op: template
+    template: >-
+      {{~ if !data.package.complete; number('contractor package is incomplete'); end ~}}
+      {{~ if data.deduplication.possible_duplicate; number('duplicate contractor access request is already present'); end ~}}
+      {{~ detail = '[Aevatar manual acceptance] Contractor access package complete | identity resolved: true | prior approval detail reachable: ' + string(data.deduplication.history_reachable) + ' | review key: contractor-access-package-20260804' ~}}
+      {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_IDENTITY_DIRECTORY__' }]) ~}}
+      {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: data.identity.user_id, form: form } }) }}
+    next: create_approval
+
+  - id: create_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/approval/v4/instances
+        query_parameters: [user_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: build_verify_request
+
+  - id: build_verify_request
+    type: transform
+    op: template
+    template: >-
+      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('contractor access approval was not created'); end ~}}
+      {{ json({ path_params: { instance_code: data.data.instance_code }, query: { user_id_type: 'user_id' } }) }}
+    next: verify_approval
+
+  - id: verify_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters: [user_id_type]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: combine_results
+
+  - id: combine_results
+    type: assign
+    parameters:
+      target: approval_results
+      value: >-
+        {"created":${steps.create_approval.output},"verified":${steps.verify_approval.output}}
+    next: summarize
+
+  - id: summarize
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.created.code == 0 && get(data.created.data, 'instance_code', '') != '' && data.verified.code == 0 ~}}
+      {{ json({ case: 'contractor_access_package_approval', mode: 'submit', success: success, package_complete: true, identity_resolved: true, history_checked: true, possible_duplicate: false, instance_code: get(data.created.data, 'instance_code', ''), approval_status: get(data.verified.data, 'status', 'UNKNOWN') }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

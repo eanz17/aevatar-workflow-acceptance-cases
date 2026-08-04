@@ -1,0 +1,16 @@
+Synthetic candidate profile for workflow acceptance
+
+Identity
+Candidate reference: CANDIDATE-SAMPLE-2026-08
+
+Experience
+Five years of experience delivering backend services and production observability.
+
+Education
+Bachelor-level computer science education completed.
+
+Contact
+The candidate supplied a contact channel through the recruiting system.
+
+Consent
+The candidate consented to document processing for this manual workflow acceptance.

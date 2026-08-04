@@ -1,0 +1,53 @@
+base_contract:
+  table_count: 6
+  saas_license_view_count: 1
+
+saas_license_inventory:
+  - Product: Source Control Enterprise
+    Seats: 100
+    Active Users: 90
+    Monthly Cost USD: 4000
+  - Product: Design Suite
+    Seats: 50
+    Active Users: 35
+    Monthly Cost USD: 2000
+  - Product: Analytics Pro
+    Seats: 35
+    Active Users: 15
+    Monthly Cost USD: 670
+
+asset_attestations:
+  - Attestation Key: baseline-device-review
+    Control: Quarterly device ownership review
+    Owner: IT Operations
+    Status: Reviewed
+
+access_requests:
+  - Request Key: shared-mailbox-project-atlas-20260804
+    Request Type: Shared mailbox access
+    Requester: Project Atlas Operations
+    Department: Platform Operations
+    Target: project-atlas@example.com
+    Review Date: 2026-08-04
+    Status: Ready for approval
+
+run_evidence: []
+
+identity_directory:
+  - Identity Key: contractor-access-requester
+    Lark User ID: replace-with-user-id
+    Status: Active
+
+monthly_access_reviews:
+  - Account: billing-admin@example.com
+    Period: 2026-08
+    Review Status: Complete
+    Exception Count: 0
+  - Account: release-operator@example.com
+    Period: 2026-08
+    Review Status: Complete
+    Exception Count: 1
+  - Account: analytics-reader@example.com
+    Period: 2026-08
+    Review Status: Pending
+    Exception Count: 0

@@ -1,0 +1,20 @@
+{
+  "date": "2026-08-04",
+  "ingress": "nyxid proxy request aevatar",
+  "endpoint": "/api/scopes/{scopeId}/workflows:explicit-request-preview",
+  "executionMode": "interactive",
+  "target": "configured private materializations that normalize to the public templates",
+  "sideEffectsExecuted": false,
+  "workflows": [
+    {"name":"release_readiness_review","callSites":0,"get":0,"post":0,"result":"passed"},
+    {"name":"candidate_document_compliance_preview","callSites":0,"get":0,"post":0,"result":"passed"},
+    {"name":"email_access_approval_audit","callSites":2,"get":2,"post":0,"result":"passed"},
+    {"name":"saas_license_utilization_review","callSites":6,"get":6,"post":0,"result":"passed"},
+    {"name":"asset_inventory_attestation","callSites":1,"get":0,"post":1,"result":"passed"},
+    {"name":"project_shared_mailbox_approval","callSites":3,"get":2,"post":1,"result":"passed"},
+    {"name":"quarterly_access_review_reminder","callSites":1,"get":0,"post":1,"result":"passed"},
+    {"name":"saas_license_optimization_digest","callSites":7,"get":6,"post":1,"result":"passed","durableResult":"DURABLE_AUTHORIZATION_UNAVAILABLE"},
+    {"name":"contractor_access_package_approval","callSites":5,"get":4,"post":1,"result":"passed"},
+    {"name":"monthly_access_certification","callSites":5,"get":2,"post":3,"result":"passed","durableResult":"NYXID_EXPLICIT_REQUEST_INTERACTIVE_REQUIRED"}
+  ]
+}

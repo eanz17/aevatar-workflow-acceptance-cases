@@ -1,0 +1,229 @@
+name: saas_license_optimization_digest
+description: Six-source SaaS review with per-source normalization, deterministic aggregation, preview, and an explicitly confirmed Lark digest send.
+roles:
+  - id: analyst
+    name: License Optimization Analyst
+steps:
+  - id: read_license_inventory
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
+    next: normalize_license_inventory
+
+  - id: normalize_license_inventory
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const response=${json(steps.read_license_inventory.output)}; const items=(response.data&&response.data.items)||[]; let seats=0,active=0,cost=0,reduce=0; for(const item of items){const f=item.fields||{}; const s=Number(f['Seats']||0),a=Number(f['Active Users']||0),c=Number(f['Monthly Cost USD']||0); const u=s>0?a/s*100:0; seats+=s; active+=a; cost+=c; if(u<50) reduce++;} console.log(JSON.stringify({ok:response.code===0,count:items.length,seats,active,cost,reduce}));"}
+    next: read_asset_attestations
+
+  - id: read_asset_attestations
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"query":{"page_size":"100"}}'
+    next: normalize_asset_attestations
+
+  - id: normalize_asset_attestations
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const response=${json(steps.read_asset_attestations.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
+    next: read_access_requests
+
+  - id: read_access_requests
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ACCESS_REQUESTS__"},"query":{"page_size":"100"}}'
+    next: normalize_access_requests
+
+  - id: normalize_access_requests
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const response=${json(steps.read_access_requests.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
+    next: read_run_evidence
+
+  - id: read_run_evidence
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_RUN_EVIDENCE__"},"query":{"page_size":"100"}}'
+    next: normalize_run_evidence
+
+  - id: normalize_run_evidence
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const response=${json(steps.read_run_evidence.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
+    next: read_table_catalog
+
+  - id: read_table_catalog
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__"},"query":{"page_size":"100"}}'
+    next: normalize_table_catalog
+
+  - id: normalize_table_catalog
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const response=${json(steps.read_table_catalog.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
+    next: read_license_views
+
+  - id: read_license_views
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/views
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
+    next: normalize_license_views
+
+  - id: normalize_license_views
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const response=${json(steps.read_license_views.output)}; console.log(JSON.stringify({ok:response.code===0,count:((response.data&&response.data.items)||[]).length}));"}
+    next: build_digest
+
+  - id: build_digest
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const raw=${json(input)}; let input=raw; if(typeof input==='string'){try{input=JSON.parse(input);}catch(_){input={};}} if(!input||typeof input!=='object')input={}; const license=JSON.parse(${json(steps.normalize_license_inventory.output)}.output.stdout); const assets=JSON.parse(${json(steps.normalize_asset_attestations.output)}.output.stdout); const access=JSON.parse(${json(steps.normalize_access_requests.output)}.output.stdout); const evidence=JSON.parse(${json(steps.normalize_run_evidence.output)}.output.stdout); const tables=JSON.parse(${json(steps.normalize_table_catalog.output)}.output.stdout); const views=JSON.parse(${json(steps.normalize_license_views.output)}.output.stdout); const allOk=[license,assets,access,evidence,tables,views].every(x=>x.ok); const card={config:{wide_screen_mode:true},header:{title:{tag:'plain_text',content:'SaaS license optimization digest'},template:license.reduce>0?'orange':'green'},elements:[{tag:'div',text:{tag:'lark_md',content:'Seats: '+license.seats+' | Active: '+license.active+' | Monthly cost: USD '+license.cost+' | Reduce candidates: '+license.reduce}},{tag:'note',elements:[{tag:'plain_text',content:'Manual acceptance data; verify terminal workflow evidence before action.'}]}]}; const cardString=JSON.stringify(card); console.log(JSON.stringify({route:input.submit===true||input.submit==='true'?'SUBMIT':'PREVIEW',all_sources_ok:allOk,total_seats:license.seats,total_active_users:license.active,monthly_cost_usd:license.cost,reduce_candidates:license.reduce,source_counts:{licenses:license.count,assets:assets.count,access_requests:access.count,run_evidence:evidence.count,tables:tables.count,views:views.count},content_escaped:JSON.stringify(cardString).slice(1,-1)}));"}
+    next: parse_digest
+
+  - id: parse_digest
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: extract_route
+
+  - id: extract_route
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_route.output}"
+      branch.SUBMIT: send_digest
+      branch.PREVIEW: preview
+      branch._default: preview
+    branches:
+      SUBMIT: send_digest
+      PREVIEW: preview
+      _default: preview
+
+  - id: preview
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"const payload=${json(steps.parse_digest.output)}; console.log(JSON.stringify({case:'saas_license_optimization_digest',mode:'preview',all_sources_ok:payload.all_sources_ok,total_seats:payload.total_seats,total_active_users:payload.total_active_users,monthly_cost_usd:payload.monthly_cost_usd,reduce_candidates:payload.reduce_candidates,message_sent:false}));"}
+    next: done
+
+  - id: send_digest
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/im/v1/messages
+        query_parameters: [receive_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"interactive","content":"${steps.parse_digest.json.content_escaped}"}}'
+    next: combine_send_result
+
+  - id: combine_send_result
+    type: assign
+    parameters:
+      target: send_result
+      value: >-
+        {"digest":${steps.parse_digest.output},"send":${steps.send_digest.output}}
+    next: summarize_send
+
+  - id: summarize_send
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'saas_license_optimization_digest', mode: 'submit', message_sent: data.send.code == 0, downstream_code: data.send.code, total_seats: data.digest.total_seats, reduce_candidates: data.digest.reduce_candidates }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

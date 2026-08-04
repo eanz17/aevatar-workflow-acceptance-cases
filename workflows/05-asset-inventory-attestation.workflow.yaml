@@ -1,0 +1,80 @@
+name: asset_inventory_attestation
+description: Guarded IT asset inventory attestation that defaults to preview and writes one disposable Base record only when submit is true.
+roles:
+  - id: operator
+    name: Asset Operator
+steps:
+  - id: read_context
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"(async () => { const raw = ${json(input)}; let value = raw; if (typeof value === 'string') { try { value = JSON.parse(value); } catch (_) { value = {}; } } if (!value || typeof value !== 'object') value = {}; console.log(JSON.stringify({ submit: value.submit === true || value.submit === 'true' })); })();"}
+    next: select_mode
+
+  - id: select_mode
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"(async () => { const envelope = ${json(steps.read_context.output)}; const context = JSON.parse(envelope.output.stdout); console.log(context.submit === true ? 'SUBMIT' : 'PREVIEW'); })();"}
+    next: extract_mode
+
+  - id: extract_mode
+    type: transform
+    parameters:
+      op: json_extract
+      path: output.stdout
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_mode.output}"
+      branch.SUBMIT: create_attestation
+      branch.PREVIEW: preview
+      branch._default: preview
+    branches:
+      SUBMIT: create_attestation
+      PREVIEW: preview
+      _default: preview
+
+  - id: preview
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"console.log(JSON.stringify({case:'asset_inventory_attestation',mode:'preview',mutation_executed:false,target:'Asset Attestations'}))"}
+    next: done
+
+  - id: create_attestation
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: []
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"body":{"fields":{"Attestation Key":"manual-asset-attestation-20260804","Control":"Quarterly device ownership review","Owner":"IT Operations","Status":"Reviewed","Sequence":20260804,"Reviewed At":"2026-08-04"}}}
+    next: summarize_write
+
+  - id: summarize_write
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: >-
+        {"language":"javascript","code":"(async () => { const raw = ${json(steps.create_attestation.output)}; function parse(v) { if (typeof v !== 'string') return v; try { return JSON.parse(v); } catch (_) { return {}; } } let value = parse(raw); if (value && value.output !== undefined) value = parse(value.output); if (value && value.body !== undefined) value = parse(value.body); console.log(JSON.stringify({case:'asset_inventory_attestation',mode:'submit',mutation_executed:true,accepted:value && value.code === 0})); })();"}
+    next: done
+
+  - id: done
+    type: transform
+    parameters:
+      op: json_extract
+      path: output.stdout
