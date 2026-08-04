@@ -69,6 +69,25 @@ CASES = {
   "11" => {
     file: "11-complex-codex-exec-validation.workflow.yaml",
     prompt: "run"
+  },
+  "12" => {
+    file: "12-safe-code-execute-validation.workflow.yaml",
+    prompt: "校验这笔合成结算金额。",
+    approval_required: true
+  },
+  "13" => {
+    file: "13-invoice-ocr-policy-review.workflow.yaml",
+    prompt: "提取这份合成发票，归一化字段并检查历史重复；不要创建审批。",
+    attachment: "synthetic-invoice.pdf"
+  },
+  "14" => {
+    file: "14-lark-contact-batch-resolution.workflow.yaml",
+    prompt: "解析验收入职邮箱，只返回是否解析成功和数量。",
+    approval_required: true
+  },
+  "15" => {
+    file: "15-weekly-budget-variance-digest.workflow.yaml",
+    prompt: "生成合成预算的周度和月度差异摘要；不要发送消息。"
   }
 }.freeze
 
@@ -193,6 +212,7 @@ class ProductionValidator
       larkServiceHash: Digest::SHA256.hexdigest(lark_service_id)[0, 12],
       runEnabled: @options.fetch(:run),
       approvedSideEffectCases: @options.fetch(:side_effect_cases).sort,
+      approvedReadOnlyCases: @options.fetch(:read_only_approval_cases).sort,
       results: results
     )
     exit 1 if results.any? { |item| item[:result] == "失败" }
@@ -375,6 +395,8 @@ class ProductionValidator
 
   def invoke_workflow(case_id, config, member_id, revision_id)
     side_effect = @options.fetch(:side_effect_cases).include?(case_id)
+    read_only_approval = @options.fetch(:read_only_approval_cases).include?(case_id)
+    approval_allowed = @options.fetch(:approve) && (side_effect || read_only_approval)
     prompt = @options[:prompt] ||
       (side_effect ? config.fetch(:mutation_prompt, config.fetch(:prompt)) : config.fetch(:prompt))
     body = {
@@ -392,8 +414,8 @@ class ProductionValidator
       approval = parse_stream_line(evidence, line)
       next unless approval
 
-      unless side_effect && @options.fetch(:approve)
-        raise ValidationError, "运行等待 tool approval；只有 --allow-side-effects 与 --approve 同时存在才会继续"
+      unless approval_allowed
+        raise ValidationError, "运行等待 tool approval；必须显式允许对应的写入或只读批准后才会继续"
       end
       raise ValidationError, "tool approval 到达前没有 run ID" unless evidence[:run_id]
       next if approved_keys[approval.fetch(:approval_request_id)]
@@ -403,7 +425,7 @@ class ProductionValidator
     end
     raise ValidationError, "运行未返回 run ID" unless evidence[:run_id]
 
-    detail = wait_for_run(member_id, evidence.fetch(:run_id), side_effect, approved_keys)
+    detail = wait_for_run(member_id, evidence.fetch(:run_id), approval_allowed, approved_keys)
     final_output = detail["finalOutput"] || evidence[:final_output]
     success = detail.dig("summary", "status") == "completed" && detail.dig("summary", "success") == true
     {
@@ -416,7 +438,8 @@ class ProductionValidator
       totalSteps: detail.dig("statistics", "totalSteps"),
       finalOutput: sanitize_output(final_output),
       failure: sanitize_output(terminal_failure(detail)),
-      sideEffectAuthorized: side_effect
+      sideEffectAuthorized: side_effect,
+      readOnlyApprovalAuthorized: read_only_approval
     }
   end
 
@@ -450,7 +473,7 @@ class ProductionValidator
       type: "file",
       inlineFile: {
         dataBase64: Base64.strict_encode64(bytes),
-        mediaType: "text/plain",
+        mediaType: File.extname(name).downcase == ".pdf" ? "application/pdf" : "text/plain",
         name: name,
         sizeBytes: bytes.bytesize,
         ownerScopeId: @options.fetch(:scope_id)
@@ -481,7 +504,7 @@ class ProductionValidator
     nil
   end
 
-  def wait_for_run(member_id, run_id, side_effect, approved_keys = {})
+  def wait_for_run(member_id, run_id, approval_allowed, approved_keys = {})
     deadline = Time.now + @options.fetch(:timeout)
     loop do
       detail = @client.request_json(
@@ -498,7 +521,7 @@ class ProductionValidator
         approval = approval_step.fetch("toolApproval")
         key = approval.fetch("approvalRequestId")
         unless approved_keys[key]
-          unless side_effect && @options.fetch(:approve)
+          unless approval_allowed
             raise ValidationError, "运行等待 tool approval；没有获得自动批准授权"
           end
           approve(
@@ -594,6 +617,7 @@ options = {
   run: false,
   approve: false,
   side_effect_cases: [],
+  read_only_approval_cases: [],
   timeout: 420,
   prompt: nil
 }
@@ -603,10 +627,13 @@ OptionParser.new do |parser|
   parser.on("--scope-id ID", "Aevatar scope ID，也可使用 AEVATAR_SCOPE_ID") { |value| options[:scope_id] = value }
   parser.on("--team-id ID", "用于创建临时验收成员的 Studio team ID，也可使用 AEVATAR_TEAM_ID") { |value| options[:team_id] = value }
   parser.on("--lark-user-service-id ID", "固定 Lark Bot UserService，也可使用 LARK_USER_SERVICE_ID") { |value| options[:lark_service_id] = value }
-  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-11") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
+  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-15") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
   parser.on("--run", "在 preview 后执行工作流；默认只 preview") { options[:run] = true }
   parser.on("--allow-side-effects LIST", "允许执行副作用的案例编号，逗号分隔") do |value|
     options[:side_effect_cases] = value.split(",").map { |item| item.strip.rjust(2, "0") }
+  end
+  parser.on("--approve-read-only LIST", "允许批准只读但被平台门禁的案例编号，逗号分隔") do |value|
+    options[:read_only_approval_cases] = value.split(",").map { |item| item.strip.rjust(2, "0") }
   end
   parser.on("--approve", "通过 typed receipt 自动批准已允许案例的 tool approval") { options[:approve] = true }
   parser.on("--timeout SECONDS", Integer, "单个绑定或运行的超时秒数；默认 420") { |value| options[:timeout] = value }
@@ -619,7 +646,13 @@ unknown_cases = options[:cases] - CASES.keys
 abort "未知案例：#{unknown_cases.join(", ")}" unless unknown_cases.empty?
 unknown_side_effect_cases = options[:side_effect_cases] - CASES.keys
 abort "未知副作用案例：#{unknown_side_effect_cases.join(", ")}" unless unknown_side_effect_cases.empty?
-abort "--approve 必须与 --allow-side-effects 一起使用" if options[:approve] && options[:side_effect_cases].empty?
+unknown_read_only_cases = options[:read_only_approval_cases] - CASES.keys
+abort "未知只读批准案例：#{unknown_read_only_cases.join(", ")}" unless unknown_read_only_cases.empty?
+invalid_read_only_cases = options[:read_only_approval_cases].reject { |case_id| CASES.fetch(case_id)[:approval_required] }
+abort "这些案例未声明只读批准契约：#{invalid_read_only_cases.join(", ")}" unless invalid_read_only_cases.empty?
+if options[:approve] && options[:side_effect_cases].empty? && options[:read_only_approval_cases].empty?
+  abort "--approve 必须与 --allow-side-effects 或 --approve-read-only 一起使用"
+end
 abort "--prompt 只能与单个 --cases 案例一起使用" if options[:prompt] && options[:cases].length != 1
 
 ProductionValidator.new(options).run

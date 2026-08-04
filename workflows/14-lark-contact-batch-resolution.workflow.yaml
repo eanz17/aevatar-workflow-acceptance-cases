@@ -1,0 +1,36 @@
+name: lark_contact_batch_resolution
+description: 通过 Lark contact batch_get_id 把入职邮箱解析成用户身份，只输出计数和布尔证据，不泄露身份值。
+roles:
+  - id: verifier
+    name: 入职身份解析员
+steps:
+  - id: resolve_contact
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/contact/v3/users/batch_get_id
+        query_parameters: [user_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"user_id_type":"user_id"},"body":{"emails":["__LARK_CONTACT_EMAIL__"]}}'
+    next: summarize_resolution
+
+  - id: summarize_resolution
+    type: transform
+    op: template
+    template: >-
+      {{~ users = get(data.data, 'user_list', []); resolved = data.code == 0 && users.size == 1; if resolved; first = users[0]; resolved = get(first, 'user_id', '') != '' || get(first, 'open_id', '') != ''; end ~}}
+      {{ json({ case: 'lark_contact_batch_resolution', success: resolved, contact_api_reachable: data.code == 0, resolved_count: users.size, identifiers_redacted: true, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

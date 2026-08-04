@@ -2,69 +2,93 @@
 
 报告日期：2026-08-04。
 
-## 路径口径
+## 路径与统计口径
 
-用户提到的 `~/Code/workflows` 当前不存在。本报告实际比较：
+用户最初提到的 `~/Code/workflows` 当前不存在。本报告实际比较：
 
-- 新仓库：`/Users/chronoai/Code/aevatar-workflow-acceptance-cases`；
+- 验收仓库：`/Users/chronoai/Code/aevatar-workflow-acceptance-cases`；
 - 源目录：`/Users/chronoai/workflows`。
 
-源目录共有 43 个可解析工作流定义，但不能按文件数直接计算覆盖率。其中 20 个是本批十个验收案例及其 Ornn 资产的旧副本，另外 23 个分属 Base 探针、原语探针、Lark Onboarding、发票审批、预算监控和月度考勤等版本族。
+源目录共有 43 个带 workflow 形态的可解析定义，其中两个是带 `nodes/connections` 契约的 n8n JSON。本轮按要求排除 n8n，只比较其余 41 个定义。41 个定义包含旧版本、派生版本和 Ornn 内嵌副本，不能用文件数直接计算功能覆盖率；本报告将它们归并为 7 个版本族。
 
-## 结论
+## 总结
 
-- 新仓库 11/11 个工作流通过静态校验与 production explicit-request preview。
-- 11/11 个工作流都有真实 committed 终态证据；05-10 的写路径通过 typed tool receipt 批准后执行。
-- 01-10 不再依赖生产未授权的通用 `code_execute`；11 只保留一次固定、无副作用的 `codex_exec` managed sandbox 探针。
-- 09 的创建、回读和稳定键幂等跳过均得到真实证据。修复前的错误时间窗口导致诊断期间创建了两条同键 `PENDING` 验收审批，未擅自删除。
-- 10 的月末提交、非月末跳过、提醒预览和提醒发送四条路径均通过。
+- 15/15 个公开 workflow 通过本地静态校验和 production explicit-request preview。
+- 直接生产运行取得 13 个 committed `completed` 和 2 个 committed `failed`；两个失败均有稳定平台 blocker，不是未执行。
+- 15/15 个 Ornn skill 通过服务端格式校验、公开发布和按名称回读。
+- 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约。
+- `/api/chat` 自然语言验证 5 个代表案例，当前没有任何一个满足严格的 typed artifact 成功条件，因此不能宣称 Ornn 自然语言全链路通过。
+- `/api/chat` 与 Lark Bot 共用 Assistant/Ornn/workflow 核心，但不覆盖 Lark webhook、NyxID channel relay、会话映射和 Lark 回传。
 
 ## 源版本族映射
 
-| 源版本族 | 定义数 | 新仓库对应案例 | 重叠能力 | 尚未一一覆盖 |
-|---|---:|---|---|---|
-| Base 探针 | 3 | 04、05 | Base 多表 GET、表/视图 GET、受保护 POST、结果判定 | 原始旧资源本身不在公共仓库复测 |
-| 原语与执行探针 | 5 | 01、03、11 | assign、transform、switch、foreach、动态 GET、managed `codex_exec` | 通用 `code_execute` 凭据探针未覆盖 |
-| Lark Onboarding | 2 | 06 | Base 记录到审批创建、实例回读 | n8n webhook 与同步 webhook response 被交互式调用替代 |
-| 发票审批 | 7 | 02、03、09 | 附件、文档提取、LLM、历史审批、去重、审批创建/验证 | 图片/PDF OCR、发票字段与金额规则、contact batch lookup |
-| 预算监控 | 5 | 04、08 | 六源 Base、确定性聚合、阈值判断、卡片发送 | 原始预算类别/差异公式与每周 durable schedule |
-| 月度考勤 | 1 | 10 | 月末门禁、月度聚合、审批、验证、完成与提醒消息 | n8n 每日 schedule trigger |
-| 旧验收案例副本 | 10 | 01-10 | 新仓库是其修复、中文化和生产验证后的权威版本 | 源副本仍含过时 `code_execute` |
-| Ornn 资产副本 | 10 | 无 | 资产内嵌工作流与旧验收案例相同 | 新仓库未打包或发布 Ornn skill，自然语言调用未在本仓库证明 |
+| 源版本族 | 非 n8n 定义数 | 新仓库案例 | 已覆盖语义 | 生产边界 | 判断 |
+|---|---:|---|---|---|---|
+| Base 探针 | 3 | 04、05、15 | 记录 GET、多源读取、受保护 POST、typed receipt | 无新增缺口 | 覆盖 |
+| 原语与执行探针 | 5 | 01、03、11、12 | `assign`、`transform`、分支、`foreach`、managed `codex_exec`、固定 `code_execute` | `code_execute` 真实运行被 `NYXID_PROXY_UNAUTHORIZED` 阻塞 | 部分覆盖 / 平台阻塞 |
+| Lark Onboarding | 1 | 06 | Base 申请、审批 payload、创建与实例回读 | 源 Aevatar e2e 语义已覆盖 | 覆盖 |
+| 发票审批 | 7 | 02、03、09、13、14 | 图片/PDF、提取、SGD/金额/供应商规则、历史、去重、审批、contact | contact 缺 `contact:user.id:readonly`；通用代码执行仍阻塞 | 部分覆盖 / 平台阻塞 |
+| 预算监控 | 5 | 04、08、15 | 六路 Base、预算差异、阈值、周报/月报、卡片发送 | schedule endpoint 返回 HTTP 502 且无 receipt | 部分覆盖 / 平台阻塞 |
+| 旧验收案例副本 | 10 | 01-10 | 新仓库是修复、中文化并取得 committed 证据的权威版本 | 源副本仍保留旧契约 | 覆盖 |
+| Ornn 资产副本 | 10 | 01-15 | 15 个 skill 已 public 发布并回读 | `/api/chat` 的 mount、admission、artifact 与模型选路仍未闭环 | 部分覆盖 |
 
-## 已覆盖能力
+## 新增案例与真实结果
 
-新仓库已经真实覆盖：
+| 案例 | 目标能力 | 静态/preview | 直接 runtime | 结论 |
+|---|---|---|---|---|
+| 12 | 通用 `code_execute` | 通过 | committed `failed`，`stateVersion=12`，`NYXID_PROXY_UNAUTHORIZED` | 定义与失败传播覆盖，平台执行阻塞 |
+| 13 | 图片/PDF OCR、发票规则、历史去重 | 通过 | committed `completed`，`stateVersion=82` | 覆盖 |
+| 14 | Lark `contact/v3/users/batch_get_id` | 通过 | committed `failed`，`NYXID_PROXY_HTTP_400` / Lark `99991672` | 精确调用覆盖，权限阻塞 |
+| 15 | 六路 Base、预算周报/月报、schedule | 通过 | workflow committed `completed`，`stateVersion=73`；schedule HTTP 502 | 核心业务覆盖，durable schedule 阻塞 |
 
-- 工作流基础原语：`assign`、JSON 解析/提取、bounded template、`switch`、`conditional`、并行与动态 `foreach`；
-- AI 与附件：文本附件输入、`document_extract`、受约束 `llm_call`；
-- Base：记录 GET、多表汇聚、表目录、视图、记录 POST；
-- Lark Approval：列表、详情、创建、实例回读、稳定键去重；
-- Lark IM：文本私信与 interactive card；
-- 安全与证据：NyxID 用户身份代理、typed tool approval/resume、committed read model 终态；
-- 执行：preview/submit 门禁、2026 月末门禁、提醒分支、managed `codex_exec`。
+## Ornn 发布证据
 
-## 语义替换
+15 个 skill 均采用 Ornn validator 接受的 `SKILL.md + assets/*.yaml` 布局。发布器对每个 ZIP 依次执行服务端格式校验、上传或更新、设置 public、按名称回读，15 项全部完成。
 
-| 源能力 | 新仓库实现 | 判断 |
-|---|---|---|
-| n8n 内直接获取 Lark token | NyxID 绑定的 Lark UserService | 更安全的语义替换 |
-| Lark contact batch lookup | Base 身份目录稳定键查询 | 权限受限下的显式替换，不等于 contact API 通过 |
-| 任意 JavaScript 做解析和聚合 | bounded template、assign、switch、conditional | 业务功能覆盖，不等于任意代码执行能力覆盖 |
-| 预算差异业务 | SaaS 许可证利用率与成本聚合 | 相同聚合/阈值原语，不是相同财务公式 |
+本地 Aevatar 源码的 `SkillWorkflowExtractor` 已包含 `assets/*.yaml` fallback。生产 `/api/chat` 中 01、12 能从 skill 到达 workflow 启动，说明当前问题不是所有 `assets` workflow 都不可发现；14、15 仍在 mount 阶段失败，15 的 inline fallback 进一步在启动前返回 `CAPABILITY_ADMISSION_REBIND_REQUIRED`。
 
-## 未覆盖或阻塞
+## `/api/chat` 自然语言证据
 
-- n8n webhook listener 与 `respondToWebhook` 的同步 HTTP 契约；
-- n8n schedule trigger，以及 Aevatar durable weekly/monthly schedule；
-- 通用 `code_execute` 和凭据透传探针，生产返回 `NYXID_PROXY_UNAUTHORIZED`；
-- 图片/PDF OCR 的媒体广度，当前公开 fixture 是合成文本；
-- 发票专属字段、供应商归一化、金额/币种与发票号去重规则；
-- Lark `contact/v3/users/batch_get_id` 精确调用，当前 Bot 缺少 `contact:user.id:readonly`；
-- Ornn skill 打包、发布、搜索、加载，以及 Lark Bot 自然语言启动的类型化全链路。
+| 案例 | Assistant 回合 | Ornn/skill | workflow | typed artifact 判定 |
+|---|---|---|---|---|
+| 01 | completed | 搜索、加载成功 | 已启动 | 查询两次，但 SSE 没有可判定 payload，`unproven` |
+| 12 | completed | 搜索、加载成功 | 已启动 | 短 run 查询未物化；完整 actor 的 Observatory 为 committed failed |
+| 13 | completed | 未调用 | 未启动 | 模型直接识图作答，`not-started` |
+| 14 | failed | 搜索后 mount 失败 | 未启动 | `USE_SKILL_MOUNT_FAILED` |
+| 15 | failed | 搜索后 mount 失败 | 未启动 | `USE_SKILL_MOUNT_FAILED`；inline 为 `CAPABILITY_ADMISSION_REBIND_REQUIRED` |
 
-`#3182` 关注的是工具失败后 Bot 仍可能用自然语言误报成功，不是 `code_execute` 授权错误本身。直接 workflow API 的 committed 成功不能被外推为 Lark Bot + Ornn 自然语言链路已经通过。
+本轮 `/api/chat` 的成功工具在公开 SSE 中只暴露 `TOOL_CALL_END.result="completed"`，不包含可机判 artifact 内容。验证器因此把 01 记为 `unproven`，而不是根据 Assistant 文案中的 pending/completed 推测终态。
 
-## 验证证据
+## `/api/chat` 与 Lark Bot
 
-逐案例的脱敏 production 证据位于 `validation/production-validation-2026-08-04.json`。可视化分析页面位于 `report/index.html`。
+`/api/chat` 直接通过 NyxID 用户身份进入 Aevatar SSE，可验证 Assistant、工具目录、Ornn、workflow 启动和 artifact 查询。Lark Bot 在此基础上还包括：
+
+- Lark webhook 验签和事件转换；
+- NyxID channel relay 与 Bot 注册；
+- platform conversation 到 agent 的映射；
+- 发送者身份解析；
+- Agent reply 经 relay 回传 Lark。
+
+因此 `/api/chat` 成功不能证明 Lark transport 成功；Lark 中出现回复也不能证明 workflow 终态成功。
+
+## 当前阻塞项
+
+1. `code_execute`：`chrono-sandbox /execute` 生产要求 Bearer，与 catalog `auth_method=none` 不一致。
+2. Lark contact：绑定 Bot 缺少 `contact:user.id:readonly`。
+3. Schedule：案例 15 的 `/api/workflow/skills/{guid}/schedule` 返回 HTTP 502，没有 typed receipt。
+4. Skill mount：14、15 返回 `USE_SKILL_MOUNT_FAILED`，没有 mounted workflow receipt。
+5. Capability admission：15 inline fallback 返回 `CAPABILITY_ADMISSION_REBIND_REQUIRED`。
+6. Artifact identity：Assistant 得到的短 run ID 不能稳定解析为完整 workflow actor artifact。
+7. 模型选路：案例 13 即使明确要求使用 skill，仍直接识图回答。
+
+## #3182 证据边界
+
+`#3182` 未解决时，不能把直接 workflow committed 成功外推成 Ornn + 自然语言链成功。本轮已经把这两层拆开：直接 runtime 有 13 个成功，Ornn 发布有 15 个成功，但 `/api/chat` 严格 workflow validated 为 0/5。
+
+同时，最新生产证据表明 `assets/*.yaml` 并非全局不可用：01、12 已能 mount/start。当前剩余问题更具体地位于复杂 capability mount/admission、短 run identity 到完整 actor 的解析，以及模型是否遵循 skill 调用要求。
+
+## 证据位置
+
+- Preview 摘要：`validation/production-preview-2026-08-04.json`
+- Runtime、Ornn、`/api/chat` 与 schedule 摘要：`validation/production-validation-2026-08-04.json`
+- 交互分析页：`report/index.html`

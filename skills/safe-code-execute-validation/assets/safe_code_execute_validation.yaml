@@ -1,0 +1,33 @@
+name: safe_code_execute_validation
+description: 无副作用的结算金额校验，覆盖通用 code_execute 的 JavaScript 执行与结构化 receipt。
+roles:
+  - id: verifier
+    name: 结算校验员
+steps:
+  - id: calculate_settlement
+    type: tool_call
+    parameters:
+      tool: code_execute
+      arguments: '{"language":"javascript","code":"const grossCents=15250;const taxCents=1373;const totalCents=grossCents+taxCents;console.log(JSON.stringify({case:\"safe_code_execute_validation\",gross_cents:grossCents,tax_cents:taxCents,total_cents:totalCents,feature_ok:totalCents===16623,side_effects:false}));"}'
+    next: parse_receipt
+
+  - id: parse_receipt
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: verify_receipt
+
+  - id: verify_receipt
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.case == 'safe_code_execute_validation' && data.gross_cents == 15250 && data.tax_cents == 1373 && data.total_cents == 16623 && data.feature_ok == true && data.side_effects == false ~}}
+      {{ json({ case: 'safe_code_execute_validation', success: success, structured_receipt: success, total_cents: data.total_cents, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

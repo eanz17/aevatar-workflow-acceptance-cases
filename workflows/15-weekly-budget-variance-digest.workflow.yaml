@@ -1,0 +1,141 @@
+name: weekly_budget_variance_digest
+description: 六路只读 Base 探测后，用合成财务数据生成可同时用于周报和月报的预算差异摘要，不发送消息。
+roles:
+  - id: analyst
+    name: 预算差异分析员
+steps:
+  - id: read_compute_actual_source
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"1"}}'
+    next: read_storage_actual_source
+
+  - id: read_storage_actual_source
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"query":{"page_size":"1"}}'
+    next: read_network_actual_source
+
+  - id: read_network_actual_source
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ACCESS_REQUESTS__"},"query":{"page_size":"1"}}'
+    next: read_compute_budget_source
+
+  - id: read_compute_budget_source
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_RUN_EVIDENCE__"},"query":{"page_size":"1"}}'
+    next: read_storage_budget_source
+
+  - id: read_storage_budget_source
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_IDENTITY_DIRECTORY__"},"query":{"page_size":"1"}}'
+    next: read_network_budget_source
+
+  - id: read_network_budget_source
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_MONTHLY_ACCESS_REVIEWS__"},"query":{"page_size":"1"}}'
+    next: assemble_live_reads
+
+  - id: assemble_live_reads
+    type: assign
+    parameters:
+      target: live_reads
+      value: >-
+        {"compute_actual":${steps.read_compute_actual_source.output},"storage_actual":${steps.read_storage_actual_source.output},"network_actual":${steps.read_network_actual_source.output},"compute_budget":${steps.read_compute_budget_source.output},"storage_budget":${steps.read_storage_budget_source.output},"network_budget":${steps.read_network_budget_source.output}}
+    next: build_sanitized_fixture
+
+  - id: build_sanitized_fixture
+    type: assign
+    parameters:
+      target: budget_fixture
+      value: >-
+        {"live_reads":${steps.assemble_live_reads.output},"actual":[{"category":"compute","amount":1200},{"category":"storage","amount":840},{"category":"network","amount":300}],"budget":[{"category":"compute","amount":1000},{"category":"storage","amount":1000},{"category":"network","amount":400}]}
+    next: build_variance_digest
+
+  - id: build_variance_digest
+    type: transform
+    op: template
+    template: >-
+      {{~ live_ok = data.live_reads.compute_actual.code == 0 && data.live_reads.storage_actual.code == 0 && data.live_reads.network_actual.code == 0 && data.live_reads.compute_budget.code == 0 && data.live_reads.storage_budget.code == 0 && data.live_reads.network_budget.code == 0 ~}}
+      {{~ actuals = {}; budgets = {}; weekly_actual = 0; weekly_budget = 0; for row in data.actual; actuals[row.category] = number(row.amount); weekly_actual = weekly_actual + number(row.amount); end; for row in data.budget; budgets[row.category] = number(row.amount); weekly_budget = weekly_budget + number(row.amount); end ~}}
+      {{~ variances = []; over_count = 0; watch_count = 0; for category in keys(budgets); actual = get(actuals, category, 0); budget = get(budgets, category, 0); pct = 0; if budget > 0; pct = round(actual / budget * 100, 1); end; level = 'ok'; if pct >= 120; level = 'over'; over_count = over_count + 1; end; if pct < 120 && pct >= 80; level = 'watch'; watch_count = watch_count + 1; end; variances = append(variances, { category: category, actual: actual, budget: budget, pct: pct, level: level }); end ~}}
+      {{ json({ schema: 'budget-variance-digest.v1', live_base_reads_ok: live_ok, weekly: { actual: weekly_actual, budget: weekly_budget, variance: variances, over_count: over_count, watch_count: watch_count }, monthly_projection: { actual: weekly_actual * 4, budget: weekly_budget * 4 }, side_effects: false }) }}
+    next: verify_digest
+
+  - id: verify_digest
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.live_base_reads_ok && data.weekly.actual == 2340 && data.weekly.budget == 2400 && data.weekly.over_count == 1 && data.weekly.watch_count == 1 && data.monthly_projection.actual == 9360 && data.monthly_projection.budget == 9600 && data.side_effects == false ~}}
+      {{ json({ case: 'weekly_budget_variance_digest', success: success, live_base_reads_ok: data.live_base_reads_ok, weekly_actual: data.weekly.actual, weekly_budget: data.weekly.budget, monthly_projected_actual: data.monthly_projection.actual, monthly_budget: data.monthly_projection.budget, over_count: data.weekly.over_count, watch_count: data.weekly.watch_count, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

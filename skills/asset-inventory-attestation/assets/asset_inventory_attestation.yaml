@@ -1,0 +1,70 @@
+name: asset_inventory_attestation
+description: 受保护的 IT 资产盘点确认，默认只预览，仅在 submit 为 true 时写入一条可清理的 Base 记录。
+roles:
+  - id: operator
+    name: 资产操作员
+steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ submit = get(data, 'submit', false) ~}}
+      {{ json({ route: submit == true || submit == 'true' ? 'SUBMIT' : 'PREVIEW' }) }}
+    next: extract_mode
+
+  - id: extract_mode
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_mode.output}"
+      branch.SUBMIT: create_attestation
+      branch.PREVIEW: preview
+      branch._default: preview
+    branches:
+      SUBMIT: create_attestation
+      PREVIEW: preview
+      _default: preview
+
+  - id: preview
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"asset_inventory_attestation","mode":"preview","mutation_executed":false,"target":"资产盘点确认"}'
+    next: done
+
+  - id: create_attestation
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: []
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"body":{"fields":{"Attestation Key":"manual-asset-attestation-20260804","Control":"季度设备归属审查","Owner":"IT 运维","Status":"Reviewed","Sequence":20260804,"Reviewed At":"2026-08-04"}}}
+    next: summarize_write
+
+  - id: summarize_write
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'asset_inventory_attestation', mode: 'submit', mutation_executed: true, accepted: data.code == 0, downstream_code: data.code }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

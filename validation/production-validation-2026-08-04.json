@@ -4,16 +4,21 @@
   "scope": "已脱敏",
   "larkUserServiceHash": "a623c5a302b9",
   "staticValidation": {
-    "workflowCount": 11,
-    "passed": 11,
-    "genericCodeExecuteCount": 0,
+    "workflowCount": 15,
+    "passed": 15,
+    "genericCodeExecuteCount": 1,
     "managedCodexExecCount": 1,
-    "placeholderCount": 14
+    "placeholderCount": 16
   },
   "productionPreview": {
-    "passed": 11,
+    "passed": 15,
     "failed": 0,
     "executionMode": "interactive"
+  },
+  "directRuntimeSummary": {
+    "passed": 13,
+    "platformBlocked": 2,
+    "unverified": 0
   },
   "runtime": [
     {"case":"01","result":"通过","terminalStatus":"completed","stateVersion":80,"assertion":"ready_for_review=true","sideEffects":false},
@@ -25,13 +30,62 @@
     {"case":"07","result":"通过","terminalStatus":"completed","stateVersion":46,"assertion":"message_sent=true","sideEffects":"发送一条验收私信"},
     {"case":"08","result":"通过","terminalStatus":"completed","stateVersion":112,"assertion":"六源汇总正确且 message_sent=true","sideEffects":"发送一条验收卡片"},
     {"case":"09","result":"通过","terminalStatus":"completed","stateVersion":157,"assertion":"审批创建并回读；修复版复跑返回 idempotent_skip=true","sideEffects":"诊断期间创建两条同键 PENDING 验收审批"},
-    {"case":"10","result":"通过","terminalStatus":"completed","stateVersion":115,"assertion":"审批创建、回读、完成私信均成功；跳过和提醒分支另行通过","sideEffects":"创建一条验收审批并发送两条验收私信"},
-    {"case":"11","result":"通过","terminalStatus":"completed","stateVersion":178,"assertion":"CODEX_EXEC_READY、五项检查为 true、parallel_check_count=5","sideEffects":false}
+    {"case":"10","result":"通过","terminalStatus":"completed","stateVersion":115,"assertion":"月末提交、跳过、提醒预览和提醒发送分支通过","sideEffects":"创建一条验收审批并发送两条验收私信"},
+    {"case":"11","result":"通过","terminalStatus":"completed","stateVersion":178,"assertion":"CODEX_EXEC_READY、五项检查为 true、parallel_check_count=5","sideEffects":false},
+    {"case":"12","result":"平台阻塞","terminalStatus":"failed","stateVersion":12,"assertion":"calculate_settlement committed failed","blockerCode":"NYXID_PROXY_UNAUTHORIZED","blocker":"chrono-sandbox /execute 要求 Bearer，与 catalog auth_method=none 不一致","sideEffects":false},
+    {"case":"13","result":"通过","terminalStatus":"completed","stateVersion":82,"assertion":"PDF 提取、SGD/金额/供应商归一化、审批历史与精确去重均命中","sideEffects":false},
+    {"case":"14","result":"平台阻塞","terminalStatus":"failed","stateVersion":null,"assertion":"resolve_contact committed failed","blockerCode":"NYXID_PROXY_HTTP_400","downstreamCode":"99991672","blocker":"绑定 Lark Bot 缺少 contact:user.id:readonly","sideEffects":false},
+    {"case":"15","result":"通过","terminalStatus":"completed","stateVersion":73,"assertion":"六路 Base GET、周度 2340/2400、月度 9360/9600、over=1、watch=1","sideEffects":false}
   ],
+  "ornnPublication": {
+    "skillCount": 15,
+    "serverFormatValidated": 15,
+    "publishedPublic": 15,
+    "nameReadbackPassed": 15,
+    "packageLayout": "SKILL.md + assets/*.yaml",
+    "versions": {
+      "01-07": "2.0",
+      "08": "4.0",
+      "09": "2.0",
+      "10": "3.0",
+      "11-15": "1.0"
+    }
+  },
+  "assistantNaturalLanguage": {
+    "ingress": "nyxid proxy request aevatar /api/chat",
+    "cases": 5,
+    "chatCompleted": 3,
+    "workflowValidated": 0,
+    "toolResultBoundary": "公开 SSE 的 TOOL_CALL_END.result 对成功工具只返回 completed，不能作为 typed artifact 内容",
+    "results": [
+      {"case":"01","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":2,"workflowValidationStatus":"unproven","reason":"已到 artifact 查询，但 SSE 没有可判定的 artifact payload"},
+      {"case":"12","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":2,"workflowValidationStatus":"typed-failure","reason":"短 run 查询未物化；日志关联完整 actor 后，Observatory committed 终态为 NYXID_PROXY_UNAUTHORIZED"},
+      {"case":"13","chatCompleted":true,"ornnSearch":false,"skillLoaded":false,"workflowStarted":false,"artifactReads":0,"workflowValidationStatus":"not-started","reason":"模型直接识别图片并回答，绕过 skill 与 workflow"},
+      {"case":"14","chatCompleted":false,"ornnSearch":true,"skillLoaded":false,"workflowStarted":false,"artifactReads":0,"workflowValidationStatus":"mount-blocked","blockerCode":"USE_SKILL_MOUNT_FAILED"},
+      {"case":"15","chatCompleted":false,"ornnSearch":true,"skillLoaded":false,"workflowStarted":false,"artifactReads":0,"workflowValidationStatus":"mount-blocked","blockerCode":"USE_SKILL_MOUNT_FAILED","inlineFallback":"CAPABILITY_ADMISSION_REBIND_REQUIRED"}
+    ]
+  },
+  "scheduleValidation": {
+    "case": "15",
+    "endpoint": "/api/workflow/skills/{guid}/schedule",
+    "cronExpression": "0 9 * * 1",
+    "timezone": "Asia/Singapore",
+    "result": "平台阻塞",
+    "httpStatus": 502,
+    "receiptCreated": false
+  },
+  "surfaceBoundary": {
+    "apiChat": "验证 Assistant、Ornn、tool 与 workflow 核心链",
+    "larkBotAdditional": "还需验证 Lark webhook、NyxID channel relay、Bot 注册、会话映射、发送者解析与 Lark 回传",
+    "conclusion": "/api/chat 成功不能外推为 Lark Bot transport 成功"
+  },
   "knownBoundaries": [
-    {"capability":"通用 code_execute","status":"未覆盖","reason":"生产返回 NYXID_PROXY_UNAUTHORIZED；业务逻辑已改用原生确定性节点"},
-    {"capability":"durable schedule","status":"未覆盖","reason":"历史验证返回 DURABLE_AUTHORIZATION_UNAVAILABLE 或 NYXID_EXPLICIT_REQUEST_INTERACTIVE_REQUIRED"},
-    {"capability":"Lark contact batch_get_id","status":"语义替换","reason":"绑定 Bot 缺少 contact:user.id:readonly，使用 Base 身份目录"},
-    {"capability":"Lark Bot 通过 Ornn 自然语言启动","status":"未覆盖","reason":"需要独立验证 skill 搜索、加载、启动的类型化回执；不能以 Bot 文案代替"}
+    {"capability":"通用 code_execute","status":"平台阻塞","reason":"committed NYXID_PROXY_UNAUTHORIZED"},
+    {"capability":"Lark contact batch_get_id","status":"平台阻塞","reason":"Lark 99991672，缺 contact:user.id:readonly"},
+    {"capability":"durable schedule","status":"平台阻塞","reason":"案例 15 schedule endpoint 返回 HTTP 502 且无 receipt"},
+    {"capability":"Ornn workflow mount","status":"部分通过","reason":"01、12 可 mount/start；14、15 返回 USE_SKILL_MOUNT_FAILED"},
+    {"capability":"inline capability admission","status":"平台阻塞","reason":"案例 15 返回 CAPABILITY_ADMISSION_REBIND_REQUIRED"},
+    {"capability":"typed artifact identity","status":"平台阻塞","reason":"短 run ID 无法稳定解析到完整 workflow actor artifact"},
+    {"capability":"Lark Bot 自然语言 transport","status":"未验证","reason":"本轮使用 /api/chat，不包含 webhook/relay/回传链"}
   ]
 }

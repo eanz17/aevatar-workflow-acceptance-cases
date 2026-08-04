@@ -1,0 +1,71 @@
+name: quarterly_access_review_reminder
+description: 受保护的 2026 年第三季度访问审查提醒，默认只预览，仅在 submit 为 true 时发送一条 Lark 私信。
+roles:
+  - id: coordinator
+    name: 访问审查协调员
+steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ submit = get(data, 'submit', false) ~}}
+      {{ json({ route: submit == true || submit == 'true' ? 'SUBMIT' : 'PREVIEW' }) }}
+    next: extract_mode
+
+  - id: extract_mode
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_mode.output}"
+      branch.SUBMIT: send_reminder
+      branch.PREVIEW: preview
+      branch._default: preview
+    branches:
+      SUBMIT: send_reminder
+      PREVIEW: preview
+      _default: preview
+
+  - id: preview
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"quarterly_access_review_reminder","mode":"preview","message_sent":false,"period":"2026-Q3"}'
+    next: done
+
+  - id: send_reminder
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/im/v1/messages
+        query_parameters:
+          - receive_id_type
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"query":{"receive_id_type":"user_id"},"body":{"receive_id":"__LARK_MESSAGE_RECIPIENT_ID__","msg_type":"text","content":"{\"text\":\"[Aevatar 手工验收] 2026 年第三季度访问审查已就绪。请在 2026-08-14 前确认负责人、移除过期权限并记录例外。\"}"}}
+    next: summarize_send
+
+  - id: summarize_send
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'quarterly_access_review_reminder', mode: 'submit', message_sent: data.code == 0, downstream_code: data.code, period: '2026-Q3' }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

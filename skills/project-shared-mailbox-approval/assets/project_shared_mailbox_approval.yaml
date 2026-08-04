@@ -1,0 +1,96 @@
+name: project_shared_mailbox_approval
+description: 从 Base 读取已配置的共享邮箱请求，在工具授权后创建审批，并验证新的 Lark 审批实例。
+roles:
+  - id: requester
+    name: 共享邮箱申请人
+steps:
+  - id: read_reference_record
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}
+        query_parameters: []
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ACCESS_REQUESTS__","record_id":"__RECORD_SHARED_MAILBOX_REQUEST__"}}
+    next: build_approval_request
+
+  - id: build_approval_request
+    type: transform
+    op: template
+    template: >-
+      {{~ fields = data.data.record.fields; request_key = get(fields, 'Request Key', ''); request_type = get(fields, 'Request Type', ''); requester = get(fields, 'Requester', ''); department = get(fields, 'Department', ''); target = get(fields, 'Target', ''); review_date = get(fields, 'Review Date', ''); status = get(fields, 'Status', '') ~}}
+      {{~ if data.code != 0 || request_key == '' || target == '' || status != 'Ready for approval'; number('共享邮箱申请不可用或尚未达到可审批状态'); end ~}}
+      {{~ detail = '[Aevatar 手工验收] ' + request_type + ' | 目标：' + target + ' | 申请人：' + requester + ' | 部门：' + department + ' | 审查日期：' + review_date + ' | 申请键：' + request_key ~}}
+      {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_ACCESS_REQUESTS__' }]) ~}}
+      {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: '__LARK_APPROVAL_USER_ID__', form: form } }) }}
+    next: create_approval
+
+  - id: create_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/approval/v4/instances
+        query_parameters:
+          - user_id_type
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: build_verify_request
+
+  - id: build_verify_request
+    type: transform
+    op: template
+    template: >-
+      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('共享邮箱审批实例创建失败'); end ~}}
+      {{ json({ path_params: { instance_code: data.data.instance_code }, query: { user_id_type: 'user_id' } }) }}
+    next: verify_approval
+
+  - id: verify_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters:
+          - user_id_type
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: combine_results
+
+  - id: combine_results
+    type: assign
+    parameters:
+      target: approval_results
+      value: >-
+        {"created":${steps.create_approval.output},"verified":${steps.verify_approval.output}}
+    next: summarize
+
+  - id: summarize
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.created.code == 0 && get(data.created.data, 'instance_code', '') != '' && data.verified.code == 0 ~}}
+      {{ json({ case: 'project_shared_mailbox_approval', success: success, request_key: 'shared-mailbox-project-atlas-20260804', instance_code: get(data.created.data, 'instance_code', ''), approval_status: get(data.verified.data, 'status', 'UNKNOWN') }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

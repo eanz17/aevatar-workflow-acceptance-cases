@@ -18,7 +18,11 @@ EXPECTED = {
   "08-saas-license-optimization-digest.workflow.yaml" => [19, 7, 6, 1],
   "09-contractor-access-package-approval.workflow.yaml" => [25, 5, 4, 1],
   "10-monthly-access-certification.workflow.yaml" => [23, 5, 2, 3],
-  "11-complex-codex-exec-validation.workflow.yaml" => [32, 0, 0, 0]
+  "11-complex-codex-exec-validation.workflow.yaml" => [32, 0, 0, 0],
+  "12-safe-code-execute-validation.workflow.yaml" => [4, 0, 0, 0],
+  "13-invoice-ocr-policy-review.workflow.yaml" => [10, 2, 2, 0],
+  "14-lark-contact-batch-resolution.workflow.yaml" => [3, 1, 0, 1],
+  "15-weekly-budget-variance-digest.workflow.yaml" => [11, 6, 6, 0]
 }.freeze
 
 CODEX_EXEC_WORKFLOW = "11-complex-codex-exec-validation.workflow.yaml"
@@ -29,6 +33,14 @@ CODEX_EXEC_ARGUMENTS = {
   "timeout_secs" => 180
 }.freeze
 CODEX_EXEC_CHECK_NAMES = %w[status target output exit_code diagnostic_id].freeze
+CODE_EXECUTE_WORKFLOW = "12-safe-code-execute-validation.workflow.yaml"
+CODE_EXECUTE_ARGUMENTS = {
+  "language" => "javascript",
+  "code" => "const grossCents=15250;const taxCents=1373;const totalCents=grossCents+taxCents;console.log(JSON.stringify({case:\"safe_code_execute_validation\",gross_cents:grossCents,tax_cents:taxCents,total_cents:totalCents,feature_ok:totalCents===16623,side_effects:false}));"
+}.freeze
+INVOICE_WORKFLOW = "13-invoice-ocr-policy-review.workflow.yaml"
+CONTACT_WORKFLOW = "14-lark-contact-batch-resolution.workflow.yaml"
+BUDGET_WORKFLOW = "15-weekly-budget-variance-digest.workflow.yaml"
 
 ALLOWED_PLACEHOLDERS = Set.new(
   YAML.safe_load(File.read(File.join(ROOT, "config.example.yaml")), aliases: false)
@@ -85,7 +97,22 @@ files.each do |file|
 
   codex_steps = steps.select { |step| step.dig("parameters", "tool") == "codex_exec" }
   generic_code_steps = steps.select { |step| step.dig("parameters", "tool") == "code_execute" }
-  fail_validation("#{name}：不得依赖线上未授权的通用 code_execute") unless generic_code_steps.empty?
+  expected_code_count = name == CODE_EXECUTE_WORKFLOW ? 1 : 0
+  fail_validation("#{name}：code_execute 调用数应为 #{expected_code_count}") unless generic_code_steps.length == expected_code_count
+  if name == CODE_EXECUTE_WORKFLOW
+    begin
+      arguments = JSON.parse(generic_code_steps.first.dig("parameters", "arguments"))
+    rescue JSON::ParserError => e
+      fail_validation("#{name}：code_execute 参数不是有效 JSON：#{e.message}")
+    end
+    fail_validation("#{name}：code_execute 必须保持固定、无副作用的结算探针") unless arguments == CODE_EXECUTE_ARGUMENTS
+
+    receipt_step = steps.find { |step| step["id"] == "verify_receipt" }
+    template = receipt_step&.fetch("template", receipt_step&.dig("parameters", "template"))
+    unless template.to_s.include?("total_cents == 16623") && template.to_s.include?("side_effects: false")
+      fail_validation("#{name}：结算 receipt 缺少金额与无副作用断言")
+    end
+  end
   if %w[05-asset-inventory-attestation.workflow.yaml 07-quarterly-access-review-reminder.workflow.yaml].include?(name)
     extract_mode = steps.find { |step| step["id"] == "extract_mode" }
     unless extract_mode&.dig("parameters", "op") == "json_extract" &&
@@ -105,6 +132,43 @@ files.each do |file|
     unless expected_window.all? { |key, value| history_arguments.dig("query", key) == value } &&
            extracted_history["n"] == "100"
       fail_validation("#{name}：稳定键去重必须检查验收日内完整的百条历史窗口")
+    end
+  end
+  if name == INVOICE_WORKFLOW
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    extraction = steps_by_id.fetch("extract_document").fetch("parameters")
+    unless extraction["items_source"] == "input_file_refs" &&
+           extraction["sub_param_tool"] == "document_extract"
+      fail_validation("#{name}：必须从类型化媒体输入调用 document_extract")
+    end
+    unless text.include?("amount_minor == 123450") &&
+           text.include?("currency == 'SGD'") &&
+           text.include?("vendor_key == 'harbor-cloud'") &&
+           text.include?("exact_matches == 1") &&
+           text.include?("vendor_matches == 2")
+      fail_validation("#{name}：发票归一化或去重规则不完整")
+    end
+    fixture = File.join(ROOT, "fixtures", "synthetic-invoice.pdf")
+    fail_validation("#{name}：缺少合成 PDF fixture") unless File.file?(fixture) && File.size(fixture).positive?
+  end
+  if name == CONTACT_WORKFLOW
+    contact = steps.find { |step| step["id"] == "resolve_contact" }
+    capability = contact&.dig("capability", "nyxid_request")
+    arguments = JSON.parse(contact&.dig("parameters", "arguments").to_s)
+    contract_ok = capability&.fetch("method") == "POST" &&
+                  capability["path_template"] == "/open-apis/contact/v3/users/batch_get_id" &&
+                  capability["body_mode"] == "json" &&
+                  arguments.dig("query", "user_id_type") == "user_id" &&
+                  arguments.dig("body", "emails") == ["__LARK_CONTACT_EMAIL__"]
+    fail_validation("#{name}：contact batch_get_id 契约漂移") unless contract_ok
+  end
+  if name == BUDGET_WORKFLOW
+    unless capabilities.length == 6 &&
+           text.include?("data.weekly.actual == 2340") &&
+           text.include?("monthly_projection.actual == 9360") &&
+           text.include?("over_count == 1") &&
+           text.include?("watch_count == 1")
+      fail_validation("#{name}：预算周报/月报差异契约不完整")
     end
   end
   expected_codex_count = name == CODEX_EXEC_WORKFLOW ? 1 : 0
@@ -162,6 +226,20 @@ files.each do |file|
 
   puts "通过 #{name} 步骤=#{steps.length} 外部调用=#{capabilities.length} GET=#{methods.count('GET')} POST=#{methods.count('POST')} codex_exec=#{codex_steps.length}"
 end
+
+schedule_path = File.join(ROOT, "schedules", "15-weekly-budget-variance-digest.schedule.example.yaml")
+fail_validation("缺少案例 15 的 durable schedule 契约") unless File.file?(schedule_path)
+schedule_text = File.read(schedule_path)
+schedule = YAML.safe_load(schedule_text, aliases: false)
+all_placeholders.merge(schedule_text.scan(/__[A-Z0-9_]+__/))
+weekly, monthly = schedule.fetch("schedules")
+schedule_ok = schedule["skill_name"] == "weekly-budget-variance-digest" &&
+              schedule["endpoint_template"] == "/api/workflow/skills/{skill_guid}/schedule" &&
+              schedule["team_id"] == "__STUDIO_TEAM_ID__" &&
+              weekly["cron_expression"] == "0 9 * * 1" &&
+              monthly["cron_expression"] == "0 9 1 * *" &&
+              [weekly, monthly].all? { |item| item["timezone"] == "Asia/Singapore" }
+fail_validation("案例 15 的 durable schedule 契约漂移") unless schedule_ok
 
 unused = ALLOWED_PLACEHOLDERS - all_placeholders
 fail_validation("存在未使用的已声明占位符：#{unused.to_a.join(', ')}") unless unused.empty?

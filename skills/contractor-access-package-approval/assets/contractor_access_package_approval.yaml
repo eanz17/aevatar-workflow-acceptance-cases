@@ -1,0 +1,255 @@
+name: contractor_access_package_approval
+description: 由附件驱动的外包人员访问资料审查，覆盖身份解析、审批历史验证、预览和确认后的审批创建。
+roles:
+  - id: reviewer
+    name: 外包人员访问审核员
+    system_prompt: >-
+      只返回纯 JSON，且必须恰好包含五个布尔值：identity_present、organization_present、
+      nda_present、requested_access_present、end_date_present。不得复述个人数据或原文。
+steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ submit = get(data, 'submit', false); route = 'PREVIEW'; if submit == true || submit == 'true'; route = 'SUBMIT'; end ~}}
+      {{ json({ route: route }) }}
+    next: extract_documents
+
+  - id: extract_documents
+    type: foreach
+    parameters:
+      items_source: input_file_refs
+      sub_step_type: tool_call
+      sub_param_tool: document_extract
+      sub_param_arguments: '{"maxChars":8000}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "3"
+    next: classify_package
+
+  - id: classify_package
+    type: llm_call
+    target_role: reviewer
+    parameters:
+      prompt_prefix: "在不泄露内容的前提下分类这份外包人员访问资料："
+    next: combine_package_context
+
+  - id: combine_package_context
+    type: assign
+    parameters:
+      target: package_context
+      value: >-
+        {"context":${steps.normalize_context.output},"classification":${steps.classify_package.output}}
+    next: normalize_package
+
+  - id: normalize_package
+    type: transform
+    op: template
+    template: >-
+      {{~ c = data.classification; identity = get(c, 'identity_present', false) == true; organization = get(c, 'organization_present', false) == true; nda = get(c, 'nda_present', false) == true; requested_access = get(c, 'requested_access_present', false) == true; end_date = get(c, 'end_date_present', false) == true ~}}
+      {{ json({ route: data.context.route, checks: { identity_present: identity, organization_present: organization, nda_present: nda, requested_access_present: requested_access, end_date_present: end_date }, complete: identity && organization && nda && requested_access && end_date }) }}
+    next: extract_route
+
+  - id: extract_route
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_route.output}"
+      branch.SUBMIT: read_identity_directory
+      branch.PREVIEW: restore_preview_package
+      branch._default: restore_preview_package
+    branches:
+      SUBMIT: read_identity_directory
+      PREVIEW: restore_preview_package
+      _default: restore_preview_package
+
+  - id: restore_preview_package
+    type: assign
+    parameters:
+      target: preview_package
+      value: "${steps.normalize_package.output}"
+    next: preview
+
+  - id: preview
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'contractor_access_package_approval', mode: 'preview', success: data.complete, complete: data.complete, checks: data.checks, identity_resolved: false, history_checked: false, approval_created: false }) }}
+    next: done
+
+  - id: read_identity_directory
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_IDENTITY_DIRECTORY__"},"query":{"page_size":"100"}}'
+    next: resolve_identity
+
+  - id: resolve_identity
+    type: transform
+    op: template
+    template: >-
+      {{~ resolved = ''; items = get(data.data, 'items', []); for item in items; fields = item.fields; if get(fields, 'Identity Key', '') == 'contractor-access-requester' && get(fields, 'Status', '') == 'Active'; resolved = get(fields, 'Lark User ID', ''); end; end ~}}
+      {{~ if data.code != 0 || resolved == ''; number('无法解析验收身份'); end ~}}
+      {{ json({ user_id: resolved, identity_key: 'contractor-access-requester' }) }}
+    next: list_approval_history
+
+  - id: list_approval_history
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances
+        query_parameters: [approval_code, page_size, start_time, end_time]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"100","start_time":"1785772800000","end_time":"1785859199000"}}'
+    next: extract_history_codes
+
+  - id: extract_history_codes
+    type: transform
+    parameters:
+      op: json_extract
+      path: data.instance_code_list
+      n: "100"
+    next: fetch_history_detail
+
+  - id: fetch_history_detail
+    type: foreach
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters: []
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      sub_step_type: tool_call
+      sub_param_tool: nyxid_proxy
+      sub_param_arguments: '{"path_params":{"instance_code":"${input}"}}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "1"
+    next: check_duplicate
+
+  - id: check_duplicate
+    type: conditional
+    parameters:
+      condition: contractor-access-package-20260804
+      branch.true: duplicate_request
+      branch.false: build_deduplication
+    branches:
+      "true": duplicate_request
+      "false": build_deduplication
+
+  - id: duplicate_request
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"contractor_access_package_approval","mode":"submit","success":true,"package_complete":true,"identity_resolved":true,"history_checked":true,"possible_duplicate":true,"approval_created":false,"idempotent_skip":true}'
+    next: done
+
+  - id: build_deduplication
+    type: assign
+    parameters:
+      target: deduplication
+      value: '{"history_reachable":true,"request_key":"contractor-access-package-20260804","possible_duplicate":false}'
+    next: combine_request_context
+
+  - id: combine_request_context
+    type: assign
+    parameters:
+      target: request_context
+      value: >-
+        {"package":${steps.normalize_package.output},"identity":${steps.resolve_identity.output},"deduplication":${steps.build_deduplication.output}}
+    next: build_approval_request
+
+  - id: build_approval_request
+    type: transform
+    op: template
+    template: >-
+      {{~ if !data.package.complete; number('外包人员访问资料不完整'); end ~}}
+      {{~ if data.deduplication.possible_duplicate; number('已存在重复的外包人员访问申请'); end ~}}
+      {{~ detail = '[Aevatar 手工验收] 外包人员访问资料完整 | 身份已解析：true | 历史审批详情可访问：' + ('' + data.deduplication.history_reachable) + ' | 审查键：contractor-access-package-20260804' ~}}
+      {{~ form = json([{ id: '__LARK_APPROVAL_DETAIL_WIDGET_ID__', type: 'textarea', value: detail }, { id: '__LARK_APPROVAL_LINK_WIDGET_ID__', type: 'input', value: 'https://example.larksuite.com/base/__BASE_APP_TOKEN__?table=__TABLE_IDENTITY_DIRECTORY__' }]) ~}}
+      {{ json({ query: { user_id_type: 'user_id' }, body: { approval_code: '__LARK_APPROVAL_CODE__', user_id: data.identity.user_id, form: form } }) }}
+    next: create_approval
+
+  - id: create_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/approval/v4/instances
+        query_parameters: [user_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: build_verify_request
+
+  - id: build_verify_request
+    type: transform
+    op: template
+    template: >-
+      {{~ if data.code != 0 || get(data.data, 'instance_code', '') == ''; number('外包人员访问审批创建失败'); end ~}}
+      {{ json({ path_params: { instance_code: data.data.instance_code }, query: { user_id_type: 'user_id' } }) }}
+    next: verify_approval
+
+  - id: verify_approval
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters: [user_id_type]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: combine_results
+
+  - id: combine_results
+    type: assign
+    parameters:
+      target: approval_results
+      value: >-
+        {"created":${steps.create_approval.output},"verified":${steps.verify_approval.output}}
+    next: summarize
+
+  - id: summarize
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.created.code == 0 && get(data.created.data, 'instance_code', '') != '' && data.verified.code == 0 ~}}
+      {{ json({ case: 'contractor_access_package_approval', mode: 'submit', success: success, package_complete: true, identity_resolved: true, history_checked: true, possible_duplicate: false, instance_code: get(data.created.data, 'instance_code', ''), approval_status: get(data.verified.data, 'status', 'UNKNOWN') }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

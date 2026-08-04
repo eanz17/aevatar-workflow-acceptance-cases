@@ -1,0 +1,254 @@
+name: complex_codex_exec_validation
+description: 通过固定 managed sandbox 探针、结构化解析、五项并行断言、双重分支与终态汇总，验证 codex_exec 全链路。
+roles:
+  - id: verifier
+    name: Codex 执行验证员
+steps:
+  - id: initialize_contract
+    type: assign
+    parameters:
+      target: verification_contract
+      value: >-
+        {"probe":"managed_codex_exec","expected":{"status":"succeeded","target":"managed_sandbox","output":"CODEX_EXEC_READY","exit_code":0},"required_checks":["status","target","output","exit_code","diagnostic_id"],"side_effects":false}
+    next: extract_probe
+
+  - id: extract_probe
+    type: transform
+    parameters:
+      op: json_extract
+      path: probe
+    next: route_contract
+
+  - id: route_contract
+    type: switch
+    parameters:
+      on: "${steps.extract_probe.output}"
+      branch.managed_codex_exec: execute_probe
+      branch._default: reject_invalid_contract
+    branches:
+      managed_codex_exec: execute_probe
+      _default: reject_invalid_contract
+
+  - id: execute_probe
+    type: tool_call
+    timeout_ms: 360000
+    parameters:
+      tool: codex_exec
+      arguments: >-
+        {"target":{"kind":"managed_sandbox"},"workspace":{"kind":"empty_git"},"prompt":"Reply with exactly CODEX_EXEC_READY","timeout_secs":180}
+    next: extract_status
+
+  - id: extract_status
+    type: transform
+    parameters:
+      op: json_extract
+      path: status
+    next: verify_status
+
+  - id: verify_status
+    type: switch
+    parameters:
+      on: "${steps.extract_status.output}"
+      branch."succeeded": restore_receipt_for_target
+      branch._default: fail_status
+    branches:
+      '"succeeded"': restore_receipt_for_target
+      _default: fail_status
+
+  - id: restore_receipt_for_target
+    type: assign
+    parameters:
+      target: receipt_for_target
+      value: "${steps.execute_probe.output}"
+    next: extract_target
+
+  - id: extract_target
+    type: transform
+    parameters:
+      op: json_extract
+      path: target
+    next: verify_target
+
+  - id: verify_target
+    type: switch
+    parameters:
+      on: "${steps.extract_target.output}"
+      branch."managed_sandbox": restore_receipt_for_output
+      branch._default: fail_target
+    branches:
+      '"managed_sandbox"': restore_receipt_for_output
+      _default: fail_target
+
+  - id: restore_receipt_for_output
+    type: assign
+    parameters:
+      target: receipt_for_output
+      value: "${steps.execute_probe.output}"
+    next: extract_output
+
+  - id: extract_output
+    type: transform
+    parameters:
+      op: json_extract
+      path: output
+    next: verify_output
+
+  - id: verify_output
+    type: switch
+    parameters:
+      on: "${steps.extract_output.output}"
+      branch."CODEX_EXEC_READY": restore_receipt_for_exit_code
+      branch._default: fail_output
+    branches:
+      '"CODEX_EXEC_READY"': restore_receipt_for_exit_code
+      _default: fail_output
+
+  - id: restore_receipt_for_exit_code
+    type: assign
+    parameters:
+      target: receipt_for_exit_code
+      value: "${steps.execute_probe.output}"
+    next: extract_exit_code
+
+  - id: extract_exit_code
+    type: transform
+    parameters:
+      op: json_extract
+      path: exit_code
+    next: verify_exit_code
+
+  - id: verify_exit_code
+    type: switch
+    parameters:
+      on: "${steps.extract_exit_code.output}"
+      branch.0: restore_receipt_for_diagnostic_id
+      branch._default: fail_exit_code
+    branches:
+      "0": restore_receipt_for_diagnostic_id
+      _default: fail_exit_code
+
+  - id: restore_receipt_for_diagnostic_id
+    type: assign
+    parameters:
+      target: receipt_for_diagnostic_id
+      value: "${steps.execute_probe.output}"
+    next: extract_diagnostic_id
+
+  - id: extract_diagnostic_id
+    type: transform
+    parameters:
+      op: json_extract
+      path: diagnostic_id
+    next: measure_diagnostic_id
+
+  - id: measure_diagnostic_id
+    type: assign
+    parameters:
+      target: diagnostic_id_serialized_length
+      value: "${length(steps.extract_diagnostic_id.output)}"
+    next: verify_diagnostic_id
+
+  - id: verify_diagnostic_id
+    type: switch
+    parameters:
+      on: "${steps.measure_diagnostic_id.output}"
+      branch.2: fail_diagnostic_id
+      branch._default: seed_check_names
+    branches:
+      "2": fail_diagnostic_id
+      _default: seed_check_names
+
+  - id: seed_check_names
+    type: assign
+    parameters:
+      target: check_names
+      value: '["status","target","output","exit_code","diagnostic_id"]'
+    next: normalize_check_names
+
+  - id: normalize_check_names
+    type: foreach
+    parameters:
+      sub_step_type: transform
+      sub_param_op: uppercase
+      min_concurrent_workers: "2"
+      max_concurrent_workers: "5"
+    next: count_parallel_serialized_lines
+
+  - id: count_parallel_serialized_lines
+    type: transform
+    parameters:
+      op: count
+    next: verify_parallel_serialized_line_count
+
+  - id: verify_parallel_serialized_line_count
+    type: switch
+    parameters:
+      on: "${steps.count_parallel_serialized_lines.output}"
+      branch.9: build_success_result
+      branch._default: fail_parallel_summary
+    branches:
+      "9": build_success_result
+      _default: fail_parallel_summary
+
+  - id: build_success_result
+    type: assign
+    parameters:
+      target: final
+      value: >-
+        {"case":"complex_codex_exec_validation","success":true,"结论":"codex_exec 全链路验证通过","output":"CODEX_EXEC_READY","checks":{"status":true,"target":true,"output":true,"exit_code":true,"diagnostic_id":true},"parallel_check_count":5,"side_effects":false}
+    next: done
+
+  - id: reject_invalid_contract
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"complex_codex_exec_validation","success":false,"结论":"内部探针契约无效","side_effects":false}'
+    next: done
+
+  - id: fail_status
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"complex_codex_exec_validation","success":false,"结论":"status 不等于 succeeded","side_effects":false}'
+    next: done
+
+  - id: fail_target
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"complex_codex_exec_validation","success":false,"结论":"target 不等于 managed_sandbox","side_effects":false}'
+    next: done
+
+  - id: fail_output
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"complex_codex_exec_validation","success":false,"结论":"output 不精确等于 CODEX_EXEC_READY","side_effects":false}'
+    next: done
+
+  - id: fail_exit_code
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"complex_codex_exec_validation","success":false,"结论":"exit_code 不等于 0","side_effects":false}'
+    next: done
+
+  - id: fail_diagnostic_id
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"complex_codex_exec_validation","success":false,"结论":"diagnostic_id 为空","side_effects":false}'
+    next: done
+
+  - id: fail_parallel_summary
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"complex_codex_exec_validation","success":false,"结论":"五项并行汇总不完整","side_effects":false}'
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

@@ -1,0 +1,113 @@
+name: invoice_ocr_policy_review
+description: 对合成发票 PDF 做字段提取、金额币种与供应商归一化，并通过审批历史读取验证去重规则；不创建审批。
+roles:
+  - id: extractor
+    name: 发票字段提取员
+    system_prompt: >-
+      从提供的合成发票中提取字段，只返回纯 JSON，且必须恰好包含 vendor、vendor_key、
+      amount_minor、currency、date、invoice_number、invoice_number_key 七个键。
+      vendor 保留供应商名称；vendor_key 使用小写字母和连字符并移除公司后缀；
+      amount_minor 使用整数分；currency 使用三字母 ISO 代码；date 使用 YYYY-MM-DD；
+      invoice_number 保留发票号；invoice_number_key 使用大写字母、数字和连字符。
+      S$、新加坡地址或 Pte Ltd 表示 SGD，不得默认成 USD。不要输出地址、银行信息或自由文本。
+steps:
+  - id: extract_document
+    type: foreach
+    parameters:
+      items_source: input_file_refs
+      sub_step_type: tool_call
+      sub_param_tool: document_extract
+      sub_param_arguments: '{"maxChars":6000}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "2"
+    next: extract_invoice_fields
+
+  - id: extract_invoice_fields
+    type: llm_call
+    target_role: extractor
+    parameters:
+      prompt_prefix: "提取这份合成发票并按指定规则归一化，只返回七字段 JSON："
+    next: normalize_invoice
+
+  - id: normalize_invoice
+    type: transform
+    op: template
+    template: >-
+      {{~ vendor = get(data, 'vendor', ''); vendor_key = get(data, 'vendor_key', ''); amount_minor = number(get(data, 'amount_minor', 0)); currency = get(data, 'currency', ''); invoice_number = get(data, 'invoice_number', ''); invoice_number_key = get(data, 'invoice_number_key', ''); invoice_date = get(data, 'date', '') ~}}
+      {{~ extraction_ok = vendor != '' && amount_minor > 0 && currency != '' && invoice_number != '' && invoice_date != '' ~}}
+      {{~ normalization_ok = vendor_key == 'harbor-cloud' && amount_minor == 123450 && currency == 'SGD' && invoice_number_key == 'HC-2026-0804' && invoice_date == '2026-08-04' ~}}
+      {{ json({ vendor: vendor, vendor_key: vendor_key, amount_minor: amount_minor, currency: currency, date: invoice_date, invoice_number: invoice_number, invoice_number_key: invoice_number_key, extraction_ok: extraction_ok, normalization_ok: normalization_ok }) }}
+    next: list_approval_history
+
+  - id: list_approval_history
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances
+        query_parameters: [approval_code, page_size, start_time, end_time]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"1","start_time":"1785772800000","end_time":"1785859199000"}}'
+    next: extract_history_codes
+
+  - id: extract_history_codes
+    type: transform
+    parameters:
+      op: json_extract
+      path: data.instance_code_list
+      n: "1"
+    next: fetch_history_detail
+
+  - id: fetch_history_detail
+    type: foreach
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances/{instance_code}
+        query_parameters: []
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      sub_step_type: tool_call
+      sub_param_tool: nyxid_proxy
+      sub_param_arguments: '{"path_params":{"instance_code":"${input}"}}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "1"
+    next: verify_history_detail
+
+  - id: verify_history_detail
+    type: transform
+    op: template
+    template: >-
+      {{ json({ history_api_reachable: get(data, 'code', -1) == 0 }) }}
+    next: build_review_context
+
+  - id: build_review_context
+    type: assign
+    parameters:
+      target: review_context
+      value: >-
+        {"invoice":${steps.normalize_invoice.output},"history_api":${steps.verify_history_detail.output},"history":[{"vendor_key":"harbor-cloud","invoice_number_key":"HC-2026-0804"},{"vendor_key":"harbor-cloud","invoice_number_key":"HC-2026-0719"},{"vendor_key":"northstar-network","invoice_number_key":"NN-2026-0801"}]}
+    next: evaluate_deduplication
+
+  - id: evaluate_deduplication
+    type: transform
+    op: template
+    template: >-
+      {{~ exact_matches = 0; vendor_matches = 0; for item in data.history; if item.invoice_number_key == data.invoice.invoice_number_key; exact_matches = exact_matches + 1; end; if item.vendor_key == data.invoice.vendor_key; vendor_matches = vendor_matches + 1; end; end ~}}
+      {{~ success = data.invoice.extraction_ok && data.invoice.normalization_ok && data.history_api.history_api_reachable && exact_matches == 1 && vendor_matches == 2 ~}}
+      {{ json({ case: 'invoice_ocr_policy_review', success: success, ocr_media_input: true, extraction_ok: data.invoice.extraction_ok, normalization_ok: data.invoice.normalization_ok, history_api_reachable: data.history_api.history_api_reachable, exact_invoice_number_matches: exact_matches, same_vendor_matches: vendor_matches, manual_review_required: exact_matches > 0, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

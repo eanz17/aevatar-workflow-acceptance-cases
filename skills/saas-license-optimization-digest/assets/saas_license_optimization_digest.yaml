@@ -1,0 +1,215 @@
+name: saas_license_optimization_digest
+description: 汇聚六个 SaaS 数据源，覆盖确定性标准化、聚合、预览和显式确认后的 Lark 摘要发送。
+roles:
+  - id: analyst
+    name: 许可证优化分析员
+steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ submit = get(data, 'submit', false); route = 'PREVIEW'; if submit == true || submit == 'true'; route = 'SUBMIT'; end ~}}
+      {{ json({ route: route }) }}
+    next: read_license_inventory
+
+  - id: read_license_inventory
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
+    next: read_asset_attestations
+
+  - id: read_asset_attestations
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"query":{"page_size":"100"}}'
+    next: read_access_requests
+
+  - id: read_access_requests
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ACCESS_REQUESTS__"},"query":{"page_size":"100"}}'
+    next: read_run_evidence
+
+  - id: read_run_evidence
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_RUN_EVIDENCE__"},"query":{"page_size":"100"}}'
+    next: read_table_catalog
+
+  - id: read_table_catalog
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__"},"query":{"page_size":"100"}}'
+    next: read_license_views
+
+  - id: read_license_views
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/views
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"100"}}'
+    next: assemble_live_sources
+
+  - id: assemble_live_sources
+    type: assign
+    parameters:
+      target: live_sources
+      value: >-
+        {"request":${steps.normalize_context.output},"licenses":${steps.read_license_inventory.output},"assets":${steps.read_asset_attestations.output},"access_requests":${steps.read_access_requests.output},"run_evidence":${steps.read_run_evidence.output},"tables":${steps.read_table_catalog.output},"views":${steps.read_license_views.output}}
+    next: build_digest
+
+  - id: build_digest
+    type: transform
+    op: template
+    template: >-
+      {{~ license_items = get(data.licenses.data, 'items', []); asset_items = get(data.assets.data, 'items', []); access_items = get(data.access_requests.data, 'items', []); evidence_items = get(data.run_evidence.data, 'items', []); table_items = get(data.tables.data, 'items', []); view_items = get(data.views.data, 'items', []) ~}}
+      {{~ seats = 0; active = 0; cost = 0; reduce = 0 ~}}
+      {{~ for item in license_items; fields = item.fields; item_seats = number(get(fields, 'Seats', 0)); item_active = number(get(fields, 'Active Users', 0)); item_cost = number(get(fields, 'Monthly Cost USD', 0)); utilization = 0; if item_seats > 0; utilization = item_active / item_seats * 100; end; seats = seats + item_seats; active = active + item_active; cost = cost + item_cost; if utilization < 50; reduce = reduce + 1; end; end ~}}
+      {{~ all_ok = data.licenses.code == 0 && data.assets.code == 0 && data.access_requests.code == 0 && data.run_evidence.code == 0 && data.tables.code == 0 && data.views.code == 0 ~}}
+      {{ json({ route: data.request.route, all_sources_ok: all_ok, total_seats: seats, total_active_users: active, monthly_cost_usd: cost, reduce_candidates: reduce, source_counts: { licenses: license_items.size, assets: asset_items.size, access_requests: access_items.size, run_evidence: evidence_items.size, tables: table_items.size, views: view_items.size } }) }}
+    next: extract_route
+
+  - id: extract_route
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: route_mode
+
+  - id: route_mode
+    type: switch
+    parameters:
+      on: "${steps.extract_route.output}"
+      branch.SUBMIT: restore_submit_digest
+      branch.PREVIEW: restore_preview_digest
+      branch._default: restore_preview_digest
+    branches:
+      SUBMIT: restore_submit_digest
+      PREVIEW: restore_preview_digest
+      _default: restore_preview_digest
+
+  - id: restore_preview_digest
+    type: assign
+    parameters:
+      target: preview_digest
+      value: "${steps.build_digest.output}"
+    next: summarize_preview
+
+  - id: summarize_preview
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'saas_license_optimization_digest', mode: 'preview', all_sources_ok: data.all_sources_ok, total_seats: data.total_seats, total_active_users: data.total_active_users, monthly_cost_usd: data.monthly_cost_usd, reduce_candidates: data.reduce_candidates, source_counts: data.source_counts, message_sent: false }) }}
+    next: done
+
+  - id: restore_submit_digest
+    type: assign
+    parameters:
+      target: submit_digest
+      value: "${steps.build_digest.output}"
+    next: build_send_request
+
+  - id: build_send_request
+    type: transform
+    op: template
+    template: >-
+      {{~ color = 'green'; if data.reduce_candidates > 0; color = 'orange'; end ~}}
+      {{~ summary = '席位：' + ('' + data.total_seats) + ' | 活跃用户：' + ('' + data.total_active_users) + ' | 月成本：USD ' + ('' + data.monthly_cost_usd) + ' | 缩减候选：' + ('' + data.reduce_candidates) ~}}
+      {{~ card = { config: { wide_screen_mode: true }, header: { title: { tag: 'plain_text', content: 'SaaS 许可证优化摘要' }, template: color }, elements: [{ tag: 'div', text: { tag: 'lark_md', content: summary } }, { tag: 'note', elements: [{ tag: 'plain_text', content: '这是手工验收数据；采取行动前请核对工作流终态证据。' }] }] } ~}}
+      {{ json({ query: { receive_id_type: 'user_id' }, body: { receive_id: '__LARK_MESSAGE_RECIPIENT_ID__', msg_type: 'interactive', content: json(card) } }) }}
+    next: send_digest
+
+  - id: send_digest
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/im/v1/messages
+        query_parameters: [receive_id_type]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+    next: combine_send_result
+
+  - id: combine_send_result
+    type: assign
+    parameters:
+      target: send_result
+      value: >-
+        {"digest":${steps.build_digest.output},"send":${steps.send_digest.output}}
+    next: summarize_send
+
+  - id: summarize_send
+    type: transform
+    op: template
+    template: >-
+      {{ json({ case: 'saas_license_optimization_digest', mode: 'submit', success: data.digest.all_sources_ok && data.send.code == 0, message_sent: data.send.code == 0, downstream_code: data.send.code, total_seats: data.digest.total_seats, total_active_users: data.digest.total_active_users, monthly_cost_usd: data.digest.monthly_cost_usd, reduce_candidates: data.digest.reduce_candidates }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

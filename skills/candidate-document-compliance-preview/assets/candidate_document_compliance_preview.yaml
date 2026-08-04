@@ -1,0 +1,35 @@
+name: candidate_document_compliance_preview
+description: 无副作用的候选人材料完整性预览，覆盖文件输入、文档提取和 LLM 分类。
+roles:
+  - id: reviewer
+    name: 候选人材料审核员
+    system_prompt: >-
+      检查提供的候选人材料，只返回一个紧凑的 JSON 对象，且只能包含
+      identity_present、experience_present、education_present、contact_present、
+      consent_present 五个键。每个值必须是布尔值。不得复述姓名、邮箱、电话、
+      雇主、学校、标识符、地址或任何自由文本。
+steps:
+  - id: extract_documents
+    type: foreach
+    parameters:
+      items_source: input_file_refs
+      sub_step_type: tool_call
+      sub_param_tool: document_extract
+      sub_param_arguments: '{"maxChars":4000}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "3"
+    next: classify_completeness
+
+  - id: classify_completeness
+    type: llm_call
+    target_role: reviewer
+    parameters:
+      prompt_prefix: >-
+        检查提取后的候选人材料是否包含五类必需信息，只返回指定的布尔 JSON。
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

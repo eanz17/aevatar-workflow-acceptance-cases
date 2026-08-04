@@ -3,533 +3,401 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Aevatar 工作流能力覆盖分析</title>
+  <title>Aevatar 工作流验收分析</title>
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #f6f7f5;
+      color-scheme: light;
+      --page: #f5f6f7;
       --surface: #ffffff;
-      --surface-alt: #eef1ef;
-      --text: #18201d;
-      --muted: #59645f;
-      --border: #d7ddd9;
-      --strong-border: #aeb9b3;
-      --accent: #176b52;
-      --accent-soft: #dcefe8;
-      --accent-text: #0f503d;
-      --blue: #1f5e9c;
-      --blue-soft: #e0edf8;
-      --amber: #986000;
-      --amber-soft: #fff0ca;
-      --red: #a03535;
-      --red-soft: #f8dfdf;
-      --purple: #6b4b8d;
-      --purple-soft: #ece3f4;
-      --shadow: 0 8px 28px rgba(25, 40, 34, 0.08);
+      --surface-alt: #eef1f3;
+      --ink: #202428;
+      --muted: #657079;
+      --border: #d8dde1;
+      --strong-border: #b9c1c7;
+      --header: #202428;
+      --header-ink: #ffffff;
+      --green: #20684f;
+      --green-soft: #e2f1ea;
+      --blue: #245f91;
+      --blue-soft: #e4eef7;
+      --amber: #825812;
+      --amber-soft: #faedce;
+      --red: #a23b3b;
+      --red-soft: #f8e3e1;
+      --purple: #6e4b82;
+      --purple-soft: #eee6f2;
+      --shadow: 0 1px 2px rgba(19, 24, 28, 0.06);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #111614;
-        --surface: #19201d;
-        --surface-alt: #222b27;
-        --text: #eef3f0;
-        --muted: #aebbb5;
-        --border: #36423d;
-        --strong-border: #53635c;
-        --accent: #76c9aa;
-        --accent-soft: #173f32;
-        --accent-text: #a9e0ca;
-        --blue: #8ec1ed;
-        --blue-soft: #173550;
-        --amber: #f0c66a;
-        --amber-soft: #4b3815;
-        --red: #f09a9a;
-        --red-soft: #4d2424;
-        --purple: #c2a4df;
-        --purple-soft: #39294a;
-        --shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+        color-scheme: dark;
+        --page: #16191c;
+        --surface: #20252a;
+        --surface-alt: #292f34;
+        --ink: #edf0f2;
+        --muted: #a8b1b8;
+        --border: #3a4248;
+        --strong-border: #59636b;
+        --header: #0f1214;
+        --header-ink: #f6f7f8;
+        --green: #89d1b3;
+        --green-soft: #203d33;
+        --blue: #8fc2ea;
+        --blue-soft: #21384b;
+        --amber: #e4bd69;
+        --amber-soft: #493b20;
+        --red: #ee9b96;
+        --red-soft: #4d2d2c;
+        --purple: #d0a9e2;
+        --purple-soft: #3d3044;
+        --shadow: none;
       }
     }
 
     * { box-sizing: border-box; }
-    html { background: var(--bg); }
     body {
       margin: 0;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--page);
+      color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.55;
     }
-    button, input, select { font: inherit; letter-spacing: 0; }
-    button, select, input { color: var(--text); }
-    a { color: var(--blue); text-underline-offset: 3px; }
+    button, input, select { font: inherit; color: inherit; }
+    a { color: var(--blue); }
     code {
-      color: var(--text);
-      background: var(--surface-alt);
-      border-radius: 4px;
-      padding: 0.08rem 0.3rem;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
       overflow-wrap: anywhere;
     }
     h1, h2, h3, p { margin-top: 0; }
-    h1 { margin-bottom: 8px; font-size: 30px; line-height: 1.2; font-weight: 500; letter-spacing: 0; }
-    h2 { margin-bottom: 14px; font-size: 21px; line-height: 1.3; font-weight: 500; letter-spacing: 0; }
-    h3 { margin-bottom: 8px; font-size: 16px; line-height: 1.35; font-weight: 500; letter-spacing: 0; }
+    h1 { margin-bottom: 8px; font-size: 30px; line-height: 1.2; font-weight: 600; letter-spacing: 0; }
+    h2 { margin-bottom: 8px; font-size: 20px; line-height: 1.3; font-weight: 600; letter-spacing: 0; }
+    h3 { margin-bottom: 5px; font-size: 15px; line-height: 1.35; font-weight: 600; letter-spacing: 0; }
 
-    .shell { min-width: 0; }
-    .masthead {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-    .masthead-inner, main, .footer-inner {
-      width: min(1220px, calc(100% - 40px));
-      margin: 0 auto;
-    }
-    .masthead-inner { padding: 30px 0 22px; }
-    .eyebrow {
-      margin-bottom: 8px;
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 500;
-    }
-    .subtitle { max-width: 840px; margin-bottom: 16px; color: var(--muted); }
-    .path-note {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      max-width: 980px;
-      padding: 11px 13px;
-      border-left: 3px solid var(--amber);
-      background: var(--amber-soft);
-      color: var(--text);
-    }
-    .path-note strong { font-weight: 500; }
-    .path-note span { min-width: 0; overflow-wrap: anywhere; }
+    .container { width: min(100% - 40px, 1260px); margin: 0 auto; }
+    .masthead { background: var(--header); color: var(--header-ink); }
+    .masthead-inner { padding: 30px 0 24px; }
+    .eyebrow { margin-bottom: 7px; color: #a9d7c4; font-size: 12px; font-weight: 600; }
+    .subtitle { max-width: 900px; margin-bottom: 16px; color: #d4dade; }
+    .path-line { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #b9c2c8; font-size: 13px; }
+    .path-line strong { color: #ffffff; }
 
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-    .metric {
-      min-width: 0;
-      padding: 18px 24px;
-      border-right: 1px solid var(--border);
-    }
+    .metrics-band { border-bottom: 1px solid var(--border); background: var(--surface); }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .metric { min-width: 0; padding: 18px 20px; border-right: 1px solid var(--border); }
+    .metric:first-child { padding-left: 0; }
     .metric:last-child { border-right: 0; }
-    .metric-value { display: block; font-size: 25px; line-height: 1.15; font-weight: 500; }
-    .metric-label { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; }
+    .metric-value { display: block; margin-bottom: 2px; font-size: 25px; line-height: 1.15; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .metric-label { display: block; color: var(--muted); font-size: 12px; }
 
-    .tabs-band {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: color-mix(in srgb, var(--bg) 92%, transparent);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(10px);
-    }
-    .tabs {
-      width: min(1220px, calc(100% - 40px));
-      margin: 0 auto;
-      display: flex;
-      gap: 4px;
-      padding: 9px 0;
-      overflow-x: auto;
-    }
+    .tabs-band { border-bottom: 1px solid var(--border); background: var(--surface); }
+    .tabs { display: flex; gap: 2px; overflow-x: auto; }
     .tab {
-      flex: 0 0 auto;
-      border: 1px solid transparent;
-      border-radius: 6px;
-      padding: 8px 12px;
+      min-height: 44px;
+      border: 0;
+      border-bottom: 3px solid transparent;
       background: transparent;
+      padding: 9px 14px 7px;
       color: var(--muted);
       cursor: pointer;
+      white-space: nowrap;
     }
-    .tab:hover { background: var(--surface-alt); color: var(--text); }
-    .tab[aria-selected="true"] {
-      background: var(--accent-soft);
-      color: var(--accent-text);
-      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-    }
-    .tab:focus-visible, select:focus-visible, input:focus-visible {
-      outline: 3px solid color-mix(in srgb, var(--blue) 50%, transparent);
-      outline-offset: 2px;
-    }
+    .tab[aria-selected="true"] { border-bottom-color: var(--green); color: var(--ink); font-weight: 600; }
 
-    main { padding: 28px 0 48px; }
+    main { padding: 28px 0 44px; }
     .view[hidden] { display: none; }
     .section { margin-bottom: 34px; }
-    .section-heading {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 14px;
-    }
+    .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 14px; }
     .section-heading h2 { margin-bottom: 0; }
-    .section-caption { margin: 0; color: var(--muted); font-size: 13px; }
+    .caption { margin: 0; color: var(--muted); font-size: 13px; }
+    .note { margin-bottom: 18px; border-left: 3px solid var(--blue); padding: 2px 0 2px 13px; }
+    .note p { margin: 0; }
 
-    .family-bar {
-      display: flex;
-      width: 100%;
-      min-height: 48px;
-      margin: 4px 0 14px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--surface);
-      box-shadow: var(--shadow);
-    }
-    .family-segment {
-      display: flex;
-      min-width: 3px;
-      align-items: center;
-      justify-content: center;
-      padding: 5px 3px;
-      border-right: 1px solid color-mix(in srgb, var(--surface) 75%, transparent);
-      color: #ffffff;
-      font-size: 12px;
-      font-weight: 500;
-      text-align: center;
-      overflow: hidden;
-    }
-    .family-segment:last-child { border-right: 0; }
+    .family-bar { display: flex; min-height: 46px; overflow: hidden; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); box-shadow: var(--shadow); }
+    .family-segment { display: flex; min-width: 3px; align-items: center; justify-content: center; padding: 5px 3px; color: #ffffff; text-align: center; font-size: 12px; font-weight: 600; }
     .family-segment:nth-child(1), .family-segment:nth-child(5) { background: #39765f; }
     .family-segment:nth-child(2), .family-segment:nth-child(6) { background: #356c9b; }
-    .family-segment:nth-child(3), .family-segment:nth-child(7) { background: #91672a; }
-    .family-segment:nth-child(4), .family-segment:nth-child(8) { background: #76568d; }
-    .family-segment span { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+    .family-segment:nth-child(3), .family-segment:nth-child(7) { background: #8b6528; }
+    .family-segment:nth-child(4) { background: #76568d; }
+    .family-segment span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px 18px; margin-top: 12px; }
+    .legend-item { display: flex; gap: 8px; color: var(--muted); }
+    .legend-item b { margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
 
-    .legend {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px 16px;
-      margin-bottom: 22px;
-    }
-    .legend-item { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
-    .legend-key { color: var(--muted); overflow-wrap: anywhere; }
-    .legend-value { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 500; }
-
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: end;
-      margin: 0 0 14px;
-      padding: 13px 0;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-    .field { display: grid; gap: 5px; min-width: 180px; }
-    .field label { color: var(--muted); font-size: 12px; font-weight: 500; }
-    select, input[type="search"] {
-      min-height: 38px;
-      border: 1px solid var(--strong-border);
-      border-radius: 6px;
-      background: var(--surface);
-      padding: 7px 10px;
-    }
+    .controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 12px; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .field { display: grid; gap: 4px; min-width: 180px; }
+    .field label { color: var(--muted); font-size: 12px; font-weight: 600; }
+    select, input[type="search"] { min-height: 38px; border: 1px solid var(--strong-border); border-radius: 5px; background: var(--surface); padding: 7px 9px; }
     input[type="search"] { width: min(360px, 100%); }
     .result-count { margin-left: auto; padding-bottom: 7px; color: var(--muted); font-size: 13px; }
 
     .table-wrap { width: 100%; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; background: transparent; }
-    .table-wrap table { min-width: 840px; }
-    th, td {
-      padding: 11px 10px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      vertical-align: top;
-      overflow-wrap: anywhere;
-    }
-    th { color: var(--muted); font-size: 12px; font-weight: 500; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; }
+    .table-wrap table { min-width: 900px; }
+    th, td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+    th { color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
     tbody tr:hover { background: color-mix(in srgb, var(--surface-alt) 65%, transparent); }
-    .number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .case-id { font-weight: 500; white-space: nowrap; }
-    .case-name { min-width: 210px; }
-    .assertion { min-width: 260px; }
-    .family-name { min-width: 150px; font-weight: 500; }
-    .status {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 12px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    .status-covered { background: var(--accent-soft); color: var(--accent-text); }
-    .status-substitute { background: var(--blue-soft); color: var(--blue); }
-    .status-partial { background: var(--amber-soft); color: var(--amber); }
+    .number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .case-id, .family-name { white-space: nowrap; font-weight: 600; }
+    .assertion { min-width: 240px; }
+    .status { display: inline-flex; min-height: 23px; align-items: center; border-radius: 999px; padding: 2px 8px; white-space: nowrap; font-size: 12px; font-weight: 600; }
+    .status-covered, .status-passed { background: var(--green-soft); color: var(--green); }
+    .status-partial { background: var(--blue-soft); color: var(--blue); }
+    .status-blocked { background: var(--amber-soft); color: var(--amber); }
     .status-missing { background: var(--red-soft); color: var(--red); }
     .status-info { background: var(--purple-soft); color: var(--purple); }
 
-    .evidence-note {
-      margin-bottom: 18px;
-      padding: 13px 15px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--surface);
-    }
-    .evidence-note p { margin: 0; }
+    .surface-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .surface { border-top: 3px solid var(--blue); padding-top: 12px; }
+    .surface:last-child { border-top-color: var(--purple); }
+    .surface ul { margin: 0; padding-left: 20px; color: var(--muted); }
 
     .gap-list { border-top: 1px solid var(--border); }
-    .gap-row {
-      display: grid;
-      grid-template-columns: minmax(180px, 0.8fr) 110px minmax(280px, 2fr);
-      gap: 18px;
-      padding: 14px 4px;
-      border-bottom: 1px solid var(--border);
-    }
-    .gap-row h3 { margin: 0; }
-    .gap-row p { margin: 0; color: var(--muted); }
-    .priority { white-space: nowrap; font-variant-numeric: tabular-nums; }
-
-    .repair-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0 24px;
-      border-top: 1px solid var(--border);
-    }
+    .gap-row { display: grid; grid-template-columns: minmax(190px, 0.8fr) 125px minmax(280px, 2fr); gap: 16px; padding: 14px 2px; border-bottom: 1px solid var(--border); }
+    .gap-row h3, .gap-row p { margin: 0; }
+    .gap-row p { color: var(--muted); }
+    .repair-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; border-top: 1px solid var(--border); }
     .repair-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
     .repair-item p { margin: 0; color: var(--muted); }
-
-    .boundary {
-      margin-top: 26px;
-      border-left: 3px solid var(--red);
-      padding: 2px 0 2px 14px;
-    }
-    .boundary h2 { margin-bottom: 7px; }
-    .boundary p { margin: 0; max-width: 900px; }
+    .boundary { border-left: 3px solid var(--red); padding: 3px 0 3px 14px; }
+    .boundary p { max-width: 980px; margin: 0; }
 
     footer { border-top: 1px solid var(--border); background: var(--surface); }
-    .footer-inner {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 10px 22px;
-      padding: 18px 0 28px;
-      color: var(--muted);
-      font-size: 13px;
-    }
+    .footer-inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 20px; padding: 18px 0 26px; color: var(--muted); font-size: 13px; }
     .footer-links { display: flex; flex-wrap: wrap; gap: 14px; }
 
-    @media (max-width: 840px) {
+    @media (max-width: 860px) {
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .metric:nth-child(2) { border-right: 0; }
       .metric:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+      .metric:nth-child(3) { padding-left: 0; }
       .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .gap-row { grid-template-columns: minmax(0, 1fr) 100px; }
+      .surface-grid, .repair-grid { grid-template-columns: 1fr; }
+      .gap-row { grid-template-columns: minmax(0, 1fr) 125px; }
       .gap-row p { grid-column: 1 / -1; }
-      .repair-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 560px) {
-      .masthead-inner, main, .footer-inner, .tabs { width: min(100% - 24px, 1220px); }
+      .container { width: min(100% - 24px, 1260px); }
       .masthead-inner { padding-top: 22px; }
       h1 { font-size: 25px; }
-      .metrics { grid-template-columns: 1fr 1fr; }
-      .metric { padding: 14px 12px; }
-      .metric-value { font-size: 22px; }
+      .metric { padding: 14px 10px; }
+      .metric-value { font-size: 21px; }
       .family-bar { min-height: 34px; }
       .family-segment span { display: none; }
       .legend { grid-template-columns: 1fr; }
       .field, input[type="search"] { width: 100%; min-width: 0; }
       .result-count { width: 100%; margin-left: 0; }
+      .section-heading { display: block; }
+      .section-heading h2 { margin-bottom: 4px; }
       .gap-row { grid-template-columns: 1fr; gap: 7px; }
       .gap-row p { grid-column: auto; }
-      th, td { padding: 9px 8px; }
     }
   </style>
 </head>
 <body>
-  <div class="shell" id="workflow-analysis">
+  <div id="workflow-analysis">
     <header class="masthead">
-      <div class="masthead-inner">
-        <p class="eyebrow">2026-08-04 · 生产验收结果</p>
-        <h1>Aevatar 工作流能力覆盖分析</h1>
-        <p class="subtitle">将新仓库的 11 个验收案例，与源目录中 43 个可解析定义按版本族归并比较。结论区分真实覆盖、语义替换、部分覆盖与尚未覆盖。</p>
-        <div class="path-note" role="note">
-          <strong>路径口径</strong>
-          <span><code>~/Code/workflows</code> 当前不存在；本页实际比较 <code>/Users/chronoai/Code/aevatar-workflow-acceptance-cases</code> 与 <code>/Users/chronoai/workflows</code>。</span>
-        </div>
+      <div class="container masthead-inner">
+        <p class="eyebrow">2026-08-04 · 可审计生产验收</p>
+        <h1>Aevatar 工作流验收分析</h1>
+        <p class="subtitle">15 个公开 workflow、15 个 Ornn skill，以及对源目录 41 个非 n8n 定义的功能对照。页面严格区分直接运行、自然语言调用和平台阻塞。</p>
+        <div class="path-line"><strong>实际源目录：<code>~/workflows</code></strong><span><code>~/Code/workflows</code> 当前不存在</span><span>两个 n8n JSON 已排除</span></div>
       </div>
     </header>
 
-    <section class="metrics" aria-label="验证摘要">
-      <div class="metric"><span class="metric-value">11 / 11</span><span class="metric-label">静态校验与 production preview</span></div>
-      <div class="metric"><span class="metric-value">11 / 11</span><span class="metric-label">真实 committed 终态通过</span></div>
-      <div class="metric"><span class="metric-value">43</span><span class="metric-label">源目录可解析定义，归并为 8 族</span></div>
-      <div class="metric"><span class="metric-value">7</span><span class="metric-label">仍需补齐的明确能力缺口</span></div>
+    <section class="metrics-band" aria-label="验证摘要">
+      <div class="container metrics">
+        <div class="metric"><span class="metric-value">15 / 15</span><span class="metric-label">静态校验与 production preview</span></div>
+        <div class="metric"><span class="metric-value">13 / 15</span><span class="metric-label">直接 runtime committed 通过</span></div>
+        <div class="metric"><span class="metric-value">15 / 15</span><span class="metric-label">Ornn skill public 发布并回读</span></div>
+        <div class="metric"><span class="metric-value">0 / 5</span><span class="metric-label">/api/chat 严格 workflow validated</span></div>
+      </div>
     </section>
 
     <nav class="tabs-band" aria-label="分析视图">
-      <div class="tabs" role="tablist">
-        <button class="tab" type="button" role="tab" id="tab-compare" aria-controls="view-compare" aria-selected="true">版本族与能力</button>
-        <button class="tab" type="button" role="tab" id="tab-evidence" aria-controls="view-evidence" aria-selected="false">真实运行证据</button>
-        <button class="tab" type="button" role="tab" id="tab-gaps" aria-controls="view-gaps" aria-selected="false">缺口与修复记录</button>
+      <div class="container tabs" role="tablist">
+        <button class="tab" type="button" role="tab" id="tab-coverage" aria-controls="view-coverage" aria-selected="true">覆盖范围</button>
+        <button class="tab" type="button" role="tab" id="tab-runtime" aria-controls="view-runtime" aria-selected="false">直接运行</button>
+        <button class="tab" type="button" role="tab" id="tab-chat" aria-controls="view-chat" aria-selected="false">/api/chat</button>
+        <button class="tab" type="button" role="tab" id="tab-blockers" aria-controls="view-blockers" aria-selected="false">阻塞与修复</button>
       </div>
     </nav>
 
-    <main>
-      <section class="view" id="view-compare" role="tabpanel" aria-labelledby="tab-compare">
+    <main class="container">
+      <section class="view" id="view-coverage" role="tabpanel" aria-labelledby="tab-coverage">
         <div class="section">
-          <div class="section-heading">
-            <h2>43 个源定义的版本族构成</h2>
-            <p class="section-caption">旧副本和 Ornn 内嵌资产不重复计为新功能</p>
-          </div>
-          <div class="family-bar" role="img" aria-label="43 个源定义：Base 探针 3，原语与执行探针 5，Lark Onboarding 2，发票审批 7，预算监控 5，月度考勤 1，旧验收案例副本 10，Ornn 资产副本 10">
+          <div class="section-heading"><h2>41 个非 n8n 定义的版本族</h2><p class="caption">旧版本和 Ornn asset 不重复计为新功能</p></div>
+          <div class="family-bar" role="img" aria-label="41 个定义：Base 3，原语与执行 5，Lark Onboarding 1，发票 7，预算 5，旧验收案例 10，Ornn 资产 10">
             <div class="family-segment" style="flex:3"><span>Base 3</span></div>
             <div class="family-segment" style="flex:5"><span>原语 5</span></div>
-            <div class="family-segment" style="flex:2"><span>Onboarding 2</span></div>
+            <div class="family-segment" style="flex:1"><span>Onboarding 1</span></div>
             <div class="family-segment" style="flex:7"><span>发票 7</span></div>
             <div class="family-segment" style="flex:5"><span>预算 5</span></div>
-            <div class="family-segment" style="flex:1"><span>考勤 1</span></div>
             <div class="family-segment" style="flex:10"><span>旧案例 10</span></div>
             <div class="family-segment" style="flex:10"><span>Ornn 10</span></div>
           </div>
           <div class="legend" aria-hidden="true">
-            <div class="legend-item"><span class="legend-key">Base 探针</span><span class="legend-value">3</span></div>
-            <div class="legend-item"><span class="legend-key">原语与执行探针</span><span class="legend-value">5</span></div>
-            <div class="legend-item"><span class="legend-key">Lark Onboarding</span><span class="legend-value">2</span></div>
-            <div class="legend-item"><span class="legend-key">发票审批</span><span class="legend-value">7</span></div>
-            <div class="legend-item"><span class="legend-key">预算监控</span><span class="legend-value">5</span></div>
-            <div class="legend-item"><span class="legend-key">月度考勤</span><span class="legend-value">1</span></div>
-            <div class="legend-item"><span class="legend-key">旧验收案例副本</span><span class="legend-value">10</span></div>
-            <div class="legend-item"><span class="legend-key">Ornn 资产副本</span><span class="legend-value">10</span></div>
+            <div class="legend-item"><span>Base 探针</span><b>3</b></div>
+            <div class="legend-item"><span>原语与执行探针</span><b>5</b></div>
+            <div class="legend-item"><span>Lark Onboarding</span><b>1</b></div>
+            <div class="legend-item"><span>发票审批</span><b>7</b></div>
+            <div class="legend-item"><span>预算监控</span><b>5</b></div>
+            <div class="legend-item"><span>旧验收案例副本</span><b>10</b></div>
+            <div class="legend-item"><span>Ornn 资产副本</span><b>10</b></div>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-heading">
-            <h2>版本族映射</h2>
-            <p class="section-caption">按功能语义判断，不计算文件覆盖率</p>
-          </div>
+          <div class="section-heading"><h2>源版本族映射</h2><p class="caption">状态同时考虑定义覆盖和生产证据</p></div>
           <div class="table-wrap">
             <table aria-label="源版本族映射">
-              <thead><tr><th>源版本族</th><th class="number">定义数</th><th>新仓库案例</th><th>重叠功能</th><th>尚未一一覆盖</th><th>判断</th></tr></thead>
+              <thead><tr><th>源版本族</th><th class="number">定义</th><th>新案例</th><th>已覆盖语义</th><th>剩余边界</th><th>判断</th></tr></thead>
               <tbody>
-                <tr><td class="family-name">Base 探针</td><td class="number">3</td><td>04、05</td><td>多表、表目录、视图 GET；受保护 POST；结果判定</td><td>旧组织资源本身未进入公共仓库</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr><td class="family-name">原语与执行探针</td><td class="number">5</td><td>01、03、11</td><td><code>assign</code>、<code>transform</code>、分支、<code>foreach</code>、动态 GET、managed <code>codex_exec</code></td><td>通用 <code>code_execute</code> 凭据探针</td><td><span class="status status-partial">部分覆盖</span></td></tr>
-                <tr><td class="family-name">Lark Onboarding</td><td class="number">2</td><td>06</td><td>Base 申请到审批创建和实例回读</td><td>n8n webhook listener 与同步 response</td><td><span class="status status-substitute">语义替换</span></td></tr>
-                <tr><td class="family-name">发票审批</td><td class="number">7</td><td>02、03、09</td><td>附件、提取、LLM、历史审批、去重、创建与验证</td><td>图片/PDF OCR、发票规则、contact batch lookup</td><td><span class="status status-partial">部分覆盖</span></td></tr>
-                <tr><td class="family-name">预算监控</td><td class="number">5</td><td>04、08</td><td>六源 Base、确定性聚合、阈值判断、卡片发送</td><td>预算类别/差异公式与 weekly durable schedule</td><td><span class="status status-substitute">语义替换</span></td></tr>
-                <tr><td class="family-name">月度考勤</td><td class="number">1</td><td>10</td><td>月末门禁、月度聚合、审批验证、完成与提醒消息</td><td>n8n daily schedule trigger</td><td><span class="status status-partial">部分覆盖</span></td></tr>
-                <tr><td class="family-name">旧验收案例副本</td><td class="number">10</td><td>01-10</td><td>新仓库是修复、中文化并完成生产验证的权威版本</td><td>源副本仍含过时 <code>code_execute</code></td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr><td class="family-name">Ornn 资产副本</td><td class="number">10</td><td>无</td><td>资产内嵌 workflow 与旧验收案例功能相同</td><td>新仓库未打包/发布 skill，Bot 自然语言链路未证明</td><td><span class="status status-partial">部分覆盖</span></td></tr>
+                <tr data-source-family="base"><td class="family-name">Base 探针</td><td class="number">3</td><td>04、05、15</td><td>记录 GET、多源读取、受保护 POST、typed receipt</td><td>无新增缺口</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-source-family="primitives"><td class="family-name">原语与执行探针</td><td class="number">5</td><td>01、03、11、12</td><td>转换、分支、foreach、managed codex、固定 code</td><td><code>code_execute</code> 生产授权阻塞</td><td><span class="status status-blocked">部分 / 阻塞</span></td></tr>
+                <tr data-source-family="onboarding"><td class="family-name">Lark Onboarding</td><td class="number">1</td><td>06</td><td>Base 申请、审批创建和实例回读</td><td>无新增缺口</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-source-family="invoice"><td class="family-name">发票审批</td><td class="number">7</td><td>02、03、09、13、14</td><td>媒体提取、财务规则、历史、去重、审批、contact</td><td>contact 权限与通用 code 阻塞</td><td><span class="status status-blocked">部分 / 阻塞</span></td></tr>
+                <tr data-source-family="budget"><td class="family-name">预算监控</td><td class="number">5</td><td>04、08、15</td><td>六路 Base、差异公式、阈值、周/月摘要、消息</td><td>durable schedule 无 receipt</td><td><span class="status status-blocked">部分 / 阻塞</span></td></tr>
+                <tr data-source-family="legacy"><td class="family-name">旧验收案例副本</td><td class="number">10</td><td>01-10</td><td>修复并取得 committed evidence 的权威版本</td><td>源副本保留旧契约</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-source-family="ornn"><td class="family-name">Ornn 资产副本</td><td class="number">10</td><td>01-15</td><td>15 个 public skill 完成发布和回读</td><td>自然语言 mount/admission/artifact 未闭环</td><td><span class="status status-partial">部分覆盖</span></td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-heading">
-            <h2>能力覆盖矩阵</h2>
-            <p class="section-caption">覆盖状态指新仓库取得的证据强度</p>
-          </div>
+          <div class="section-heading"><h2>能力覆盖矩阵</h2><p class="caption">按功能语义判断，不以文件数量替代</p></div>
           <div class="controls">
-            <div class="field"><label for="family-filter">业务族</label><select id="family-filter"><option value="all">全部业务族</option><option value="基础原语">基础原语</option><option value="Base">Base</option><option value="审批">审批</option><option value="消息">消息</option><option value="执行与调度">执行与调度</option><option value="Ornn 与 Bot">Ornn 与 Bot</option></select></div>
-            <div class="field"><label for="status-filter">覆盖状态</label><select id="status-filter"><option value="all">全部状态</option><option value="covered">覆盖</option><option value="substitute">语义替换</option><option value="partial">部分覆盖</option><option value="missing">未覆盖</option></select></div>
-            <output class="result-count" id="capability-count" aria-live="polite">显示 14 项能力</output>
+            <div class="field"><label for="family-filter">能力域</label><select id="family-filter"><option value="all">全部能力域</option><option value="基础原语">基础原语</option><option value="Base">Base</option><option value="Lark">Lark</option><option value="执行与调度">执行与调度</option><option value="Ornn 与聊天">Ornn 与聊天</option></select></div>
+            <div class="field"><label for="status-filter">证据状态</label><select id="status-filter"><option value="all">全部状态</option><option value="covered">覆盖</option><option value="partial">部分覆盖</option><option value="blocked">平台阻塞</option><option value="missing">未验证</option></select></div>
+            <output class="result-count" id="capability-count" aria-live="polite">显示 16 项能力</output>
           </div>
           <div class="table-wrap">
             <table aria-label="能力覆盖矩阵">
-              <thead><tr><th>业务族</th><th>能力</th><th>新仓库证据</th><th>对应案例</th><th>状态</th></tr></thead>
+              <thead><tr><th>能力域</th><th>能力</th><th>证据</th><th>案例</th><th>状态</th></tr></thead>
               <tbody id="capability-rows">
-                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>赋值、解析、转换、条件与 switch</td><td>确定性节点真实 committed</td><td>01、04、08、10、11</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>并行和动态 <code>foreach</code></td><td>静态图检查与真实汇总断言</td><td>01、03、11</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>附件、<code>document_extract</code>、受约束 LLM</td><td>合成文本附件五类结果为 true</td><td>02、09</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="Base" data-status="covered"><td>Base</td><td>记录、表目录、视图读取与多源聚合</td><td>六个真实 GET 与精确合计断言</td><td>04、08、10</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="Base" data-status="covered"><td>Base</td><td>受保护记录写入</td><td>typed approval 后 <code>accepted=true</code></td><td>05</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="审批" data-status="covered"><td>审批</td><td>列表、详情、创建、回读与稳定键去重</td><td>创建/回读及幂等复跑 committed</td><td>03、06、09、10</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="消息" data-status="covered"><td>消息</td><td>Lark 文本私信与 interactive card</td><td>两类消息 typed receipt 成功</td><td>07、08、10</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="执行与调度" data-status="covered"><td>执行与调度</td><td>固定 managed <code>codex_exec</code></td><td><code>CODEX_EXEC_READY</code> 与五项 gate</td><td>11</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="审批" data-status="substitute"><td>审批</td><td>Lark contact batch lookup</td><td>当前改用 Base 身份目录稳定键</td><td>09</td><td><span class="status status-substitute">语义替换</span></td></tr>
-                <tr data-family="执行与调度" data-status="substitute"><td>执行与调度</td><td>n8n 内直接获取 Lark token</td><td>改由 NyxID 绑定 UserService 代理</td><td>03-10</td><td><span class="status status-substitute">语义替换</span></td></tr>
-                <tr data-family="基础原语" data-status="partial"><td>基础原语</td><td>图片/PDF OCR 与发票专属字段规则</td><td>只验证合成文本和通用材料规则</td><td>02、09</td><td><span class="status status-partial">部分覆盖</span></td></tr>
-                <tr data-family="执行与调度" data-status="missing"><td>执行与调度</td><td>n8n webhook listener / response</td><td>交互式 invoke 不能证明同步 HTTP 契约</td><td>无</td><td><span class="status status-missing">未覆盖</span></td></tr>
-                <tr data-family="执行与调度" data-status="missing"><td>执行与调度</td><td>durable weekly / monthly schedule</td><td>生产 authorization 仍拒绝</td><td>08、10 仅覆盖业务分支</td><td><span class="status status-missing">未覆盖</span></td></tr>
-                <tr data-family="Ornn 与 Bot" data-status="missing"><td>Ornn 与 Bot</td><td>skill 发布、搜索、加载和 Bot 自然语言启动</td><td>直接 workflow API 成功不能外推</td><td>无</td><td><span class="status status-missing">未覆盖</span></td></tr>
+                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>赋值、解析、转换</td><td>多条 committed 成功路径</td><td>01、04、08、10、11、15</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>switch、conditional、并行与动态 foreach</td><td>步骤图校验和终态断言</td><td>01、03、09、11</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>文件/图片、document_extract、受约束 LLM</td><td>文本、PDF 与 PNG 合成 fixture</td><td>02、09、13</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Base" data-status="covered"><td>Base</td><td>记录、表目录、视图和多源 GET</td><td>真实 GET 与精确聚合断言</td><td>04、08、10、15</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Base" data-status="covered"><td>Base</td><td>受保护记录 POST</td><td>typed approval 后 accepted</td><td>05</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Lark" data-status="covered"><td>Lark</td><td>审批列表、详情、创建、回读和幂等</td><td>创建、回读与复跑 committed</td><td>03、06、09、10、13</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Lark" data-status="covered"><td>Lark</td><td>文本私信与 interactive card</td><td>typed receipt 成功</td><td>07、08、10</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="执行与调度" data-status="covered"><td>执行与调度</td><td>固定 managed codex_exec</td><td>CODEX_EXEC_READY 与五项 gate</td><td>11</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="执行与调度" data-status="blocked"><td>执行与调度</td><td>通用 code_execute</td><td>committed typed failure</td><td>12</td><td><span class="status status-blocked">平台阻塞</span></td></tr>
+                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>发票 OCR 与财务归一化规则</td><td>PDF 提取、SGD、金额和去重命中</td><td>13</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Lark" data-status="blocked"><td>Lark</td><td>contact batch_get_id</td><td>Lark 99991672 明确缺权限</td><td>14</td><td><span class="status status-blocked">平台阻塞</span></td></tr>
+                <tr data-family="Base" data-status="covered"><td>Base</td><td>预算周报/月报与差异公式</td><td>六路读取与六项数值断言</td><td>15</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="执行与调度" data-status="blocked"><td>执行与调度</td><td>durable weekly/monthly schedule</td><td>POST 返回 HTTP 502，无 receipt</td><td>15</td><td><span class="status status-blocked">平台阻塞</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>skill 校验、发布、public 权限与回读</td><td>15/15 服务端闭环</td><td>01-15</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="partial"><td>Ornn 与聊天</td><td>/api/chat 自然语言选择和 workflow 启动</td><td>01/12 到启动；13 绕过；14/15 mount 失败</td><td>01、12-15</td><td><span class="status status-partial">部分覆盖</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="missing"><td>Ornn 与聊天</td><td>Lark Bot webhook/relay/回传</td><td>本轮入口为 /api/chat</td><td>无</td><td><span class="status status-missing">未验证</span></td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <section class="view" id="view-evidence" role="tabpanel" aria-labelledby="tab-evidence" hidden>
+      <section class="view" id="view-runtime" role="tabpanel" aria-labelledby="tab-runtime" hidden>
         <div class="section">
-          <div class="section-heading">
-            <h2>11 个 workflow 的 committed 证据</h2>
-            <p class="section-caption">全部经 <code>nyxid proxy request aevatar</code></p>
-          </div>
-          <div class="evidence-note"><p><strong>判定口径：</strong>preview、SSE 文本或 <code>202 Accepted</code> 均不算通过；必须同时有 run ID、业务断言和 committed read model 终态。生产标识已脱敏。</p></div>
+          <div class="section-heading"><h2>15 个直接 workflow 的 committed 证据</h2><p class="caption">13 个通过，2 个平台阻塞</p></div>
+          <div class="note"><p><strong>判定口径：</strong>通过必须有 run identity、业务断言和 committed terminal read model。平台阻塞也必须有 committed failed 和稳定错误码。</p></div>
           <div class="controls">
-            <div class="field"><label for="evidence-search">案例或断言</label><input id="evidence-search" type="search" placeholder="例如：审批、Base、CODEX_EXEC_READY"></div>
-            <div class="field"><label for="effect-filter">副作用</label><select id="effect-filter"><option value="all">全部</option><option value="none">无副作用</option><option value="write">已执行写操作</option></select></div>
-            <output class="result-count" id="evidence-count" aria-live="polite">显示 11 个案例</output>
+            <div class="field"><label for="runtime-search">案例或证据</label><input id="runtime-search" type="search" placeholder="例如：审批、Base、NYXID"></div>
+            <div class="field"><label for="runtime-filter">运行结果</label><select id="runtime-filter"><option value="all">全部结果</option><option value="passed">通过</option><option value="blocked">平台阻塞</option></select></div>
+            <output class="result-count" id="runtime-count" aria-live="polite">显示 15 个案例</output>
           </div>
           <div class="table-wrap">
-            <table aria-label="真实运行证据">
-              <thead><tr><th>案例</th><th>工作流</th><th class="number">步骤</th><th class="number">State version</th><th>机器断言</th><th>副作用</th></tr></thead>
-              <tbody id="evidence-rows">
-                <tr data-effect="none"><td class="case-id">01</td><td class="case-name"><code>release_readiness_review</code></td><td class="number">13</td><td class="number">80</td><td class="assertion"><code>ready_for_review=true</code></td><td>无</td></tr>
-                <tr data-effect="none"><td class="case-id">02</td><td class="case-name"><code>candidate_document_compliance_preview</code></td><td class="number">3</td><td class="number">35</td><td class="assertion">五类材料字段均为 true</td><td>无</td></tr>
-                <tr data-effect="none"><td class="case-id">03</td><td class="case-name"><code>email_access_approval_audit</code></td><td class="number">5</td><td class="number">42</td><td class="assertion"><code>instance_reachable=true</code></td><td>无</td></tr>
-                <tr data-effect="none"><td class="case-id">04</td><td class="case-name"><code>saas_license_utilization_review</code></td><td class="number">10</td><td class="number">67</td><td class="assertion">185 席位、140 活跃、USD 6670、1 个缩减候选</td><td>无</td></tr>
-                <tr data-effect="write"><td class="case-id">05</td><td class="case-name"><code>asset_inventory_attestation</code></td><td class="number">7</td><td class="number">46</td><td class="assertion"><code>mutation_executed=true</code>、<code>accepted=true</code></td><td>新增一条验收 Base 记录</td></tr>
-                <tr data-effect="write"><td class="case-id">06</td><td class="case-name"><code>project_shared_mailbox_approval</code></td><td class="number">8</td><td class="number">58</td><td class="assertion">审批创建并回读，状态 <code>PENDING</code></td><td>创建一条验收审批</td></tr>
-                <tr data-effect="write"><td class="case-id">07</td><td class="case-name"><code>quarterly_access_review_reminder</code></td><td class="number">7</td><td class="number">46</td><td class="assertion"><code>message_sent=true</code></td><td>发送一条验收私信</td></tr>
-                <tr data-effect="write"><td class="case-id">08</td><td class="case-name"><code>saas_license_optimization_digest</code></td><td class="number">19</td><td class="number">112</td><td class="assertion">六源汇总正确且 <code>message_sent=true</code></td><td>发送一条验收卡片</td></tr>
-                <tr data-effect="write"><td class="case-id">09</td><td class="case-name"><code>contractor_access_package_approval</code></td><td class="number">25</td><td class="number">157</td><td class="assertion">创建/回读通过；复跑 <code>idempotent_skip=true</code></td><td>诊断期间创建两条同键 PENDING 验收审批</td></tr>
-                <tr data-effect="write"><td class="case-id">10</td><td class="case-name"><code>monthly_access_certification</code></td><td class="number">23</td><td class="number">115</td><td class="assertion">月末提交、跳过、提醒预览与提醒发送分支通过</td><td>创建一条验收审批并发送两条验收私信</td></tr>
-                <tr data-effect="none"><td class="case-id">11</td><td class="case-name"><code>complex_codex_exec_validation</code></td><td class="number">32</td><td class="number">178</td><td class="assertion"><code>CODEX_EXEC_READY</code>、五项 gate、<code>parallel_check_count=5</code></td><td>无</td></tr>
+            <table aria-label="直接运行证据">
+              <thead><tr><th>案例</th><th>工作流</th><th class="number">步骤</th><th class="number">State version</th><th>机器证据</th><th>结果</th></tr></thead>
+              <tbody id="runtime-rows">
+                <tr data-result="passed" data-effect="none"><td class="case-id">01</td><td><code>release_readiness_review</code></td><td class="number">13</td><td class="number">80</td><td class="assertion"><code>ready_for_review=true</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">02</td><td><code>candidate_document_compliance_preview</code></td><td class="number">3</td><td class="number">35</td><td class="assertion">五类材料字段均为 true</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">03</td><td><code>email_access_approval_audit</code></td><td class="number">5</td><td class="number">42</td><td class="assertion"><code>instance_reachable=true</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">04</td><td><code>saas_license_utilization_review</code></td><td class="number">10</td><td class="number">67</td><td class="assertion">185 席位、140 活跃、USD 6670</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">05</td><td><code>asset_inventory_attestation</code></td><td class="number">7</td><td class="number">46</td><td class="assertion"><code>mutation_executed=true</code>、<code>accepted=true</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">06</td><td><code>project_shared_mailbox_approval</code></td><td class="number">8</td><td class="number">58</td><td class="assertion">审批创建并回读为 <code>PENDING</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">07</td><td><code>quarterly_access_review_reminder</code></td><td class="number">7</td><td class="number">46</td><td class="assertion"><code>message_sent=true</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">08</td><td><code>saas_license_optimization_digest</code></td><td class="number">19</td><td class="number">112</td><td class="assertion">六源汇总与 card receipt</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">09</td><td><code>contractor_access_package_approval</code></td><td class="number">25</td><td class="number">157</td><td class="assertion">创建/回读；复跑 <code>idempotent_skip=true</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">10</td><td><code>monthly_access_certification</code></td><td class="number">23</td><td class="number">115</td><td class="assertion">月末、跳过、提醒预览与发送分支</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">11</td><td><code>complex_codex_exec_validation</code></td><td class="number">32</td><td class="number">178</td><td class="assertion"><code>CODEX_EXEC_READY</code>、五项 gate</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="blocked" data-effect="none"><td class="case-id">12</td><td><code>safe_code_execute_validation</code></td><td class="number">4</td><td class="number">12</td><td class="assertion"><code>NYXID_PROXY_UNAUTHORIZED</code></td><td><span class="status status-blocked">平台阻塞</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">13</td><td><code>invoice_ocr_policy_review</code></td><td class="number">10</td><td class="number">82</td><td class="assertion">PDF、SGD、金额、供应商与去重命中</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="blocked" data-effect="none"><td class="case-id">14</td><td><code>lark_contact_batch_resolution</code></td><td class="number">3</td><td class="number">-</td><td class="assertion"><code>NYXID_PROXY_HTTP_400</code> / Lark <code>99991672</code></td><td><span class="status status-blocked">平台阻塞</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">15</td><td><code>weekly_budget_variance_digest</code></td><td class="number">11</td><td class="number">73</td><td class="assertion">六路 Base、周/月差异、over=1、watch=1</td><td><span class="status status-passed">通过</span></td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <section class="view" id="view-gaps" role="tabpanel" aria-labelledby="tab-gaps" hidden>
+      <section class="view" id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
         <div class="section">
-          <div class="section-heading"><h2>尚未覆盖的能力</h2><p class="section-caption">按对源目录功能等价的优先级排序</p></div>
+          <div class="section-heading"><h2>自然语言调用结果</h2><p class="caption">入口：<code>nyxid proxy request aevatar /api/chat</code></p></div>
+          <div class="note"><p><strong>核心结论：</strong>Assistant 回合完成和 workflow 成功是两个状态。本轮 3/5 chat completed，但 0/5 workflow validated。</p></div>
+          <div class="table-wrap">
+            <table aria-label="自然语言调用证据">
+              <thead><tr><th>案例</th><th>Chat</th><th>Ornn / skill</th><th>Workflow</th><th>严格判定</th><th>证据</th></tr></thead>
+              <tbody>
+                <tr data-chat-case="01"><td class="case-id">01</td><td>completed</td><td>搜索、加载成功</td><td>启动并读 artifact 两次</td><td><span class="status status-info">unproven</span></td><td>SSE 工具结果无 artifact payload</td></tr>
+                <tr data-chat-case="12"><td class="case-id">12</td><td>completed</td><td>搜索、加载成功</td><td>启动；短 ID 查询未物化</td><td><span class="status status-blocked">typed-failure</span></td><td>完整 actor committed <code>NYXID_PROXY_UNAUTHORIZED</code></td></tr>
+                <tr data-chat-case="13"><td class="case-id">13</td><td>completed</td><td>未调用</td><td>未启动</td><td><span class="status status-missing">not-started</span></td><td>模型直接识图作答</td></tr>
+                <tr data-chat-case="14"><td class="case-id">14</td><td>failed</td><td>搜索后 mount 失败</td><td>未启动</td><td><span class="status status-blocked">mount-blocked</span></td><td><code>USE_SKILL_MOUNT_FAILED</code></td></tr>
+                <tr data-chat-case="15"><td class="case-id">15</td><td>failed</td><td>搜索后 mount 失败</td><td>未启动；inline fallback 启动前失败</td><td><span class="status status-blocked">mount-blocked</span></td><td><code>USE_SKILL_MOUNT_FAILED</code>；inline：<code>CAPABILITY_ADMISSION_REBIND_REQUIRED</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-heading"><h2>/api/chat 与 Lark Bot 的边界</h2><p class="caption">共享核心能力，不共享完整 transport</p></div>
+          <div class="surface-grid">
+            <article class="surface"><h3>/api/chat 已覆盖</h3><ul><li>NyxID 用户身份和 scope</li><li>Assistant / AgentRun 与工具目录</li><li>Ornn 搜索和 skill 加载</li><li>workflow 启动与 artifact 查询工具</li><li>SSE 直接返回调用方</li></ul></article>
+            <article class="surface"><h3>Lark Bot 还需覆盖</h3><ul><li>Lark webhook 验签与事件转换</li><li>NyxID channel relay 和 Bot 注册</li><li>conversation 到 agent 的映射</li><li>发送者身份解析</li><li>reply relay 和 Lark 回传</li></ul></article>
+          </div>
+        </div>
+
+        <div class="boundary"><h2>不能外推</h2><p><code>/api/chat</code> 成功不能证明 Lark Bot transport 成功；Lark 中出现自然语言回复也不能证明 workflow committed 成功。</p></div>
+      </section>
+
+      <section class="view" id="view-blockers" role="tabpanel" aria-labelledby="tab-blockers" hidden>
+        <div class="section">
+          <div class="section-heading"><h2>当前阻塞项</h2><p class="caption">全部来自生产 typed/committed/log evidence</p></div>
           <div class="gap-list">
-            <div class="gap-row"><h3>Ornn skill 与 Lark Bot 启动</h3><div class="priority"><span class="status status-missing">P0 未覆盖</span></div><p>尚未在新仓库完成 skill 打包、发布、搜索、加载，以及 Bot 通过自然语言选中并启动 workflow 的 typed 全链路。</p></div>
-            <div class="gap-row"><h3>Durable schedule</h3><div class="priority"><span class="status status-missing">P0 阻塞</span></div><p>08 和 10 的业务分支已通过，但 production durable preview 返回 <code>DURABLE_AUTHORIZATION_UNAVAILABLE</code> 或 <code>NYXID_EXPLICIT_REQUEST_INTERACTIVE_REQUIRED</code>。</p></div>
-            <div class="gap-row"><h3>Webhook HTTP 契约</h3><div class="priority"><span class="status status-missing">P1 未覆盖</span></div><p>交互式 workflow invoke 替代了触发入口，但没有证明 n8n webhook listener 和 <code>respondToWebhook</code> 的同步 HTTP 行为。</p></div>
-            <div class="gap-row"><h3>图片与 PDF OCR</h3><div class="priority"><span class="status status-partial">P1 部分</span></div><p>附件、提取和 LLM 已通过，公开 fixture 仍只有合成文本，没有覆盖图片/PDF 媒体输入质量与 OCR。</p></div>
-            <div class="gap-row"><h3>发票专属财务规则</h3><div class="priority"><span class="status status-partial">P1 部分</span></div><p>当前验证材料完整性和访问审批，不覆盖供应商归一化、金额/币种、发票号与财务重复提交规则。</p></div>
-            <div class="gap-row"><h3>Lark contact batch lookup</h3><div class="priority"><span class="status status-substitute">P2 替换</span></div><p>绑定 Bot 缺少 <code>contact:user.id:readonly</code>，案例 09 使用 Base 身份目录。业务身份解析可用，但 contact API 本身未通过。</p></div>
-            <div class="gap-row"><h3>通用 code_execute</h3><div class="priority"><span class="status status-info">P2 有意移除</span></div><p>production 返回 <code>NYXID_PROXY_UNAUTHORIZED</code>。01-10 已改为原生确定性节点；这不等于通用代码执行能力得到验证。</p></div>
+            <div class="gap-row"><h3>通用 code_execute</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p><code>chrono-sandbox /execute</code> 要求 Bearer，与 catalog <code>auth_method=none</code> 不一致；案例 12 committed failed。</p></div>
+            <div class="gap-row"><h3>Lark contact 权限</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>案例 14 返回 Lark <code>99991672</code>，绑定 Bot 缺少 <code>contact:user.id:readonly</code>。</p></div>
+            <div class="gap-row"><h3>Durable schedule</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>案例 15 schedule POST 返回 HTTP 502，未创建 typed schedule receipt。</p></div>
+            <div class="gap-row"><h3>Skill workflow mount</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>14、15 的自然语言链在 <code>use_skill</code> 返回 <code>USE_SKILL_MOUNT_FAILED</code>。</p></div>
+            <div class="gap-row"><h3>Capability admission</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>15 inline fallback 已到 <code>aevatar_start_workflow</code>，随后返回 <code>CAPABILITY_ADMISSION_REBIND_REQUIRED</code>。</p></div>
+            <div class="gap-row"><h3>Artifact identity</h3><div><span class="status status-partial">P1 部分</span></div><p>Assistant 获得短 run ID，但 artifact 工具不能稳定解析到完整 workflow actor；需靠日志和 Observatory 关联。</p></div>
+            <div class="gap-row"><h3>模型选路</h3><div><span class="status status-partial">P1 部分</span></div><p>案例 13 明确要求 skill 和 workflow，模型仍直接识图回答，说明 prompt 不是强制路由契约。</p></div>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-heading"><h2>本轮真实运行修复</h2><p class="section-caption">均由失败证据驱动，而非只修静态定义</p></div>
+          <div class="section-heading"><h2>本轮新增与修复</h2><p class="caption">定义、工具、证据与报告同步更新</p></div>
           <div class="repair-grid">
-            <div class="repair-item"><h3>Scriban 与运行时兼容</h3><p>修复多余 <code>end</code>、空 Base 省略 <code>items</code>、受限 Scriban 不支持 <code>string()</code> 等问题。</p></div>
-            <div class="repair-item"><h3>工具 receipt 路径</h3><p>05、07 改为读取当前 typed receipt，不再提取迁移前的 <code>output.stdout</code>。</p></div>
-            <div class="repair-item"><h3>SSE 审批恢复</h3><p>生产验证器改为逐行消费 SSE，pending receipt 到达后立即 resume，并限制诊断缓冲为 64 KiB。</p></div>
-            <div class="repair-item"><h3>审批历史与幂等</h3><p>09 不再假定 <code>page_size=1</code> 是最新记录，修正动态时间窗，并按多条 foreach 输出逐行判断。</p></div>
-            <div class="repair-item"><h3>多源输出归一化</h3><p>08-10 显式处理各工具响应和 foreach 串联格式，避免把多条 JSON 当成一个对象。</p></div>
-            <div class="repair-item"><h3>分支复测入口</h3><p>新增单案例 <code>--prompt</code>，同一定义已复测 09 幂等和 10 的月末、跳过、提醒分支。</p></div>
+            <div class="repair-item"><h3>安全 code_execute 探针</h3><p>新增固定、无副作用的结算案例和精确 receipt 断言。</p></div>
+            <div class="repair-item"><h3>合成发票媒体</h3><p>新增 PDF/PNG fixture、OCR 输入和发票财务规则。</p></div>
+            <div class="repair-item"><h3>Contact 精确调用</h3><p>新增 batch_get_id 契约与联系人标识脱敏输出。</p></div>
+            <div class="repair-item"><h3>预算周报/月报</h3><p>新增六路 Base、差异公式和 weekly/monthly schedule 示例。</p></div>
+            <div class="repair-item"><h3>15 个 Ornn skills</h3><p>完成合法 package、服务端校验、public 发布和名称回读。</p></div>
+            <div class="repair-item"><h3>自然语言验证器</h3><p>新增 ID 脱敏，并拆分 chat completed 与 workflow validated。</p></div>
+            <div class="repair-item"><h3>Committed 失败追踪</h3><p>短 run ID 通过生产日志关联完整 actor，再由 Observatory 读取终态。</p></div>
+            <div class="repair-item"><h3>非 n8n 覆盖口径</h3><p>源目录改按 41 个定义、7 个版本族统计，移除两个 n8n JSON。</p></div>
           </div>
         </div>
 
-        <div class="boundary">
-          <h2>#3182 证据边界</h2>
-          <p><code>#3182</code> 关注的是工具失败后 Bot 仍可能用自然语言误报成功，不是 <code>code_execute</code> 授权错误本身。11 个直接 workflow committed 成功，不能外推为 Ornn + Lark Bot 自然语言链路已经通过。</p>
-        </div>
+        <div class="boundary"><h2>#3182 证据边界</h2><p>直接 runtime 13 个成功和 Ornn 15 个发布成功，都不能外推成自然语言链成功。01、12 已证明 <code>assets/*.yaml</code> 能到启动；当前剩余问题集中在复杂 capability mount/admission、短 run identity 和模型选路。</p></div>
       </section>
     </main>
 
     <footer>
-      <div class="footer-inner">
-        <span>报告日期：2026-08-04 · 生产标识与业务载荷已脱敏</span>
-        <span class="footer-links"><a href="./2026-08-04-workflow-coverage-report.md">文字报告</a><a href="../validation/production-validation-2026-08-04.json">机器摘要</a><a href="../README.md">仓库说明</a></span>
-      </div>
+      <div class="container footer-inner"><span>报告日期：2026-08-04 · 生产标识和业务 payload 已脱敏</span><span class="footer-links"><a href="./2026-08-04-workflow-coverage-report.md">文字报告</a><a href="../validation/production-validation-2026-08-04.json">机器摘要</a><a href="../README.md">仓库说明</a></span></div>
     </footer>
   </div>
 
@@ -539,10 +407,18 @@
       const tabs = [...root.querySelectorAll('[role="tab"]')];
       const views = [...root.querySelectorAll('[role="tabpanel"]')];
 
-      tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-          tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
-          views.forEach((view) => { view.hidden = view.id !== tab.getAttribute("aria-controls"); });
+      const selectTab = (tab) => {
+        tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+        views.forEach((view) => { view.hidden = view.id !== tab.getAttribute("aria-controls"); });
+        tab.focus({ preventScroll: true });
+      };
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => selectTab(tab));
+        tab.addEventListener("keydown", (event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          const direction = event.key === "ArrowRight" ? 1 : -1;
+          selectTab(tabs[(index + direction + tabs.length) % tabs.length]);
         });
       });
 
@@ -550,7 +426,6 @@
       const statusFilter = root.querySelector("#status-filter");
       const capabilityRows = [...root.querySelectorAll("#capability-rows tr")];
       const capabilityCount = root.querySelector("#capability-count");
-
       const filterCapabilities = () => {
         let visible = 0;
         capabilityRows.forEach((row) => {
@@ -564,24 +439,23 @@
       familyFilter.addEventListener("change", filterCapabilities);
       statusFilter.addEventListener("change", filterCapabilities);
 
-      const evidenceSearch = root.querySelector("#evidence-search");
-      const effectFilter = root.querySelector("#effect-filter");
-      const evidenceRows = [...root.querySelectorAll("#evidence-rows tr")];
-      const evidenceCount = root.querySelector("#evidence-count");
-
-      const filterEvidence = () => {
-        const query = evidenceSearch.value.trim().toLocaleLowerCase("zh-CN");
+      const runtimeSearch = root.querySelector("#runtime-search");
+      const runtimeFilter = root.querySelector("#runtime-filter");
+      const runtimeRows = [...root.querySelectorAll("#runtime-rows tr")];
+      const runtimeCount = root.querySelector("#runtime-count");
+      const filterRuntime = () => {
+        const query = runtimeSearch.value.trim().toLocaleLowerCase("zh-CN");
         let visible = 0;
-        evidenceRows.forEach((row) => {
+        runtimeRows.forEach((row) => {
           const matchesText = !query || row.textContent.toLocaleLowerCase("zh-CN").includes(query);
-          const matchesEffect = effectFilter.value === "all" || row.dataset.effect === effectFilter.value;
-          row.hidden = !(matchesText && matchesEffect);
+          const matchesResult = runtimeFilter.value === "all" || row.dataset.result === runtimeFilter.value;
+          row.hidden = !(matchesText && matchesResult);
           if (!row.hidden) visible += 1;
         });
-        evidenceCount.textContent = `显示 ${visible} 个案例`;
+        runtimeCount.textContent = `显示 ${visible} 个案例`;
       };
-      evidenceSearch.addEventListener("input", filterEvidence);
-      effectFilter.addEventListener("change", filterEvidence);
+      runtimeSearch.addEventListener("input", filterRuntime);
+      runtimeFilter.addEventListener("change", filterRuntime);
     })();
   </script>
 </body>

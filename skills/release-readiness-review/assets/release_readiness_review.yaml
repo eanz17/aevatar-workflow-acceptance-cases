@@ -1,0 +1,104 @@
+name: release_readiness_review
+description: 无副作用的发布就绪审查，覆盖确定性工作流基础能力。
+roles:
+  - id: verifier
+    name: 发布验证员
+steps:
+  - id: seed_review_envelope
+    type: assign
+    parameters:
+      target: review_envelope
+      value: '{"output":{"stdout":"{\"route\":\"REVIEW\",\"controls\":[\"backup\",\"monitoring\",\"rollback\"]}"}}'
+    next: parse_review_envelope
+
+  - id: parse_review_envelope
+    type: transform
+    parameters:
+      op: json_parse
+      path: output.stdout
+    next: extract_route
+
+  - id: extract_route
+    type: transform
+    parameters:
+      op: json_extract
+      path: route
+    next: route_review
+
+  - id: route_review
+    type: switch
+    parameters:
+      on: "${steps.extract_route.output}"
+      branch.REVIEW: seed_controls
+      branch.DEPLOY: blocked_deploy
+      branch._default: invalid_route
+    branches:
+      REVIEW: seed_controls
+      DEPLOY: blocked_deploy
+      _default: invalid_route
+
+  - id: seed_controls
+    type: assign
+    parameters:
+      target: controls
+      value: '["backup","monitoring","rollback"]'
+    next: normalize_controls
+
+  - id: normalize_controls
+    type: foreach
+    parameters:
+      sub_step_type: transform
+      sub_param_op: uppercase
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "3"
+    next: count_results
+
+  - id: count_results
+    type: transform
+    parameters:
+      op: count
+    next: verify_results
+
+  - id: verify_results
+    type: switch
+    parameters:
+      on: "${steps.count_results.output}"
+      branch.5: ready
+      branch._default: invalid_result_count
+    branches:
+      "5": ready
+      _default: invalid_result_count
+
+  - id: ready
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"release_readiness","ready_for_review":true,"controls":["BACKUP","MONITORING","ROLLBACK"],"side_effects":false}'
+    next: done
+
+  - id: blocked_deploy
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"release_readiness","ready_for_review":false,"reason":"direct_deploy_not_allowed","side_effects":false}'
+    next: done
+
+  - id: invalid_route
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"release_readiness","ready_for_review":false,"reason":"invalid_route","side_effects":false}'
+    next: done
+
+  - id: invalid_result_count
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"release_readiness","ready_for_review":false,"reason":"control_count_mismatch","side_effects":false}'
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

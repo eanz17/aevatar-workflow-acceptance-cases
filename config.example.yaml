@@ -13,3 +13,5 @@ replacements:
   __LARK_APPROVAL_LINK_WIDGET_ID__: 替换为-input-widget-id
   __LARK_APPROVAL_USER_ID__: 替换为-user-id
   __LARK_MESSAGE_RECIPIENT_ID__: 替换为-user-id
+  __LARK_CONTACT_EMAIL__: acceptance-user@example.com
+  __STUDIO_TEAM_ID__: 替换为-team-id

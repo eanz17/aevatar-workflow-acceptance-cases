@@ -1,0 +1,14 @@
+skill_name: weekly-budget-variance-digest
+endpoint_template: /api/workflow/skills/{skill_guid}/schedule
+team_id: __STUDIO_TEAM_ID__
+schedules:
+  - purpose: 每周一生成预算差异摘要
+    prompt: 生成本周预算差异摘要，只读取数据，不发送消息。
+    cron_expression: "0 9 * * 1"
+    timezone: Asia/Singapore
+    display_name: 每周预算差异摘要
+  - purpose: 每月一日生成上月预算差异摘要
+    prompt: 生成上月预算差异摘要，只读取数据，不发送消息。
+    cron_expression: "0 9 1 * *"
+    timezone: Asia/Singapore
+    display_name: 每月预算差异摘要
