@@ -22,7 +22,9 @@ EXPECTED = {
   "12-safe-code-execute-validation.workflow.yaml" => [4, 0, 0, 0],
   "13-invoice-ocr-policy-review.workflow.yaml" => [10, 2, 2, 0],
   "14-lark-contact-batch-resolution.workflow.yaml" => [3, 1, 0, 1],
-  "15-weekly-budget-variance-digest.workflow.yaml" => [11, 6, 6, 0]
+  "15-weekly-budget-variance-digest.workflow.yaml" => [11, 6, 6, 0],
+  "16-nyxid-read-receipt-probe.workflow.yaml" => [4, 1, 1, 0],
+  "17-lark-post-search-approval-probe.workflow.yaml" => [4, 1, 0, 1]
 }.freeze
 
 CODEX_EXEC_WORKFLOW = "11-complex-codex-exec-validation.workflow.yaml"
@@ -41,6 +43,8 @@ CODE_EXECUTE_ARGUMENTS = {
 INVOICE_WORKFLOW = "13-invoice-ocr-policy-review.workflow.yaml"
 CONTACT_WORKFLOW = "14-lark-contact-batch-resolution.workflow.yaml"
 BUDGET_WORKFLOW = "15-weekly-budget-variance-digest.workflow.yaml"
+NYXID_RECEIPT_WORKFLOW = "16-nyxid-read-receipt-probe.workflow.yaml"
+POST_APPROVAL_WORKFLOW = "17-lark-post-search-approval-probe.workflow.yaml"
 
 ALLOWED_PLACEHOLDERS = Set.new(
   YAML.safe_load(File.read(File.join(ROOT, "config.example.yaml")), aliases: false)
@@ -169,6 +173,53 @@ files.each do |file|
            text.include?("over_count == 1") &&
            text.include?("watch_count == 1")
       fail_validation("#{name}：预算周报/月报差异契约不完整")
+    end
+  end
+  if name == NYXID_RECEIPT_WORKFLOW
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    probe = steps_by_id.fetch("read_base_records")
+    capability = probe.dig("capability", "nyxid_request")
+    arguments = JSON.parse(probe.dig("parameters", "arguments"))
+    contract_ok = capability == {
+      "user_service_id" => "__LARK_USER_SERVICE_ID__",
+      "method" => "GET",
+      "path_template" => "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+      "query_parameters" => ["page_size"],
+      "header_parameters" => [],
+      "body_mode" => "none",
+      "body_required" => false,
+      "response_mode" => "text"
+    } && arguments.dig("query", "page_size") == "1"
+    fail_validation("#{name}：NyxID 只读 receipt 探针契约漂移") unless contract_ok
+
+    receipt_template = steps_by_id.fetch("verify_receipt").fetch("template")
+    unless receipt_template.include?("provider_response_verified == true") &&
+           receipt_template.include?("side_effects == false")
+      fail_validation("#{name}：缺少 provider receipt 与无副作用断言")
+    end
+  end
+  if name == POST_APPROVAL_WORKFLOW
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    probe = steps_by_id.fetch("search_base_records")
+    capability = probe.dig("capability", "nyxid_request")
+    arguments = JSON.parse(probe.dig("parameters", "arguments"))
+    contract_ok = capability == {
+      "user_service_id" => "__LARK_USER_SERVICE_ID__",
+      "method" => "POST",
+      "path_template" => "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/search",
+      "query_parameters" => ["page_size"],
+      "header_parameters" => [],
+      "body_mode" => "json",
+      "body_required" => true,
+      "response_mode" => "text"
+    } && arguments.dig("query", "page_size") == "3" &&
+         arguments["body"] == { "automatic_fields" => false }
+    fail_validation("#{name}：Base POST search approval 探针契约漂移") unless contract_ok
+
+    resume_template = steps_by_id.fetch("verify_approval_resume").fetch("template")
+    unless resume_template.include?("approval_resumed == true") &&
+           resume_template.include?("side_effects == false")
+      fail_validation("#{name}：缺少 approval resume 与无副作用断言")
     end
   end
   expected_codex_count = name == CODEX_EXEC_WORKFLOW ? 1 : 0

@@ -88,6 +88,22 @@ CASES = {
   "15" => {
     file: "15-weekly-budget-variance-digest.workflow.yaml",
     prompt: "生成合成预算的周度和月度差异摘要；不要发送消息。"
+  },
+  "16" => {
+    file: "16-nyxid-read-receipt-probe.workflow.yaml",
+    prompt: "运行单次只读 NyxID receipt 探针，不执行任何写入。",
+    preview_contract: { method: "GET", effectiveRisk: "read_only", approvalRequired: false }
+  },
+  "17" => {
+    file: "17-lark-post-search-approval-probe.workflow.yaml",
+    prompt: "运行语义只读的 Base POST 搜索批准恢复探针，不修改任何记录。",
+    approval_required: true,
+    preview_contract: {
+      method: "POST",
+      effectiveRisk: "write",
+      approvalRequired: true,
+      allowedExecutionModes: ["interactive"]
+    }
   }
 }.freeze
 
@@ -230,6 +246,14 @@ class ProductionValidator
     )
     display_name = "公开验收案例 #{case_id}-#{Digest::SHA256.hexdigest(yaml)[0, 10]}"
     preview = preview_workflow(yaml, display_name)
+    if config[:preview_contract]
+      item = preview.fetch("items").first
+      expected = config.fetch(:preview_contract)
+      actual = expected.keys.to_h { |key| [key, item&.fetch(key.to_s, nil)] }
+      unless preview.fetch("items").length == 1 && actual == expected
+        raise ValidationError, "定向 preview 契约不匹配：预期 #{expected.inspect}，实际 #{actual.inspect}"
+      end
+    end
     base_result = {
       case: case_id,
       workflow: config.fetch(:file),
@@ -240,7 +264,8 @@ class ProductionValidator
           method: item["method"],
           pathTemplate: item["pathTemplate"],
           effectiveRisk: item["effectiveRisk"],
-          approvalRequired: item["approvalRequired"]
+          approvalRequired: item["approvalRequired"],
+          allowedExecutionModes: item["allowedExecutionModes"]
         }
       end
     }
@@ -627,7 +652,7 @@ OptionParser.new do |parser|
   parser.on("--scope-id ID", "Aevatar scope ID，也可使用 AEVATAR_SCOPE_ID") { |value| options[:scope_id] = value }
   parser.on("--team-id ID", "用于创建临时验收成员的 Studio team ID，也可使用 AEVATAR_TEAM_ID") { |value| options[:team_id] = value }
   parser.on("--lark-user-service-id ID", "固定 Lark Bot UserService，也可使用 LARK_USER_SERVICE_ID") { |value| options[:lark_service_id] = value }
-  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-15") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
+  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-17") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
   parser.on("--run", "在 preview 后执行工作流；默认只 preview") { options[:run] = true }
   parser.on("--allow-side-effects LIST", "允许执行副作用的案例编号，逗号分隔") do |value|
     options[:side_effect_cases] = value.split(",").map { |item| item.strip.rjust(2, "0") }

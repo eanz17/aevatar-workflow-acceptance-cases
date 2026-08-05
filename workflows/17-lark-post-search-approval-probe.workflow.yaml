@@ -1,0 +1,44 @@
+name: lark_post_search_approval_probe
+description: 使用语义只读的 Base records/search POST 验证 typed tool approval pending、resume 和无副作用终态。
+roles:
+  - id: verifier
+    name: 批准恢复验证员
+steps:
+  - id: search_base_records
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/search
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_RUN_EVIDENCE__"},"query":{"page_size":"3"},"body":{"automatic_fields":false}}'
+    next: summarize_search
+
+  - id: summarize_search
+    type: transform
+    op: template
+    template: >-
+      {{~ items = get(data.data, 'items', []); resumed = data.code == 0 ~}}
+      {{ json({ case: 'lark_post_search_approval_probe', success: resumed, approval_resumed: resumed, response_item_count: items.size, side_effects: false }) }}
+    next: verify_approval_resume
+
+  - id: verify_approval_resume
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.success == true && data.approval_resumed == true && data.side_effects == false ~}}
+      {{ json({ case: 'lark_post_search_approval_probe', success: success, approval_resumed: data.approval_resumed, response_item_count: data.response_item_count, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

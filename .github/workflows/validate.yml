@@ -23,7 +23,7 @@ jobs:
         run: >-
           ruby -ryaml -e 'Dir["build/workflows/*.yaml"].sort.each {
             |file| YAML.safe_load(File.read(file), aliases: false)
-          }; puts "通过 已生成工作流=15"'
+          }; puts "通过 已生成工作流=#{Dir["build/workflows/*.yaml"].length}"'
       - name: 验证 Ornn skills
         run: ruby scripts/validate_skills.rb
       - name: 验证生产与自然语言脚本语法

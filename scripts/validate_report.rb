@@ -4,8 +4,9 @@ require "json"
 require "yaml"
 
 ROOT = File.expand_path("..", __dir__)
-EXPECTED_CASES = (1..15).map { |number| format("%02d", number) }.freeze
+EXPECTED_CASES = (1..17).map { |number| format("%02d", number) }.freeze
 EXPECTED_BLOCKED = %w[12 14].freeze
+EXPECTED_UNVERIFIED = %w[16 17].freeze
 REPORT_DATE = "2026-08-05"
 
 def fail_validation(message)
@@ -17,17 +18,23 @@ summary_path = File.join(ROOT, "validation", "production-validation-#{REPORT_DAT
 summary = JSON.parse(File.read(summary_path))
 runtime = summary.fetch("runtime")
 
-fail_validation("静态验证摘要不是 15/15") unless summary.dig("staticValidation", "passed") == 15
-fail_validation("production preview 摘要不是 15/15") unless summary.dig("productionPreview", "passed") == 15
-fail_validation("production runtime 案例数不是 15") unless runtime.length == 15
+fail_validation("静态验证摘要不是 17/17") unless summary.dig("staticValidation", "passed") == 17
+fail_validation("production preview 已验证数不是 15/17") unless summary.dig("productionPreview", "passed") == 15 &&
+  summary.dig("productionPreview", "unverified") == 2
+fail_validation("production runtime 案例数不是 17") unless runtime.length == 17
 fail_validation("production runtime 案例编号不完整") unless runtime.map { |item| item.fetch("case") } == EXPECTED_CASES
 fail_validation("直接 runtime 通过数不是 13") unless summary.dig("directRuntimeSummary", "passed") == 13
 fail_validation("直接 runtime 平台阻塞数不是 2") unless summary.dig("directRuntimeSummary", "platformBlocked") == 2
+fail_validation("直接 runtime 待验证数不是 2") unless summary.dig("directRuntimeSummary", "unverified") == 2
 
 runtime.each do |item|
   case_id = item.fetch("case")
   fail_validation("案例 #{case_id} 缺少机器断言") if item["assertion"].to_s.strip.empty?
-  if EXPECTED_BLOCKED.include?(case_id)
+  if EXPECTED_UNVERIFIED.include?(case_id)
+    fail_validation("案例 #{case_id} 未标记待验证") unless item["result"] == "待验证"
+    fail_validation("案例 #{case_id} 不应伪造终态") unless item["terminalStatus"].nil?
+    fail_validation("案例 #{case_id} 不应伪造 stateVersion") unless item["stateVersion"].nil?
+  elsif EXPECTED_BLOCKED.include?(case_id)
     fail_validation("案例 #{case_id} 未标记平台阻塞") unless item["result"] == "平台阻塞"
     fail_validation("案例 #{case_id} 不是 committed failed") unless item["terminalStatus"] == "failed"
     fail_validation("案例 #{case_id} 缺少 blockerCode") if item["blockerCode"].to_s.strip.empty?
@@ -40,6 +47,7 @@ runtime.each do |item|
 end
 
 ornn = summary.fetch("ornnPublication")
+fail_validation("本地 Ornn skill 数不是 17") unless ornn.fetch("localSkillCount") == 17
 %w[skillCount serverFormatValidated publishedPublic nameReadbackPassed].each do |field|
   fail_validation("Ornn #{field} 不是 15") unless ornn.fetch(field) == 15
 end
@@ -69,7 +77,7 @@ EXPECTED_CASES.each do |case_id|
 end
 
 html = File.read(File.join(ROOT, "report", "index.html"))
-html_case_ids = html.scan(/<tr data-result="(?:passed|blocked)"[^>]*><td class="case-id">(\d{2})<\/td>/).flatten
+html_case_ids = html.scan(/<tr data-result="(?:passed|blocked|unverified)"[^>]*><td class="case-id">(\d{2})<\/td>/).flatten
 fail_validation("分析页案例编号不完整") unless html_case_ids == EXPECTED_CASES
 
 assistant.fetch("results").each do |item|
@@ -87,11 +95,11 @@ end
 
 expected_html_counts = {
   "源版本族" => [/<tr data-source-family=/, 7],
-  "能力矩阵" => [/<tr data-family=/, 16],
-  "直接证据" => [/<tr data-result=/, 15],
+  "能力矩阵" => [/<tr data-family=/, 18],
+  "直接证据" => [/<tr data-result=/, 17],
   "自然语言证据" => [/<tr data-chat-case=/, 5],
-  "阻塞项" => [/<div class="gap-row">/, 4],
-  "修复记录" => [/<div class="repair-item">/, 8]
+  "阻塞项" => [/<div class="gap-row">/, 6],
+  "修复记录" => [/<div class="repair-item">/, 10]
 }
 expected_html_counts.each do |label, (pattern, expected)|
   actual = html.scan(pattern).length
@@ -101,6 +109,8 @@ end
 report = File.read(File.join(ROOT, "report", "#{REPORT_DATE}-workflow-coverage-report.md"))
 fail_validation("文字报告缺少 41 个非 n8n 定义口径") unless report.include?("只比较其余 41 个定义")
 fail_validation("文字报告缺少 #3182 证据边界") unless report.include?("`#3182`")
+fail_validation("文字报告缺少 #3161 定向回归边界") unless report.include?("`#3161`")
+fail_validation("文字报告缺少 #3184 定向回归边界") unless report.include?("`#3184`")
 fail_validation("文字报告缺少 /api/chat 与 Lark Bot 区分") unless report.include?("`/api/chat` 与 Lark Bot")
 fail_validation("分析页缺少实际路径口径") unless html.include?("~/Code/workflows") && html.include?("~/workflows")
 fail_validation("分析页缺少 3/5 自然语言结论") unless html.include?("3 / 5")
@@ -108,4 +118,4 @@ fail_validation("分析页缺少 3/5 自然语言结论") unless html.include?("
   fail_validation("分析页仍把已关闭症状列为当前阻塞：#{closed_blocker}") if html.include?(closed_blocker)
 end
 
-puts "通过 报告案例=15 源版本族=7 能力矩阵=16 自然语言=5 阻塞=4 修复记录=8"
+puts "通过 报告案例=17 源版本族=7 能力矩阵=18 自然语言=5 阻塞=6 修复记录=10"

@@ -13,10 +13,10 @@
 
 ## 总结
 
-- 15/15 个公开 workflow 通过本地静态校验和 production explicit-request preview。
-- 直接生产运行取得 13 个 committed `completed` 和 2 个 committed `failed`；两个失败均有稳定平台 blocker，不是未执行。
-- 15/15 个 Ornn skill 通过服务端格式校验；线上 `.1` 版本全部公开，并按名称、版本回读。
-- 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约。
+- 17/17 个公开 workflow 通过本地静态校验；原有 15/17 个通过 production explicit-request preview，新增 16、17 尚未 production preview。
+- 直接生产运行取得 13 个 committed `completed` 和 2 个 committed `failed`；新增 16、17 尚未真实运行，不能计入通过或平台阻塞。
+- 本地 17/17 个 Ornn skill 与 workflow 一一对应；原有 15/17 个通过服务端格式校验并公开回读，新增两个尚未发布。
+- 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
 - `/api/chat` 自然语言验证 5 个代表案例，3 个取得 committed `completed` 和业务断言，2 个取得 committed `failed` 和稳定 typed blocker。
 - 五个案例均按 search-first 顺序经过精确 skill 加载、typed mount approval、workflow 启动和 committed observation，重复 tool start call ID 为 0。
 - `/api/chat` 与 Lark Bot 共用 Assistant/Ornn/workflow 核心，但不覆盖 Lark webhook、NyxID channel relay、会话映射和 Lark 回传。
@@ -25,13 +25,13 @@
 
 | 源版本族 | 非 n8n 定义数 | 新仓库案例 | 已覆盖语义 | 生产边界 | 判断 |
 |---|---:|---|---|---|---|
-| Base 探针 | 3 | 04、05、15 | 记录 GET、多源读取、受保护 POST、typed receipt | 无新增缺口 | 覆盖 |
+| Base 探针 | 3 | 04、05、15-17 | 记录 GET、多源读取、受保护 POST、provider receipt、typed approval resume | 16、17 待 production preview/runtime | 覆盖 / 定向复测待完成 |
 | 原语与执行探针 | 5 | 01、03、11、12 | `assign`、`transform`、分支、`foreach`、managed `codex_exec`、固定 `code_execute` | `code_execute` 真实运行被 `NYXID_PROXY_UNAUTHORIZED` 阻塞 | 部分覆盖 / 平台阻塞 |
 | Lark Onboarding | 1 | 06 | Base 申请、审批 payload、创建与实例回读 | 源 Aevatar e2e 语义已覆盖 | 覆盖 |
 | 发票审批 | 7 | 02、03、09、13、14 | 图片/PDF、提取、SGD/金额/供应商规则、历史、去重、审批、contact | contact 缺 `contact:user.id:readonly`；通用代码执行仍阻塞 | 部分覆盖 / 平台阻塞 |
 | 预算监控 | 5 | 04、08、15 | 六路 Base、预算差异、阈值、周报/月报、卡片发送 | schedule endpoint 返回 HTTP 502 且无 receipt | 部分覆盖 / 平台阻塞 |
 | 旧验收案例副本 | 10 | 01-10 | 新仓库是修复、中文化并取得 committed 证据的权威版本 | 源副本仍保留旧契约 | 覆盖 |
-| Ornn 资产副本 | 10 | 01-15 | 15 个 skill 已 public 发布并回读；五个代表案例完成自然语言核心链 | Lark Bot transport 尚未验证 | 覆盖 / transport 待验证 |
+| Ornn 资产副本 | 10 | 01-17 | 原有 15 个 skill 已 public 发布并回读；新增两个已本地同步 | 16、17 尚未服务端校验或发布；Lark Bot transport 尚未验证 | 部分覆盖 / 发布待完成 |
 
 ## 新增案例与真实结果
 
@@ -41,10 +41,12 @@
 | 13 | 图片/PDF OCR、发票规则、历史去重 | 通过 | committed `completed`，`stateVersion=82` | 覆盖 |
 | 14 | Lark `contact/v3/users/batch_get_id` | 通过 | committed `failed`，`stateVersion=15`，`NYXID_PROXY_HTTP_400` / Lark `99991672` | 精确调用覆盖，权限阻塞 |
 | 15 | 六路 Base、预算周报/月报、schedule | 通过 | workflow committed `completed`，`stateVersion=73`；schedule HTTP 502 | 核心业务覆盖，durable schedule 阻塞 |
+| 16 | managed workflow NyxID provider receipt | 静态通过；preview 待验证 | 未运行 | #3161 最小回归已定义，不能声明生产通过 |
+| 17 | POST search typed pending/resume | 静态通过；preview 待验证 | 未运行 | #3184 批准继续与拒绝终止均待 committed 证据 |
 
 ## Ornn 发布证据
 
-15 个 skill 均采用 Ornn validator 接受的 `SKILL.md + assets/*.yaml` 布局。发布器的 `--verify-only` 模式对每个 ZIP 执行服务端格式校验，并逐个回读名称、`.1` 版本和 public 状态；15 项全部一致。由于线上版本已与本地相同，本轮没有重复上传。
+17 个 skill 均采用 Ornn validator 接受的 `SKILL.md + assets/*.yaml` 布局，且 asset 与公开 workflow 字节一致。原有 15 个线上 skill 已通过服务端格式校验，并逐个回读名称、`.1` 版本和 public 状态；新增 16、17 目前只有本地 validator 证据，尚未上传或公开。
 
 本地 Aevatar 源码的 `SkillWorkflowExtractor` 已包含 `assets/*.yaml` fallback。生产 `/api/chat` 中 01、12、13、14、15 都能完成 search、skill load、typed mount approval 和 workflow start；复杂 capability 的 mount/admission、短 run identity 和模型绕过问题已在镜像 `7ba3fa3e` 上重跑关闭。
 
@@ -72,12 +74,24 @@
 
 因此 `/api/chat` 成功不能证明 Lark transport 成功；Lark 中出现回复也不能证明 workflow 终态成功。
 
-## 当前阻塞项
+## 当前阻塞与待复测项
 
 1. `code_execute`：`chrono-sandbox /execute` 生产要求 Bearer，与 catalog `auth_method=none` 不一致。
 2. Lark contact：绑定 Bot 缺少 `contact:user.id:readonly`。
 3. Schedule：案例 15 的 `/api/workflow/skills/{guid}/schedule` 返回 HTTP 502，没有 typed receipt。
 4. Lark Bot transport：本轮只验证 `/api/chat`，未覆盖 webhook、NyxID channel relay、会话映射和 Lark 回传。
+5. `#3161` 范围边界：issue 已关闭，正向环境和一个旧 binding 已证明 authority drift 消失；原报告方 proxy-delegation-only 旧 scope 的 post-fix 复测仍未出现。Case 16 使用仓库规定的 `nyxid_request`，只能回归共同 receipt/runtime 平面，不能替代 `nyxid_operation` authority 分支。
+6. `#3184` resume：pending 状态已经 typed 化并可观察，但原报告方的 resume 在返回 `accepted=true` 后没有推进 state version。当前源码要求三项 approval identity 位于 nested `toolApproval`，并明确规定 `202` 只表示命令进入 actor inbox；仍需 Case 17 的 committed 终态证明。
+
+## #3161 与 #3184 定向回归
+
+截至 2026-08-05，[`#3161`](https://github.com/aevatarAI/aevatar/issues/3161) 已关闭，[`#3184`](https://github.com/aevatarAI/aevatar/issues/3184) 仍开放。二者都经历过“前一层修好后暴露下一层”的过程，因此不能只验 preview 或一个 HTTP ACK。
+
+Case 16 只发出一次只读 Base GET。通过条件是 run committed `completed`、首个 tool step 输出非空、最终 typed artifact 为 `success=true` 和 `provider_response_verified=true`，且不存在 auth、authority、receipt、readiness 或 admission error。它精确回归 #3161 最初的 receiptless runtime 症状；因为新案例必须使用 `capability.nyxid_request`，报告不会把它写成 published `nyxid_operation` authority fallback 的完整覆盖。
+
+Case 17 使用不会修改数据的 Base `records/search` POST，但保留 POST 的保守 write 风险。批准路径必须先收到 `aevatar.tool_approval.pending`，再用该事件的 `stepId` 和 nested `toolApproval.executionId/toolCallId/approvalRequestId` 调用 resume；只有 run committed `completed` 且 `approval_resumed=true` 才通过。拒绝路径必须使用新的 run，committed 终态应明确为 approval rejected，且没有 outbound request。Durable preview 预期仍应得到 typed `DURABLE_AUTHORIZATION_UNAVAILABLE`，不能通过 bind-time confirmation 或人工 approval 推断可调度。
+
+本轮未执行上述 production preview、bind 或 run，因此两个案例均标记“待验证”，不是“已验证阻塞”。
 
 ## #3182 证据边界
 

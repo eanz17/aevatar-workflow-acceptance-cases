@@ -19,7 +19,9 @@ SKILLS = {
   "safe-code-execute-validation" => ["12-safe-code-execute-validation.workflow.yaml", "安全 code_execute 验证", "验证通用 JavaScript 执行和结构化结算 receipt", "校验合成结算金额。", "success=true、total_cents=16623、side_effects=false"],
   "invoice-ocr-policy-review" => ["13-invoice-ocr-policy-review.workflow.yaml", "发票 OCR 与策略审查", "从发票图片或 PDF 提取字段、归一化并检查历史重复", "提取当前消息中的合成发票，归一化并检查重复；不要创建审批。", "字段和归一化通过、精确重复 1 条、同供应商 2 条"],
   "lark-contact-batch-resolution" => ["14-lark-contact-batch-resolution.workflow.yaml", "Lark 联系人批量解析", "通过 contact batch_get_id 解析入职邮箱身份", "解析验收入职邮箱，只返回结果数量。", "success=true、resolved_count=1、标识不回显"],
-  "weekly-budget-variance-digest" => ["15-weekly-budget-variance-digest.workflow.yaml", "周度预算差异摘要", "生成预算周报、月度投影或配置 recurring schedule", "生成预算周度与月度差异摘要，不发送消息。", "六路 Base 可达且周/月差异断言通过"]
+  "weekly-budget-variance-digest" => ["15-weekly-budget-variance-digest.workflow.yaml", "周度预算差异摘要", "生成预算周报、月度投影或配置 recurring schedule", "生成预算周度与月度差异摘要，不发送消息。", "六路 Base 可达且周/月差异断言通过"],
+  "nyxid-read-receipt-probe" => ["16-nyxid-read-receipt-probe.workflow.yaml", "NyxID 只读回执探针", "验证 managed workflow 的 NyxID provider receipt、首步输出或 issue 3161 回归", "运行单次只读 NyxID receipt 探针，不执行任何写入。", "success=true、provider_response_verified=true、side_effects=false"],
+  "lark-post-search-approval-probe" => ["17-lark-post-search-approval-probe.workflow.yaml", "Lark POST 搜索批准恢复探针", "验证 POST 搜索的 typed tool approval pending、resume 或 issue 3184 回归", "运行语义只读的 Base POST 搜索批准恢复探针，不修改任何记录。", "preview 为 effectiveRisk=write 且 approvalRequired=true；终态 success=true、approval_resumed=true、side_effects=false"]
 }.freeze
 
 VERSIONS = {
@@ -37,7 +39,9 @@ VERSIONS = {
   "safe-code-execute-validation" => "1.1",
   "invoice-ocr-policy-review" => "1.1",
   "lark-contact-batch-resolution" => "1.1",
-  "weekly-budget-variance-digest" => "1.1"
+  "weekly-budget-variance-digest" => "1.1",
+  "nyxid-read-receipt-probe" => "1.1",
+  "lark-post-search-approval-probe" => "1.1"
 }.freeze
 
 SKILLS.each do |slug, (workflow_file, title, trigger, prompt, expected)|
@@ -60,6 +64,8 @@ SKILLS.each do |slug, (workflow_file, title, trigger, prompt, expected)|
                        "quarterly-access-review-reminder", "saas-license-optimization-digest",
                        "contractor-access-package-approval", "monthly-access-certification"
                     "写入、审批或发消息分支必须由用户明确提出，并等待 typed tool approval；一般的检查请求只能走预览。"
+                  when "lark-post-search-approval-probe"
+                    "必须从 typed pending event 或 read model 取得完整 approval identity；用户明确批准后只能发送 nested toolApproval resume，未批准或拒绝时不得执行 POST。"
                   when "safe-code-execute-validation", "lark-contact-batch-resolution"
                     "平台可能要求 typed tool approval，但业务契约无副作用；未得到明确批准时保持 pending。"
                   else

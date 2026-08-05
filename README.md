@@ -2,7 +2,7 @@
 
 [![验证工作流](https://github.com/eanz17/aevatar-workflow-acceptance-cases/actions/workflows/validate.yml/badge.svg)](https://github.com/eanz17/aevatar-workflow-acceptance-cases/actions/workflows/validate.yml)
 
-本仓库提供 15 个公开、安全、可复现的 Aevatar workflow，以及与它们一一对应的 Ornn skill。案例覆盖基础原语、文件与图片输入、Base、Lark 审批、Lark 消息、contact、通用代码执行、`codex_exec` 和 schedule 等能力，并使用不同于源目录的实际业务场景。
+本仓库提供 17 个公开、安全、可复现的 Aevatar workflow，以及与它们一一对应的 Ornn skill。案例覆盖基础原语、文件与图片输入、Base、Lark 审批、Lark 消息、contact、通用代码执行、`codex_exec`、schedule、NyxID provider receipt 和 typed tool approval resume 等能力，并使用不同于源目录的实际业务场景。
 
 公开 YAML 只保存占位符和合成数据，不包含组织专属 Base、用户、审批、NyxID 资源标识或未脱敏运行 ID。工作流 `name`、步骤 `id`、工具名、API 字段、错误码等技术契约保留英文，其余说明使用中文。
 
@@ -10,13 +10,13 @@
 
 验证日期：2026-08-05。
 
-- 15/15 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
-- 15/15 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
-- 直接 workflow 运行中，13/15 取得 committed `completed` 终态；12 和 14 取得 committed `failed` 终态及 typed blocker。
-- 15/15 个 Ornn skill 已通过服务端格式校验；线上 `.1` 版本全部为 public，并按名称、版本回读成功。
+- 17/17 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
+- 原有 15/15 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview；新增 16、17 尚未做 production preview。
+- 直接 workflow 运行中，13/17 取得 committed `completed` 终态；12 和 14 取得 committed `failed` 终态及 typed blocker；16 和 17 尚未真实运行。
+- 本地 17/17 个 Ornn skill 与 workflow 字节一致；原有 15/17 个线上 `.1` 版本已 public 并回读，新增两个 skill 尚未发布。
 - `/api/chat` 已用自然语言验证 01、12、13、14、15：3/5 取得 committed `completed` 与业务断言，2/5 取得 committed `failed` 与稳定 typed blocker。
 - 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
-- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；新案例已覆盖其业务和原语语义，剩余问题明确落在 `code_execute` 授权、Lark contact 权限、durable schedule 和尚未验证的 Lark Bot transport。
+- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 `code_execute` 授权、Lark contact 权限、durable schedule、Lark Bot transport，以及 #3161、#3184 的定向生产复测。
 
 `preview`、`202 Accepted`、Assistant 正常结束、模型文案和 pending artifact 都不等于 workflow 成功。逐案例证据见 [生产验证摘要](validation/production-validation-2026-08-05.json)，完整对比见 [分析页面](report/index.html)。
 
@@ -39,6 +39,8 @@
 | 13 | `invoice_ocr_policy_review` | 10 | 合成 PDF、字段提取、SGD/金额归一化、历史去重 | committed 通过，`stateVersion=82` | 无 |
 | 14 | `lark_contact_batch_resolution` | 3 | `contact/v3/users/batch_get_id`、标识脱敏 | 平台阻塞，Lark `99991672` | 无 |
 | 15 | `weekly_budget_variance_digest` | 11 | 六路 Base、预算差异、周报/月报、schedule 契约 | committed 通过，`stateVersion=73` | 无 |
+| 16 | `nyxid_read_receipt_probe` | 4 | 单次 Base GET、provider receipt、首步输出与终态 | 仅静态校验；production preview/runtime 待验证 | 无 |
+| 17 | `lark_post_search_approval_probe` | 4 | 语义只读 POST、typed pending、nested resume | 仅静态校验；production preview/runtime 待验证 | 无 |
 
 12 和 14 的失败是验收结果，不是缺少测试：两条 run 均进入 workflow 并产生 committed terminal evidence。12 暴露 `chrono-sandbox /execute` 的生产认证契约与 catalog 不一致；14 暴露绑定 Lark Bot 缺少 `contact:user.id:readonly`。
 
@@ -60,16 +62,26 @@
 
 六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron，但 schedule API 当前返回 HTTP 502，未产生 schedule receipt。
 
+### 16 NyxID 只读 provider receipt
+
+单次读取验收 Base 的一页记录，成功终态必须同时包含 `success=true`、`provider_response_verified=true` 和 `side_effects=false`。它针对 #3161 最初的 managed-workflow `tool_outcome_unknown` 做最小回归；根据本仓库的新案例规则使用 `capability.nyxid_request`，因此不能替代 `capability.nyxid_operation` 的 authority revalidation 证明。当前只有静态证据，production preview、绑定和真实终态均待验证。
+
+### 17 POST 搜索批准恢复
+
+调用语义只读的 Lark Base `records/search` POST，不创建或修改记录。协议按 POST 保守分类为 write 并要求 per-run typed approval；只有收到 `aevatar.tool_approval.pending`，使用其中的 `stepId` 及 nested `toolApproval.executionId/toolCallId/approvalRequestId` 恢复，并最终 committed `completed`，才能判为通过。拒绝路径必须 committed 失败且不得发出外部请求。该案例针对 #3184，当前只有静态证据。
+
 ## Ornn skills
 
-`skills/` 下有 15 个与 workflow 一一对应的 skill。Ornn 服务端只接受 `SKILL.md`、`scripts/`、`references/`、`assets/` 等根目录，因此 workflow 放在 `assets/*.yaml`。本地同步器保证 asset 与公开 workflow 字节一致。
+`skills/` 下有 17 个与 workflow 一一对应的 skill。Ornn 服务端只接受 `SKILL.md`、`scripts/`、`references/`、`assets/` 等根目录，因此 workflow 放在 `assets/*.yaml`。本地同步器保证 asset 与公开 workflow 字节一致。
 
 已完成的生产发布证据：
 
-- 15 个 ZIP 均通过 Ornn `/api/v1/skill-format/validate`；
-- 15 个 skill 均上传或更新成功；
+- 原有 15 个 ZIP 均通过 Ornn `/api/v1/skill-format/validate`；
+- 原有 15 个 skill 均上传或更新成功；
 - 权限均设置为 public；
 - 15 个名称均回读到预期版本和 `isPrivate=false`。
+
+新增 16、17 已通过本地 skill validator，但尚未调用 Ornn 服务端校验或发布。
 
 发布命令：
 
@@ -102,6 +114,8 @@ ruby scripts/publish_skills.rb --verify-only
 | 13 | 从这张合成发票图片提取字段、归一化金额和日期并检查重复，必须使用 Ornn workflow。 |
 | 14 | 把验收入职邮箱解析为 Lark 联系人 ID，只返回成功与数量，缺权限时报告 typed blocker。 |
 | 15 | 生成合成预算的周度和月度差异摘要，不发送消息，使用 Ornn skill 并读取 typed artifact。 |
+| 16 | 运行 NyxID 只读回执探针，只接受 committed typed artifact，不执行写入。 |
+| 17 | 运行语义只读的 Base POST 搜索批准恢复探针；等待 typed pending 后再决定是否批准。 |
 
 可复现 `/api/chat` 验证：
 
@@ -150,6 +164,17 @@ ruby scripts/package_skills.rb config.local.yaml
 ruby scripts/validate_report.rb
 ```
 
+新增案例的 production preview 与只读运行入口：
+
+```bash
+ruby scripts/materialize_workflows.rb config.local.yaml
+ruby scripts/production_validate.rb --cases 16,17
+ruby scripts/production_validate.rb --cases 16 --run
+ruby scripts/production_validate.rb --cases 17 --run --approve-read-only 17 --approve
+```
+
+Case 17 必须逐行消费 SSE 并在 pending 出现时立即发送 nested `toolApproval` resume；`202 Accepted` 不是终态成功证据。拒绝路径和 durable preview 需要单独的新 run，不能复用批准路径的终态。
+
 `build/`、`tmp/` 和 `config.local.yaml` 均被忽略。合成附件位于 `fixtures/`，schedule 示例位于 `schedules/`。
 
 ## 生产验证边界
@@ -159,6 +184,8 @@ ruby scripts/validate_report.rb
 - 平台工具批准不等于 Lark 业务审批；新建审批通常仍是 `PENDING`。
 - 只有 typed receipt、run ID、业务断言和 committed terminal evidence 齐全，才可写成 workflow 通过。
 - `code_execute`、contact 和 schedule 的现有阻塞不得通过 mock 成功结果掩盖。
+- #3161 已关闭，但 Case 16 不覆盖 published-operation authority 分支；原报告方旧 scope 的最终复测不能由新 scope 正向结果替代。
+- #3184 仍开放；pending 可观察不等于 resume 已被运行时消费，必须继续读取 committed 终态。
 - 不得提交 token、真实组织标识、业务载荷、审批表单或未脱敏运行证据。
 
 新增和维护案例的完整规则见 [AGENTS.md](AGENTS.md)。
