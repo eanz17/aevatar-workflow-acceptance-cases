@@ -1,7 +1,7 @@
 ---
 name: weekly-budget-variance-digest
 description: 生成预算周报、月度投影或配置 recurring schedule。用户提到“周度预算差异摘要”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "1.0"
+version: "1.1"
 metadata:
   category: mixed
   output-type: text

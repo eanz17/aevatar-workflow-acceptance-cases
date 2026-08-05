@@ -1,7 +1,7 @@
 ---
 name: monthly-access-certification
 description: 执行月末访问认证、提醒预览或明确发送提醒。用户提到“月度访问认证”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "3.0"
+version: "3.1"
 metadata:
   category: mixed
   output-type: text

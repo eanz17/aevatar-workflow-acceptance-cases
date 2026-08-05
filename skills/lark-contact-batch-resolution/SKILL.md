@@ -1,7 +1,7 @@
 ---
 name: lark-contact-batch-resolution
 description: 通过 contact batch_get_id 解析入职邮箱身份。用户提到“Lark 联系人批量解析”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "1.0"
+version: "1.1"
 metadata:
   category: mixed
   output-type: text

@@ -6,13 +6,14 @@ require "yaml"
 ROOT = File.expand_path("..", __dir__)
 EXPECTED_CASES = (1..15).map { |number| format("%02d", number) }.freeze
 EXPECTED_BLOCKED = %w[12 14].freeze
+REPORT_DATE = "2026-08-05"
 
 def fail_validation(message)
   warn "报告验证失败：#{message}"
   exit 1
 end
 
-summary_path = File.join(ROOT, "validation", "production-validation-2026-08-04.json")
+summary_path = File.join(ROOT, "validation", "production-validation-#{REPORT_DATE}.json")
 summary = JSON.parse(File.read(summary_path))
 runtime = summary.fetch("runtime")
 
@@ -30,6 +31,7 @@ runtime.each do |item|
     fail_validation("案例 #{case_id} 未标记平台阻塞") unless item["result"] == "平台阻塞"
     fail_validation("案例 #{case_id} 不是 committed failed") unless item["terminalStatus"] == "failed"
     fail_validation("案例 #{case_id} 缺少 blockerCode") if item["blockerCode"].to_s.strip.empty?
+    fail_validation("案例 #{case_id} 缺少 stateVersion") unless item["stateVersion"].is_a?(Integer)
   else
     fail_validation("案例 #{case_id} 未通过") unless item["result"] == "通过"
     fail_validation("案例 #{case_id} 不是 completed") unless item["terminalStatus"] == "completed"
@@ -44,8 +46,13 @@ end
 
 assistant = summary.fetch("assistantNaturalLanguage")
 fail_validation("/api/chat 案例数不是 5") unless assistant.fetch("cases") == 5
-fail_validation("/api/chat 不能误报 workflow 成功") unless assistant.fetch("workflowValidated") == 0
+fail_validation("/api/chat completed 数不是 5") unless assistant.fetch("chatCompleted") == 5
+fail_validation("/api/chat validated 数不是 3") unless assistant.fetch("workflowValidated") == 3
+fail_validation("/api/chat typed failure 数不是 2") unless assistant.fetch("workflowTypedFailures") == 2
 fail_validation("/api/chat 案例编号漂移") unless assistant.fetch("results").map { |item| item.fetch("case") } == %w[01 12 13 14 15]
+fail_validation("/api/chat 未全部搜索 Ornn") unless assistant.fetch("results").all? { |item| item["ornnSearch"] == true }
+fail_validation("/api/chat 未全部加载 skill") unless assistant.fetch("results").all? { |item| item["skillLoaded"] == true }
+fail_validation("/api/chat 未全部启动 workflow") unless assistant.fetch("results").all? { |item| item["workflowStarted"] == true }
 
 readme = File.read(File.join(ROOT, "README.md"))
 EXPECTED_CASES.each do |case_id|
@@ -83,7 +90,7 @@ expected_html_counts = {
   "能力矩阵" => [/<tr data-family=/, 16],
   "直接证据" => [/<tr data-result=/, 15],
   "自然语言证据" => [/<tr data-chat-case=/, 5],
-  "阻塞项" => [/<div class="gap-row">/, 7],
+  "阻塞项" => [/<div class="gap-row">/, 4],
   "修复记录" => [/<div class="repair-item">/, 8]
 }
 expected_html_counts.each do |label, (pattern, expected)|
@@ -91,11 +98,14 @@ expected_html_counts.each do |label, (pattern, expected)|
   fail_validation("分析页#{label}数量为 #{actual}，预期 #{expected}") unless actual == expected
 end
 
-report = File.read(File.join(ROOT, "report", "2026-08-04-workflow-coverage-report.md"))
+report = File.read(File.join(ROOT, "report", "#{REPORT_DATE}-workflow-coverage-report.md"))
 fail_validation("文字报告缺少 41 个非 n8n 定义口径") unless report.include?("只比较其余 41 个定义")
 fail_validation("文字报告缺少 #3182 证据边界") unless report.include?("`#3182`")
 fail_validation("文字报告缺少 /api/chat 与 Lark Bot 区分") unless report.include?("`/api/chat` 与 Lark Bot")
 fail_validation("分析页缺少实际路径口径") unless html.include?("~/Code/workflows") && html.include?("~/workflows")
-fail_validation("分析页缺少 0/5 自然语言结论") unless html.include?("0 / 5")
+fail_validation("分析页缺少 3/5 自然语言结论") unless html.include?("3 / 5")
+%w[USE_SKILL_MOUNT_FAILED CAPABILITY_ADMISSION_REBIND_REQUIRED].each do |closed_blocker|
+  fail_validation("分析页仍把已关闭症状列为当前阻塞：#{closed_blocker}") if html.include?(closed_blocker)
+end
 
-puts "通过 报告案例=15 源版本族=7 能力矩阵=16 自然语言=5 阻塞=7 修复记录=8"
+puts "通过 报告案例=15 源版本族=7 能力矩阵=16 自然语言=5 阻塞=4 修复记录=8"

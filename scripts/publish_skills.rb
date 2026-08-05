@@ -13,13 +13,17 @@ class PublishError < StandardError; end
 
 options = {
   service: ENV.fetch("ORNN_SERVICE_SLUG", "ornn-api"),
-  via_service: ENV["ORNN_USER_SERVICE_ID"]
+  via_service: ENV["ORNN_USER_SERVICE_ID"],
+  verify_only: false
 }
 
 OptionParser.new do |parser|
   parser.banner = "用法：ruby scripts/publish_skills.rb [选项]"
   parser.on("--service SLUG", "NyxID 中的 Ornn service slug") { |value| options[:service] = value }
   parser.on("--via-service ID", "指定 NyxID UserService ID") { |value| options[:via_service] = value }
+  parser.on("--verify-only", "只校验服务端格式、线上版本和 public 状态，不上传") do
+    options[:verify_only] = true
+  end
 end.parse!
 
 def request_json(options, path, method: "GET", data_path: nil, body: nil, content_type: nil,
@@ -53,11 +57,32 @@ rescue JSON::ParserError => e
   raise PublishError, "Ornn 未返回有效 JSON：#{e.message}"
 end
 
+def read_package_version(package)
+  name = File.basename(package, ".zip")
+  skill_text, stderr, status = Open3.capture3("unzip", "-p", package, "#{name}/SKILL.md")
+  unless status.success?
+    raise PublishError, "#{name} 无法从 ZIP 读取 SKILL.md：#{stderr.strip}"
+  end
+
+  match = skill_text.match(/^version: "(0|[1-9]\d*)\.(0|[1-9]\d*)"$/)
+  raise PublishError, "#{name} 缺少有效的 major.minor version" unless match
+
+  [match[0].delete_prefix('version: "').delete_suffix('"'), [match[1].to_i, match[2].to_i]]
+end
+
+def parse_remote_version(name, version)
+  match = version.to_s.match(/\A(0|[1-9]\d*)\.(0|[1-9]\d*)\z/)
+  raise PublishError, "#{name} 的线上 version 不符合 major.minor：#{version}" unless match
+
+  [match[1].to_i, match[2].to_i]
+end
+
 packages = Dir[File.join(PACKAGE_DIR, "*.zip")].sort
 abort "没有找到 skill ZIP，请先执行 ruby scripts/package_skills.rb config.local.yaml" if packages.empty?
 
-results = packages.map do |package|
+prepared = packages.map do |package|
   name = File.basename(package, ".zip")
+  local_version, local_version_parts = read_package_version(package)
   validation = request_json(
     options,
     "/api/v1/skill-format/validate",
@@ -74,6 +99,50 @@ results = packages.map do |package|
     "/api/v1/skills/#{URI.encode_www_form_component(name)}",
     allow_not_found: true
   )&.fetch("data")
+  if options.fetch(:verify_only)
+    raise PublishError, "#{name} 线上不存在" unless existing
+
+    remote_version_parts = parse_remote_version(name, existing.fetch("version"))
+    unless local_version_parts == remote_version_parts && existing["isPrivate"] == false
+      raise PublishError,
+            "#{name} 回读不一致：本地 #{local_version}，线上 #{existing.fetch('version')}，public=#{existing['isPrivate'] == false}"
+    end
+  elsif existing && (local_version_parts <=> parse_remote_version(name, existing.fetch("version"))) != 1
+    raise PublishError,
+          "#{name} 的本地 version #{local_version} 必须严格高于线上 #{existing.fetch('version')}"
+  end
+
+  {
+    name: name,
+    package: package,
+    existing: existing,
+    local_version: local_version
+  }
+end
+
+preflight_scope = options.fetch(:verify_only) ? "版本/public 回读" : "版本单调性预检"
+puts "全部 #{prepared.length} 个 skill 已通过服务端格式与#{preflight_scope}"
+
+if options.fetch(:verify_only)
+  puts JSON.pretty_generate(
+    verifiedAt: Time.now.utc.iso8601,
+    service: options.fetch(:service),
+    count: prepared.length,
+    skills: prepared.map do |item|
+      {
+        name: item.fetch(:name),
+        version: item.fetch(:local_version),
+        public: true
+      }
+    end
+  )
+  exit
+end
+
+results = prepared.map do |item|
+  name = item.fetch(:name)
+  package = item.fetch(:package)
+  existing = item.fetch(:existing)
   upload = if existing
              request_json(
                options,
@@ -109,7 +178,10 @@ results = packages.map do |package|
     options,
     "/api/v1/skills/#{URI.encode_www_form_component(name)}"
   ).fetch("data")
-  unless detail["guid"] == guid && detail["name"] == name && detail["isPrivate"] == false
+  unless detail["guid"] == guid &&
+         detail["name"] == name &&
+         detail["version"] == item.fetch(:local_version) &&
+         detail["isPrivate"] == false
     raise PublishError, "#{name} 上传后的公开状态回读不一致"
   end
 

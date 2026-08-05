@@ -1,7 +1,7 @@
 ---
 name: contractor-access-package-approval
 description: 检查外包人员附件、历史去重并预览或创建审批。用户提到“外包人员访问资料审批”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "2.0"
+version: "2.1"
 metadata:
   category: mixed
   output-type: text

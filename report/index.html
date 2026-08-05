@@ -201,7 +201,7 @@
   <div id="workflow-analysis">
     <header class="masthead">
       <div class="container masthead-inner">
-        <p class="eyebrow">2026-08-04 · 可审计生产验收</p>
+        <p class="eyebrow">2026-08-05 · 可审计生产验收</p>
         <h1>Aevatar 工作流验收分析</h1>
         <p class="subtitle">15 个公开 workflow、15 个 Ornn skill，以及对源目录 41 个非 n8n 定义的功能对照。页面严格区分直接运行、自然语言调用和平台阻塞。</p>
         <div class="path-line"><strong>实际源目录：<code>~/workflows</code></strong><span><code>~/Code/workflows</code> 当前不存在</span><span>两个 n8n JSON 已排除</span></div>
@@ -213,7 +213,7 @@
         <div class="metric"><span class="metric-value">15 / 15</span><span class="metric-label">静态校验与 production preview</span></div>
         <div class="metric"><span class="metric-value">13 / 15</span><span class="metric-label">直接 runtime committed 通过</span></div>
         <div class="metric"><span class="metric-value">15 / 15</span><span class="metric-label">Ornn skill public 发布并回读</span></div>
-        <div class="metric"><span class="metric-value">0 / 5</span><span class="metric-label">/api/chat 严格 workflow validated</span></div>
+        <div class="metric"><span class="metric-value">3 / 5</span><span class="metric-label">/api/chat 严格 workflow validated</span></div>
       </div>
     </section>
 
@@ -262,7 +262,7 @@
                 <tr data-source-family="invoice"><td class="family-name">发票审批</td><td class="number">7</td><td>02、03、09、13、14</td><td>媒体提取、财务规则、历史、去重、审批、contact</td><td>contact 权限与通用 code 阻塞</td><td><span class="status status-blocked">部分 / 阻塞</span></td></tr>
                 <tr data-source-family="budget"><td class="family-name">预算监控</td><td class="number">5</td><td>04、08、15</td><td>六路 Base、差异公式、阈值、周/月摘要、消息</td><td>durable schedule 无 receipt</td><td><span class="status status-blocked">部分 / 阻塞</span></td></tr>
                 <tr data-source-family="legacy"><td class="family-name">旧验收案例副本</td><td class="number">10</td><td>01-10</td><td>修复并取得 committed evidence 的权威版本</td><td>源副本保留旧契约</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-source-family="ornn"><td class="family-name">Ornn 资产副本</td><td class="number">10</td><td>01-15</td><td>15 个 public skill 完成发布和回读</td><td>自然语言 mount/admission/artifact 未闭环</td><td><span class="status status-partial">部分覆盖</span></td></tr>
+                <tr data-source-family="ornn"><td class="family-name">Ornn 资产副本</td><td class="number">10</td><td>01-15</td><td>15 个 public skill 回读；五个代表案例完成自然语言核心链</td><td>Lark Bot transport 尚未验证</td><td><span class="status status-covered">覆盖 / transport 待验证</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -293,7 +293,7 @@
                 <tr data-family="Base" data-status="covered"><td>Base</td><td>预算周报/月报与差异公式</td><td>六路读取与六项数值断言</td><td>15</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="执行与调度" data-status="blocked"><td>执行与调度</td><td>durable weekly/monthly schedule</td><td>POST 返回 HTTP 502，无 receipt</td><td>15</td><td><span class="status status-blocked">平台阻塞</span></td></tr>
                 <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>skill 校验、发布、public 权限与回读</td><td>15/15 服务端闭环</td><td>01-15</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="Ornn 与聊天" data-status="partial"><td>Ornn 与聊天</td><td>/api/chat 自然语言选择和 workflow 启动</td><td>01/12 到启动；13 绕过；14/15 mount 失败</td><td>01、12-15</td><td><span class="status status-partial">部分覆盖</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>/api/chat 自然语言选择和 workflow 终态</td><td>3 个 validated；2 个 committed typed failure</td><td>01、12-15</td><td><span class="status status-covered">核心链覆盖</span></td></tr>
                 <tr data-family="Ornn 与聊天" data-status="missing"><td>Ornn 与聊天</td><td>Lark Bot webhook/relay/回传</td><td>本轮入口为 /api/chat</td><td>无</td><td><span class="status status-missing">未验证</span></td></tr>
               </tbody>
             </table>
@@ -327,7 +327,7 @@
                 <tr data-result="passed" data-effect="none"><td class="case-id">11</td><td><code>complex_codex_exec_validation</code></td><td class="number">32</td><td class="number">178</td><td class="assertion"><code>CODEX_EXEC_READY</code>、五项 gate</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="blocked" data-effect="none"><td class="case-id">12</td><td><code>safe_code_execute_validation</code></td><td class="number">4</td><td class="number">12</td><td class="assertion"><code>NYXID_PROXY_UNAUTHORIZED</code></td><td><span class="status status-blocked">平台阻塞</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">13</td><td><code>invoice_ocr_policy_review</code></td><td class="number">10</td><td class="number">82</td><td class="assertion">PDF、SGD、金额、供应商与去重命中</td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="blocked" data-effect="none"><td class="case-id">14</td><td><code>lark_contact_batch_resolution</code></td><td class="number">3</td><td class="number">-</td><td class="assertion"><code>NYXID_PROXY_HTTP_400</code> / Lark <code>99991672</code></td><td><span class="status status-blocked">平台阻塞</span></td></tr>
+                <tr data-result="blocked" data-effect="none"><td class="case-id">14</td><td><code>lark_contact_batch_resolution</code></td><td class="number">3</td><td class="number">15</td><td class="assertion"><code>NYXID_PROXY_HTTP_400</code> / Lark <code>99991672</code></td><td><span class="status status-blocked">平台阻塞</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">15</td><td><code>weekly_budget_variance_digest</code></td><td class="number">11</td><td class="number">73</td><td class="assertion">六路 Base、周/月差异、over=1、watch=1</td><td><span class="status status-passed">通过</span></td></tr>
               </tbody>
             </table>
@@ -338,16 +338,16 @@
       <section class="view" id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
         <div class="section">
           <div class="section-heading"><h2>自然语言调用结果</h2><p class="caption">入口：<code>nyxid proxy request aevatar /api/chat</code></p></div>
-          <div class="note"><p><strong>核心结论：</strong>Assistant 回合完成和 workflow 成功是两个状态。本轮 3/5 chat completed，但 0/5 workflow validated。</p></div>
+          <div class="note"><p><strong>核心结论：</strong>五个 Assistant 回合都完成并到达 workflow committed 终态；其中 3 个 validated，2 个如实返回 typed failure。</p></div>
           <div class="table-wrap">
             <table aria-label="自然语言调用证据">
               <thead><tr><th>案例</th><th>Chat</th><th>Ornn / skill</th><th>Workflow</th><th>严格判定</th><th>证据</th></tr></thead>
               <tbody>
-                <tr data-chat-case="01"><td class="case-id">01</td><td>completed</td><td>搜索、加载成功</td><td>启动并读 artifact 两次</td><td><span class="status status-info">unproven</span></td><td>SSE 工具结果无 artifact payload</td></tr>
-                <tr data-chat-case="12"><td class="case-id">12</td><td>completed</td><td>搜索、加载成功</td><td>启动；短 ID 查询未物化</td><td><span class="status status-blocked">typed-failure</span></td><td>完整 actor committed <code>NYXID_PROXY_UNAUTHORIZED</code></td></tr>
-                <tr data-chat-case="13"><td class="case-id">13</td><td>completed</td><td>未调用</td><td>未启动</td><td><span class="status status-missing">not-started</span></td><td>模型直接识图作答</td></tr>
-                <tr data-chat-case="14"><td class="case-id">14</td><td>failed</td><td>搜索后 mount 失败</td><td>未启动</td><td><span class="status status-blocked">mount-blocked</span></td><td><code>USE_SKILL_MOUNT_FAILED</code></td></tr>
-                <tr data-chat-case="15"><td class="case-id">15</td><td>failed</td><td>搜索后 mount 失败</td><td>未启动；inline fallback 启动前失败</td><td><span class="status status-blocked">mount-blocked</span></td><td><code>USE_SKILL_MOUNT_FAILED</code>；inline：<code>CAPABILITY_ADMISSION_REBIND_REQUIRED</code></td></tr>
+                <tr data-chat-case="01"><td class="case-id">01</td><td>completed</td><td>search-first、精确加载、批准 mount</td><td>13/13 completed</td><td><span class="status status-passed">validated</span></td><td><code>ready_for_review=true</code>，state 80</td></tr>
+                <tr data-chat-case="12"><td class="case-id">12</td><td>completed</td><td>search-first、精确加载、批准 mount</td><td>1/1 failed</td><td><span class="status status-blocked">typed-failure</span></td><td><code>NYXID_PROXY_UNAUTHORIZED</code>，state 12</td></tr>
+                <tr data-chat-case="13"><td class="case-id">13</td><td>completed</td><td>search-first、精确加载、图片 file ref</td><td>12/12 completed</td><td><span class="status status-passed">validated</span></td><td><code>success=true</code>，state 82</td></tr>
+                <tr data-chat-case="14"><td class="case-id">14</td><td>completed</td><td>search-first、精确加载、批准 mount</td><td>1/1 failed</td><td><span class="status status-blocked">typed-failure</span></td><td>Lark <code>99991672</code>，state 15</td></tr>
+                <tr data-chat-case="15"><td class="case-id">15</td><td>completed</td><td>search-first、精确加载、批准 mount</td><td>11/11 completed</td><td><span class="status status-passed">validated</span></td><td>六路 Base 与周/月断言，state 73</td></tr>
               </tbody>
             </table>
           </div>
@@ -371,10 +371,7 @@
             <div class="gap-row"><h3>通用 code_execute</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p><code>chrono-sandbox /execute</code> 要求 Bearer，与 catalog <code>auth_method=none</code> 不一致；案例 12 committed failed。</p></div>
             <div class="gap-row"><h3>Lark contact 权限</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>案例 14 返回 Lark <code>99991672</code>，绑定 Bot 缺少 <code>contact:user.id:readonly</code>。</p></div>
             <div class="gap-row"><h3>Durable schedule</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>案例 15 schedule POST 返回 HTTP 502，未创建 typed schedule receipt。</p></div>
-            <div class="gap-row"><h3>Skill workflow mount</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>14、15 的自然语言链在 <code>use_skill</code> 返回 <code>USE_SKILL_MOUNT_FAILED</code>。</p></div>
-            <div class="gap-row"><h3>Capability admission</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>15 inline fallback 已到 <code>aevatar_start_workflow</code>，随后返回 <code>CAPABILITY_ADMISSION_REBIND_REQUIRED</code>。</p></div>
-            <div class="gap-row"><h3>Artifact identity</h3><div><span class="status status-partial">P1 部分</span></div><p>Assistant 获得短 run ID，但 artifact 工具不能稳定解析到完整 workflow actor；需靠日志和 Observatory 关联。</p></div>
-            <div class="gap-row"><h3>模型选路</h3><div><span class="status status-partial">P1 部分</span></div><p>案例 13 明确要求 skill 和 workflow，模型仍直接识图回答，说明 prompt 不是强制路由契约。</p></div>
+            <div class="gap-row"><h3>Lark Bot transport</h3><div><span class="status status-partial">P1 未验证</span></div><p>本轮入口是 <code>/api/chat</code>，不包含 Lark webhook、NyxID channel relay、会话映射和 Lark 回传。</p></div>
           </div>
         </div>
 
@@ -385,19 +382,19 @@
             <div class="repair-item"><h3>合成发票媒体</h3><p>新增 PDF/PNG fixture、OCR 输入和发票财务规则。</p></div>
             <div class="repair-item"><h3>Contact 精确调用</h3><p>新增 batch_get_id 契约与联系人标识脱敏输出。</p></div>
             <div class="repair-item"><h3>预算周报/月报</h3><p>新增六路 Base、差异公式和 weekly/monthly schedule 示例。</p></div>
-            <div class="repair-item"><h3>15 个 Ornn skills</h3><p>完成合法 package、服务端校验、public 发布和名称回读。</p></div>
-            <div class="repair-item"><h3>自然语言验证器</h3><p>新增 ID 脱敏，并拆分 chat completed 与 workflow validated。</p></div>
-            <div class="repair-item"><h3>Committed 失败追踪</h3><p>短 run ID 通过生产日志关联完整 actor，再由 Observatory 读取终态。</p></div>
+            <div class="repair-item"><h3>15 个 Ornn skills</h3><p>完成合法 package、服务端校验、线上 `.1` public 版本和名称回读。</p></div>
+            <div class="repair-item"><h3>自然语言验证器</h3><p>新增 typed approval continuation、ID 脱敏和 committed current-state 判定。</p></div>
+            <div class="repair-item"><h3>确定性 skill recovery</h3><p>固定 search-first 顺序，并在 workflow 启动后停止无效二次搜索。</p></div>
             <div class="repair-item"><h3>非 n8n 覆盖口径</h3><p>源目录改按 41 个定义、7 个版本族统计，移除两个 n8n JSON。</p></div>
           </div>
         </div>
 
-        <div class="boundary"><h2>#3182 证据边界</h2><p>直接 runtime 13 个成功和 Ornn 15 个发布成功，都不能外推成自然语言链成功。01、12 已证明 <code>assets/*.yaml</code> 能到启动；当前剩余问题集中在复杂 capability mount/admission、短 run identity 和模型选路。</p></div>
+        <div class="boundary"><h2>#3182 证据边界</h2><p>本轮没有从直接 runtime 外推，而是在镜像 <code>7ba3fa3e</code> 上逐个重跑五个 <code>/api/chat</code> 案例。3 个 validated、2 个 committed typed failure；issue 状态不能替代新证据，Lark Bot transport 仍需单独验收。</p></div>
       </section>
     </main>
 
     <footer>
-      <div class="container footer-inner"><span>报告日期：2026-08-04 · 生产标识和业务 payload 已脱敏</span><span class="footer-links"><a href="./2026-08-04-workflow-coverage-report.md">文字报告</a><a href="../validation/production-validation-2026-08-04.json">机器摘要</a><a href="../README.md">仓库说明</a></span></div>
+      <div class="container footer-inner"><span>报告日期：2026-08-05 · 生产标识和业务 payload 已脱敏</span><span class="footer-links"><a href="./2026-08-05-workflow-coverage-report.md">文字报告</a><a href="../validation/production-validation-2026-08-05.json">机器摘要</a><a href="../README.md">仓库说明</a></span></div>
     </footer>
   </div>
 

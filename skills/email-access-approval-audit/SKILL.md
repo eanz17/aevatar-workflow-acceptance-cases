@@ -1,7 +1,7 @@
 ---
 name: email-access-approval-audit
 description: 只读检查邮箱访问审批列表和实例详情。用户提到“邮箱访问审批审计”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "2.0"
+version: "2.1"
 metadata:
   category: mixed
   output-type: text

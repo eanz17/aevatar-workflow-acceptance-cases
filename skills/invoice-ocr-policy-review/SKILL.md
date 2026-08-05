@@ -1,7 +1,7 @@
 ---
 name: invoice-ocr-policy-review
 description: 从发票图片或 PDF 提取字段、归一化并检查历史重复。用户提到“发票 OCR 与策略审查”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "1.0"
+version: "1.1"
 metadata:
   category: mixed
   output-type: text

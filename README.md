@@ -8,16 +8,17 @@
 
 ## 当前结论
 
-验证日期：2026-08-04。
+验证日期：2026-08-05。
 
 - 15/15 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
 - 15/15 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
 - 直接 workflow 运行中，13/15 取得 committed `completed` 终态；12 和 14 取得 committed `failed` 终态及 typed blocker。
-- 15/15 个 Ornn skill 已通过服务端格式校验、发布为 public，并按名称回读成功。
-- `/api/chat` 已用自然语言验证 01、12、13、14、15；当前 0/5 达到“typed artifact 证明 workflow 成功”的严格标准。
-- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；新案例已经覆盖其业务和原语语义，剩余问题均明确落在生产授权、mount/admission、artifact 解析或聊天路由边界。
+- 15/15 个 Ornn skill 已通过服务端格式校验；线上 `.1` 版本全部为 public，并按名称、版本回读成功。
+- `/api/chat` 已用自然语言验证 01、12、13、14、15：3/5 取得 committed `completed` 与业务断言，2/5 取得 committed `failed` 与稳定 typed blocker。
+- 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
+- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；新案例已覆盖其业务和原语语义，剩余问题明确落在 `code_execute` 授权、Lark contact 权限、durable schedule 和尚未验证的 Lark Bot transport。
 
-`preview`、`202 Accepted`、Assistant 正常结束、模型文案和 pending artifact 都不等于 workflow 成功。逐案例证据见 [生产验证摘要](validation/production-validation-2026-08-04.json)，完整对比见 [分析页面](report/index.html)。
+`preview`、`202 Accepted`、Assistant 正常结束、模型文案和 pending artifact 都不等于 workflow 成功。逐案例证据见 [生产验证摘要](validation/production-validation-2026-08-05.json)，完整对比见 [分析页面](report/index.html)。
 
 ## 工作流矩阵
 
@@ -77,6 +78,7 @@ ruby scripts/materialize_workflows.rb config.local.yaml
 ruby scripts/sync_skills.rb config.local.yaml
 ruby scripts/package_skills.rb config.local.yaml
 ruby scripts/publish_skills.rb
+ruby scripts/publish_skills.rb --verify-only
 ```
 
 ## 自然语言调用示例
@@ -104,11 +106,10 @@ ruby scripts/publish_skills.rb
 可复现 `/api/chat` 验证：
 
 ```bash
-ruby scripts/assistant_validate.rb --cases 01,12,13,14,15
-ruby scripts/assistant_validate.rb --cases 15 --inline-fallback
+ruby scripts/assistant_validate.rb --cases 01,12,13,14,15 --approve 01,12,13,14,15
 ```
 
-验证器只保存哈希、工具名、typed 错误码和脱敏摘要，并显式输出 `chatCompleted`、`workflowValidationStatus`、`workflowValidated`。它不会把 Assistant 回合完成写成 workflow 通过。
+`--approve` 只会批准验证器从 current state 匹配到的 typed tool approval，不会批准未声明的工具或案例。验证器只保存哈希、工具名、typed 错误码和脱敏摘要，并显式输出 `chatCompleted`、`workflowValidationStatus`、`workflowValidated`。它不会把 Assistant 回合完成写成 workflow 通过。
 
 ## `/api/chat` 与 Lark Bot 的区别
 
@@ -126,13 +127,15 @@ ruby scripts/assistant_validate.rb --cases 15 --inline-fallback
 
 ## 当前 `/api/chat` 结果
 
-- 01、12：完成 Ornn 搜索、skill 加载、workflow 启动和两次 artifact 查询；SSE 的工具结果只有通用 `completed`，无法证明 artifact 内容，严格状态为 `unproven`。
-- 12：短 run ID 查询持续 pending，但随后通过日志关联到完整 actor，并由 Observatory 确认 committed `NYXID_PROXY_UNAUTHORIZED`。
-- 13：模型直接识别图片并作答，未调用任何 skill 或 workflow，状态为 `not-started`。
-- 14、15：搜索和加载后在 `use_skill` 阶段以 `USE_SKILL_MOUNT_FAILED` 终止。
-- 15 inline fallback：越过 mount 并调用 `aevatar_start_workflow`，服务端日志确认 `CAPABILITY_ADMISSION_REBIND_REQUIRED`，即保存定义与 capability admission plan 不一致。
+- 01：严格状态 `validated`，13/13 步完成，`ready_for_review=true`，`stateVersion=80`。
+- 12：严格状态 `typed-failure`，workflow 已启动并提交 `failed`，`stateVersion=12`，blocker 为 `NYXID_PROXY_UNAUTHORIZED`。
+- 13：严格状态 `validated`，图片 file ref 进入真实执行，12/12 步完成，`success=true`，`stateVersion=82`。
+- 14：严格状态 `typed-failure`，workflow 已启动并在 `resolve_contact` 提交 `failed`，`stateVersion=15`，blocker 为 `NYXID_PROXY_HTTP_400` / Lark `99991672`。
+- 15：严格状态 `validated`，六路 Base 读取与周/月差异断言通过，11/11 步完成，`stateVersion=73`。
 
-这也是不能在 issue #3182 未关闭时宣称自然语言全链路通过的原因。当前 `assets/*.yaml` 已能让 01、12 成功到达启动阶段，所以问题不是所有 skill 都无法发现 workflow；剩余失败集中在复杂 capability 的 mount/admission、一致的 run identity 解析以及模型绕过 skill 等路径。
+五个案例都先搜索 Ornn，再加载精确 skill、完成 typed mount approval、启动 workflow 并读取 committed current state。公开 SSE 中成功工具结果仍可能只有通用 `completed`，所以验证器使用 typed run identity 查询 workflow current state；它不会把 Assistant 文案中的 pending 改写成成功。
+
+issue #3182 的历史症状不能再作为“当前未验证”的替代证据：上述五个代表案例已在生产镜像 `7ba3fa3e` 上重跑。这个结论只覆盖 `/api/chat` 核心链，不覆盖 Lark webhook、NyxID channel relay 和 Lark 回传。
 
 ## 配置与本地验证
 

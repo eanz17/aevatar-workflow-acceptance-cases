@@ -23,21 +23,21 @@ SKILLS = {
 }.freeze
 
 VERSIONS = {
-  "release-readiness-review" => "2.0",
-  "candidate-document-compliance-preview" => "2.0",
-  "email-access-approval-audit" => "2.0",
-  "saas-license-utilization-review" => "2.0",
-  "asset-inventory-attestation" => "2.0",
-  "project-shared-mailbox-approval" => "2.0",
-  "quarterly-access-review-reminder" => "2.0",
-  "saas-license-optimization-digest" => "4.0",
-  "contractor-access-package-approval" => "2.0",
-  "monthly-access-certification" => "3.0",
-  "complex-codex-exec-validation" => "1.0",
-  "safe-code-execute-validation" => "1.0",
-  "invoice-ocr-policy-review" => "1.0",
-  "lark-contact-batch-resolution" => "1.0",
-  "weekly-budget-variance-digest" => "1.0"
+  "release-readiness-review" => "2.1",
+  "candidate-document-compliance-preview" => "2.1",
+  "email-access-approval-audit" => "2.1",
+  "saas-license-utilization-review" => "2.1",
+  "asset-inventory-attestation" => "2.1",
+  "project-shared-mailbox-approval" => "2.1",
+  "quarterly-access-review-reminder" => "2.1",
+  "saas-license-optimization-digest" => "4.1",
+  "contractor-access-package-approval" => "2.1",
+  "monthly-access-certification" => "3.1",
+  "complex-codex-exec-validation" => "1.1",
+  "safe-code-execute-validation" => "1.1",
+  "invoice-ocr-policy-review" => "1.1",
+  "lark-contact-batch-resolution" => "1.1",
+  "weekly-budget-variance-digest" => "1.1"
 }.freeze
 
 SKILLS.each do |slug, (workflow_file, title, trigger, prompt, expected)|

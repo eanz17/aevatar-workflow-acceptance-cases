@@ -1,7 +1,7 @@
 ---
 name: safe-code-execute-validation
 description: 验证通用 JavaScript 执行和结构化结算 receipt。用户提到“安全 code_execute 验证”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "1.0"
+version: "1.1"
 metadata:
   category: mixed
   output-type: text
