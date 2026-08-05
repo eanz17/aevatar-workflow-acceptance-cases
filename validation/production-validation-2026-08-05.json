@@ -1,10 +1,23 @@
 {
   "date": "2026-08-05",
-  "deployedCommit": "7ba3fa3e",
-  "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:7ba3fa3e",
+  "deployedCommit": "0c4ff023",
+  "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
   "ingress": "nyxid proxy request aevatar",
   "scope": "已脱敏",
   "larkUserServiceHash": "a623c5a302b9",
+  "currentDeployment": {
+    "deployedCommit": "0c4ff023",
+    "healthyReplicas": "1/1",
+    "containsFixCommits": ["03389d0ae", "71a38ff59", "7ad633e6f", "e30fdd94a", "53e20f9ba"],
+    "postDeploymentLogCounters": {
+      "deliverBatch": 0,
+      "streamCachePressure": 0,
+      "workflowRunAlreadyActive": 0,
+      "toolExecutionAlreadyStarted": 0,
+      "operationAuthorityDrift": 0,
+      "codexAdmission": 0
+    }
+  },
   "staticValidation": {
     "workflowCount": 17,
     "passed": 17,
@@ -19,16 +32,93 @@
     "executionMode": "interactive"
   },
   "directRuntimeSummary": {
-    "passed": 15,
-    "platformBlocked": 2,
+    "passed": 14,
+    "platformBlocked": 1,
+    "contractRegressions": 2,
+    "terminalCompleted": 16,
+    "terminalFailed": 1,
     "unverified": 0
   },
-  "case16Validation": {
-    "validatedAt": "2026-08-05T08:33:06Z",
+  "latestFullRegression": {
+    "validatedAt": "2026-08-05T15:02:04Z",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
+    "entryPoint": "scripts/production_validate.rb",
+    "transport": "nyxid proxy request aevatar",
+    "previewPassed": 17,
+    "realRunCases": 17,
+    "strictAccepted": 14,
+    "runtimeBlocked": 1,
+    "contractRegressions": 2,
+    "sideEffectCases": ["06"],
+    "safeBranchCases": ["05", "07", "08", "09", "10"],
+    "approvedProbeCases": ["12", "14", "17"]
+  },
+  "case11Regression": {
+    "validatedAt": "2026-08-05T14:28:13Z",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
+    "previewPassed": true,
+    "canonicalManagedPayloadMatched": true,
+    "managedCredentialReadiness": {
+      "enabled": true,
+      "eligible": true,
+      "status": "active",
+      "executionReady": true,
+      "reason": "ready",
+      "stateVersion": 3,
+      "cleanupPending": 0
+    },
+    "attempts": [
+      {"runIdHash":"af0993fde673","terminalStatus":"failed","stateVersion":31,"completedSteps":4,"totalSteps":4},
+      {"runIdHash":"b6f97db6803b","terminalStatus":"failed","stateVersion":31,"completedSteps":4,"totalSteps":4}
+    ],
+    "failedStep": "execute_probe",
+    "stableErrorCode": "codex_execution_admission_denied",
+    "sideEffects": false
+  },
+  "case12RecoveryValidation": {
+    "validatedAt": "2026-08-05T14:57:41Z",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
+    "relatedCommit": "03389d0ae",
+    "attempts": ["04681030daec", "b9bf5af2e783"],
+    "terminalStatus": "completed",
+    "stateVersion": 31,
+    "completedSteps": 4,
+    "totalSteps": 4,
+    "finalArtifact": {"case":"safe_code_execute_validation","success":true,"structured_receipt":true,"total_cents":16623,"side_effects":false}
+  },
+  "case14Validation": {
+    "validatedAt": "2026-08-05T14:31:49Z",
     "ingress": "nyxid proxy request aevatar",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
     "scopeHash": "237314c29964",
     "larkUserServiceHash": "a623c5a302b9",
-    "runIdHash": "a2e226a74d8f",
+    "runIdHash": "a8247dcc62fe",
+    "preview": {"callSiteCount":1,"method":"post","effectiveRisk":"write","approvalRequired":true,"allowedExecutionModes":["interactive"]},
+    "binding": "复用现有 revision",
+    "terminalStatus": "completed",
+    "terminalSuccess": true,
+    "acceptanceStatus": "contract-regression",
+    "stateVersion": 25,
+    "completedSteps": 3,
+    "totalSteps": 3,
+    "toolCallSteps": 1,
+    "firstToolStepOutputPresent": true,
+    "typedApprovalIdentityPresent": false,
+    "approvalPendingObserved": false,
+    "approvalResumeAccepted": false,
+    "contractFailureCode": "TOOL_APPROVAL_IDENTITY_NOT_OBSERVED",
+    "finalArtifactVerified": true,
+    "readOnlyApprovalAuthorized": true,
+    "finalArtifact": {"case":"lark_contact_batch_resolution","success":true,"contact_api_reachable":true,"resolved_count":1,"identifiers_redacted":true,"side_effects":false},
+    "previousApprovedPathEvidence": {"deploymentImage":"docker.io/aelfdevops/aevatar-console-backend:8cf280e2","runIdHash":"3a142c1355b9","stateVersion":28,"typedApprovalIdentityPresent":true}
+  },
+  "case16Validation": {
+    "validatedAt": "2026-08-05T14:25:57Z",
+    "ingress": "nyxid proxy request aevatar",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
+    "scopeHash": "237314c29964",
+    "larkUserServiceHash": "a623c5a302b9",
+    "runIdHash": "d1d69959a0ba",
     "preview": {"callSiteCount":1,"method":"get","effectiveRisk":"read_only","approvalRequired":false,"allowedExecutionModes":["interactive"]},
     "binding": "复用现有 revision",
     "terminalStatus": "completed",
@@ -40,41 +130,166 @@
     "finalArtifact": {"success":true,"provider_response_verified":true,"side_effects":false}
   },
   "case17Validation": {
-    "validatedAt": "2026-08-05T08:42:24Z",
+    "validatedAt": "2026-08-05T14:31:49Z",
     "ingress": "nyxid proxy request aevatar",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
     "scopeHash": "237314c29964",
     "larkUserServiceHash": "a623c5a302b9",
-    "runIdHash": "8d6fc129f831",
+    "runIdHash": "106aaebffc12",
     "preview": {"callSiteCount":1,"method":"post","effectiveRisk":"write","approvalRequired":true,"allowedExecutionModes":["interactive"]},
     "binding": "复用现有 revision",
     "terminalStatus": "completed",
-    "stateVersion": 34,
+    "terminalSuccess": true,
+    "acceptanceStatus": "contract-regression",
+    "stateVersion": 31,
     "completedSteps": 4,
     "totalSteps": 4,
     "toolCallSteps": 1,
     "firstToolStepOutputPresent": true,
-    "typedApprovalIdentityPresent": true,
-    "finalArtifact": {"success":true,"approval_resumed":true,"side_effects":false},
-    "remainingBranches": ["approval_rejected", "durable_preview"]
+    "typedApprovalIdentityPresent": false,
+    "approvalPendingObserved": false,
+    "approvalResumeAccepted": false,
+    "contractFailureCode": "TOOL_APPROVAL_IDENTITY_NOT_OBSERVED",
+    "finalArtifact": {"case":"lark_post_search_approval_probe","success":true,"approval_resumed":true,"response_item_count":0,"side_effects":false},
+    "previousApprovedPathEvidence": {"runIdHash":"8d6fc129f831","stateVersion":34,"typedApprovalIdentityPresent":true},
+    "remainingBranches": ["approval_rejected", "durable_preview", "approved_path_revalidation"]
+  },
+  "case15ArtifactResolutionValidation": {
+    "validatedAt": "2026-08-05T10:18:45Z",
+    "ingress": "nyxid proxy request aevatar /api/chat",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:d7844b5e",
+    "runIdHash": "5bc958d83bec",
+    "chatCompleted": true,
+    "ornnSearchCalls": 1,
+    "useSkillCalls": 3,
+    "useSkillApprovalAccepted": true,
+    "workflowStartCalls": 1,
+    "artifactReads": 4,
+    "workflowValidationStatus": "validated",
+    "terminalStatus": "completed",
+    "stateVersion": 73,
+    "completedSteps": 11,
+    "totalSteps": 11,
+    "finalOutputSha256": "6613ab18ff7ec46d",
+    "assistantReportedCommittedArtifact": true,
+    "artifactPendingReportedAsFinal": false,
+    "typedFailureCodes": []
+  },
+  "sourceFinancialAcceptance": {
+    "evidenceScope": "源财务 workflow 的 post-fix 脱敏生产验收，不计入公开 17-case runtime 统计",
+    "p2NoSend": {
+      "sourceDefinition": "P2-budget-monitor/budget_monitor_weekly.shared-base.nosend.yaml",
+      "preview": {
+        "exactSource": true,
+        "callSiteCount": 6,
+        "uniqueCallSiteCount": 6,
+        "methods": ["get"],
+        "effectiveRisks": ["read_only"],
+        "approvalRequired": false
+      },
+      "binding": {
+        "status": "succeeded",
+        "contractReady": true,
+        "revisionConsistent": true
+      },
+      "runtime": {
+        "invokeCount": 1,
+        "runCatalogIncrease": 1,
+        "terminalStatus": "completed",
+        "lastSuccess": true,
+        "completedSteps": 8,
+        "totalSteps": 8,
+        "firstBaseStepOutputPresent": true,
+        "finalOutputPresent": true,
+        "typedErrorClasses": []
+      },
+      "messagesSent": false,
+      "scheduleCreated": false
+    },
+    "p1V5SubmitFalse": {
+      "sourceDefinition": "P1-invoice-approval/invoice_file_chain.v5.workflow.json",
+      "preview": {
+        "exactSource": true,
+        "callSiteCount": 5,
+        "uniqueCallSiteCount": 5,
+        "getCallSiteCount": 3,
+        "postCallSiteCount": 2,
+        "readOnlyCallSiteCount": 4,
+        "writeCallSiteCount": 1,
+        "approvalRequiredCallSiteCount": 1
+      },
+      "input": {
+        "sanitizedPngFixtureVerified": true,
+        "submit": false
+      },
+      "binding": {
+        "status": "succeeded",
+        "contractReady": true,
+        "revisionConsistent": true
+      },
+      "transientFailureDiagnosis": {
+        "errorClass": "HTTP_524",
+        "requestBytesLessThan": 1024,
+        "elapsedSecondsLessThan": 2,
+        "readContextOnlyProbeCompleted": true,
+        "evidenceBasedRetryCount": 1
+      },
+      "runtime": {
+        "terminalStatus": "completed",
+        "lastSuccess": true,
+        "completedSteps": 14,
+        "totalExecutedSteps": 14,
+        "imageAttachmentExtracted": true,
+        "readOnlyLookupCompleted": true,
+        "previewPresentationCompleted": true,
+        "finalOutputPresent": true,
+        "submitStepsExecuted": false,
+        "approvalCreated": false,
+        "typedErrorClasses": []
+      },
+      "larkWrites": false
+    },
+    "pdfAttachmentProbe": {
+      "sideEffects": false,
+      "runCatalogIncrease": 1,
+      "terminalStatus": "completed",
+      "lastSuccess": true,
+      "completedSteps": 2,
+      "totalSteps": 2,
+      "extractOutputPresent": true,
+      "finalOutputPresent": true,
+      "typedErrorClasses": []
+    },
+    "notRun": [
+      {"workflow":"P2 send workflow","reason":"禁止发送 Lark 消息"},
+      {"workflow":"P1 v6","reason":"精确 UserService authority 尚未证明，禁止 bind/run"},
+      {"workflow":"durable/weekly schedule","reason":"禁止创建或运行生产排程"},
+      {"workflow":"P1 v2 legacy definition","reason":"旧定义不替代当前 v5 submit=false 验收"}
+    ],
+    "larkChannelCanary": {
+      "status": "unproven",
+      "issue": "#3087",
+      "reason": "修复后未发送真实 Lark attachment/skill lookup canary"
+    }
   },
   "runtime": [
-    {"case":"01","result":"通过","terminalStatus":"completed","stateVersion":80,"assertion":"ready_for_review=true","sideEffects":false},
-    {"case":"02","result":"通过","terminalStatus":"completed","stateVersion":35,"assertion":"五类材料字段均为 true","sideEffects":false},
-    {"case":"03","result":"通过","terminalStatus":"completed","stateVersion":42,"assertion":"instance_reachable=true","sideEffects":false},
-    {"case":"04","result":"通过","terminalStatus":"completed","stateVersion":67,"assertion":"185 席位、140 活跃用户、USD 6670、1 个缩减候选","sideEffects":false},
-    {"case":"05","result":"通过","terminalStatus":"completed","stateVersion":46,"assertion":"mutation_executed=true、accepted=true","sideEffects":"新增一条验收 Base 记录"},
-    {"case":"06","result":"通过","terminalStatus":"completed","stateVersion":58,"assertion":"审批创建并回读，状态 PENDING","sideEffects":"创建一条验收审批"},
-    {"case":"07","result":"通过","terminalStatus":"completed","stateVersion":46,"assertion":"message_sent=true","sideEffects":"发送一条验收私信"},
-    {"case":"08","result":"通过","terminalStatus":"completed","stateVersion":112,"assertion":"六源汇总正确且 message_sent=true","sideEffects":"发送一条验收卡片"},
-    {"case":"09","result":"通过","terminalStatus":"completed","stateVersion":157,"assertion":"审批创建并回读；修复版复跑返回 idempotent_skip=true","sideEffects":"诊断期间创建两条同键 PENDING 验收审批"},
-    {"case":"10","result":"通过","terminalStatus":"completed","stateVersion":115,"assertion":"月末提交、跳过、提醒预览和提醒发送分支通过","sideEffects":"创建一条验收审批并发送两条验收私信"},
-    {"case":"11","result":"通过","terminalStatus":"completed","stateVersion":178,"assertion":"CODEX_EXEC_READY、五项检查为 true、parallel_check_count=5","sideEffects":false},
-    {"case":"12","result":"平台阻塞","terminalStatus":"failed","stateVersion":12,"assertion":"calculate_settlement committed failed","blockerCode":"NYXID_PROXY_UNAUTHORIZED","blocker":"chrono-sandbox /execute 要求 Bearer，与 catalog auth_method=none 不一致","sideEffects":false},
-    {"case":"13","result":"通过","terminalStatus":"completed","stateVersion":82,"assertion":"PDF 提取、SGD/金额/供应商归一化、审批历史与精确去重均命中","sideEffects":false},
-    {"case":"14","result":"平台阻塞","terminalStatus":"failed","stateVersion":15,"assertion":"resolve_contact committed failed","blockerCode":"NYXID_PROXY_HTTP_400","downstreamCode":"99991672","blocker":"绑定 Lark Bot 缺少 contact:user.id:readonly","sideEffects":false},
-    {"case":"15","result":"通过","terminalStatus":"completed","stateVersion":73,"assertion":"六路 Base GET、周度 2340/2400、月度 9360/9600、over=1、watch=1","sideEffects":false},
-    {"case":"16","result":"通过","terminalStatus":"completed","stateVersion":31,"completedSteps":4,"totalSteps":4,"runIdHash":"a2e226a74d8f","firstToolStepOutputPresent":true,"finalArtifactVerified":true,"assertion":"单次 Base GET、首步输出非空、success=true、provider_response_verified=true、side_effects=false","issue":"#3161","sideEffects":false},
-    {"case":"17","result":"通过","terminalStatus":"completed","stateVersion":34,"completedSteps":4,"totalSteps":4,"runIdHash":"8d6fc129f831","firstToolStepOutputPresent":true,"typedApprovalIdentityPresent":true,"finalArtifactVerified":true,"assertion":"typed pending/nested resume、单次 Base POST search、approval_resumed=true、side_effects=false","issue":"#3184","sideEffects":false}
+    {"case":"01","result":"通过","terminalStatus":"completed","stateVersion":80,"completedSteps":13,"totalSteps":13,"runIdHash":"dabc9623ad2b","assertion":"ready_for_review=true","sideEffects":false},
+    {"case":"02","result":"通过","terminalStatus":"completed","stateVersion":35,"completedSteps":4,"totalSteps":4,"runIdHash":"779a56254694","assertion":"五类材料字段均为 true","sideEffects":false},
+    {"case":"03","result":"通过","terminalStatus":"completed","stateVersion":42,"completedSteps":6,"totalSteps":6,"runIdHash":"6080e4e35597","assertion":"success=true、instance_reachable=true","sideEffects":false},
+    {"case":"04","result":"通过","terminalStatus":"completed","stateVersion":67,"completedSteps":10,"totalSteps":10,"runIdHash":"f05e3c854570","assertion":"185 席位、140 活跃用户、USD 6670、1 个缩减候选","sideEffects":false},
+    {"case":"05","result":"通过","terminalStatus":"completed","stateVersion":37,"completedSteps":5,"totalSteps":5,"runIdHash":"bbeb4629a5b2","executionBranch":"preview","assertion":"mutation_executed=false；历史 submit=true 分支另有通过证据","sideEffects":false},
+    {"case":"06","result":"通过","terminalStatus":"completed","stateVersion":55,"completedSteps":8,"totalSteps":8,"runIdHash":"cde756394cbc","executionBranch":"submit","assertion":"审批创建并回读，状态 PENDING","sideEffects":"创建一条合成验收审批"},
+    {"case":"07","result":"通过","terminalStatus":"completed","stateVersion":37,"completedSteps":5,"totalSteps":5,"runIdHash":"00ffbeb1d954","executionBranch":"preview","assertion":"message_sent=false；历史 submit=true 分支另有通过证据","sideEffects":false},
+    {"case":"08","result":"通过","terminalStatus":"completed","stateVersion":91,"completedSteps":14,"totalSteps":14,"runIdHash":"824477df567a","executionBranch":"preview","assertion":"六源汇总正确且 message_sent=false","sideEffects":false},
+    {"case":"09","result":"通过","terminalStatus":"completed","stateVersion":77,"completedSteps":11,"totalSteps":11,"runIdHash":"5d428bf7fcd9","executionBranch":"preview","assertion":"材料完整且 approval_created=false；历史 submit/idempotent 分支另有通过证据","sideEffects":false},
+    {"case":"10","result":"通过","terminalStatus":"completed","stateVersion":67,"completedSteps":10,"totalSteps":10,"runIdHash":"5c2d6bab6644","executionBranch":"preview","assertion":"月度汇总正确且 approval_created=false、message_sent=false","sideEffects":false},
+    {"case":"11","result":"平台阻塞","terminalStatus":"failed","stateVersion":31,"completedSteps":4,"totalSteps":4,"runIdHash":"b6f97db6803b","retryRunIdHash":"af0993fde673","assertion":"execute_probe 连续两次 committed failed","blockerCode":"codex_execution_admission_denied","blocker":"managed credential readiness=ready，但 workflow 执行身份未通过 admission","sideEffects":false},
+    {"case":"12","result":"通过","terminalStatus":"completed","stateVersion":31,"completedSteps":4,"totalSteps":4,"runIdHash":"b9bf5af2e783","retryRunIdHash":"04681030daec","assertion":"两次 success=true、structured_receipt=true、total_cents=16623、side_effects=false","sideEffects":false},
+    {"case":"13","result":"通过","terminalStatus":"completed","stateVersion":82,"completedSteps":12,"totalSteps":12,"runIdHash":"01977e206d50","assertion":"PDF 提取、SGD/金额/供应商归一化、审批历史与精确去重均命中","sideEffects":false},
+    {"case":"14","result":"契约回归","terminalStatus":"completed","terminalSuccess":true,"stateVersion":25,"completedSteps":3,"totalSteps":3,"runIdHash":"a8247dcc62fe","assertion":"业务 artifact 成功，但未观察到 preview 所要求的 per-run typed approval identity","blockerCode":"TOOL_APPROVAL_IDENTITY_NOT_OBSERVED","sideEffects":false},
+    {"case":"15","result":"通过","terminalStatus":"completed","stateVersion":73,"completedSteps":11,"totalSteps":11,"runIdHash":"e7121c11312e","assertion":"六路 Base GET、周度 2340/2400、月度 9360/9600、over=1、watch=1","sideEffects":false},
+    {"case":"16","result":"通过","terminalStatus":"completed","stateVersion":31,"completedSteps":4,"totalSteps":4,"runIdHash":"d1d69959a0ba","firstToolStepOutputPresent":true,"finalArtifactVerified":true,"assertion":"单次 Base GET、首步输出非空、success=true、provider_response_verified=true、side_effects=false","issue":"#3161","sideEffects":false},
+    {"case":"17","result":"契约回归","terminalStatus":"completed","terminalSuccess":true,"stateVersion":31,"completedSteps":4,"totalSteps":4,"runIdHash":"106aaebffc12","firstToolStepOutputPresent":true,"typedApprovalIdentityPresent":false,"finalArtifactVerified":true,"assertion":"业务 artifact 写 approval_resumed=true，但本轮未观察到 per-run typed pending/resume","blockerCode":"TOOL_APPROVAL_IDENTITY_NOT_OBSERVED","issue":"#3184","sideEffects":false}
   ],
   "ornnPublication": {
     "localSkillCount": 17,
@@ -96,8 +311,8 @@
     "ingress": "nyxid proxy request aevatar /api/chat",
     "cases": 5,
     "chatCompleted": 5,
-    "workflowValidated": 3,
-    "workflowTypedFailures": 2,
+    "workflowValidated": 4,
+    "workflowTypedFailures": 1,
     "searchFirst": 5,
     "duplicateToolStartCallIds": 0,
     "toolResultBoundary": "公开 SSE 的成功工具结果仍为通用 completed；验证器从 typed run identity 读取 committed workflow current state，不根据 Assistant 文案推断",
@@ -105,8 +320,124 @@
       {"case":"01","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":1,"workflowValidationStatus":"validated","terminalStatus":"completed","stateVersion":80,"completedSteps":13,"totalSteps":13,"assertion":"ready_for_review=true"},
       {"case":"12","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":2,"workflowValidationStatus":"typed-failure","terminalStatus":"failed","stateVersion":12,"completedSteps":1,"totalSteps":1,"blockerCode":"NYXID_PROXY_UNAUTHORIZED"},
       {"case":"13","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":2,"workflowValidationStatus":"validated","terminalStatus":"completed","stateVersion":82,"completedSteps":12,"totalSteps":12,"inputFileRefCount":1,"assertion":"success=true、extraction_ok=true、normalization_ok=true"},
-      {"case":"14","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":2,"workflowValidationStatus":"typed-failure","terminalStatus":"failed","stateVersion":15,"completedSteps":1,"totalSteps":1,"blockerCode":"NYXID_PROXY_HTTP_400","downstreamCode":"99991672"},
-      {"case":"15","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":1,"workflowValidationStatus":"validated","terminalStatus":"completed","stateVersion":73,"completedSteps":11,"totalSteps":11,"assertion":"live_base_reads_ok=true、周/月差异断言通过"}
+      {"case":"14","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":2,"workflowValidationStatus":"validated","terminalStatus":"completed","stateVersion":28,"completedSteps":3,"totalSteps":3,"runIdHash":"9a93e623c8d5","assertion":"success=true、contact_api_reachable=true、resolved_count=1、identifiers_redacted=true"},
+      {"case":"15","chatCompleted":true,"ornnSearch":true,"skillLoaded":true,"workflowStarted":true,"artifactReads":4,"workflowValidationStatus":"validated","terminalStatus":"completed","stateVersion":73,"completedSteps":11,"totalSteps":11,"runIdHash":"5bc958d83bec","assistantReportedCommittedArtifact":true,"artifactPendingReportedAsFinal":false,"assertion":"live_base_reads_ok=true、周/月差异断言通过"}
+    ]
+  },
+  "larkBotTransportValidation": {
+    "validatedAt": "2026-08-05T09:44:00Z",
+    "app": "Aevatar",
+    "bot": "aevatar-virtual-assistant",
+    "productionVersion": "1.0.10",
+    "releaseStatus": "Released",
+    "botEnabled": true,
+    "availability": "All",
+    "p2pAndGroupReceiveScopesAdded": true,
+    "integratedMessageScopeAdded": true,
+    "sendAsBotScopeAdded": true,
+    "receiveEventTargetsNyxidWebhook": true,
+    "defaultPrivateConversationRouteActive": true,
+    "channelBotVerifyCommandSucceeded": true,
+    "nyxidBotStatus": "active",
+    "webhookRegistered": true,
+    "webPrivateChatComposerPresent": true,
+    "inboundEventObserved": true,
+    "senderBindingResolved": true,
+    "channelAgentRunStarted": true,
+    "ornnSearchObserved": true,
+    "skillLoadAttempted": true,
+    "replyRelayObserved": true,
+    "conversationTurnCompleted": true,
+    "workflowValidationStatus": "typed-failure",
+    "workflowFailureClasses": ["Skill workflow mounting failed", "AgentNotFound", "WorkflowExternalCapabilityAdmissionException"],
+    "result": "transport 已验证，workflow typed failure"
+  },
+  "case14PostFailureRecovery": {
+    "validatedAt": "2026-08-05T09:59:00Z",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:8cf280e2",
+    "directRun": {"runIdHash":"3a142c1355b9","terminalStatus":"completed","stateVersion":28,"completedSteps":3,"totalSteps":3,"success":true},
+    "apiChatRun": {"runIdHash":"b98b752ebf80","conversationStatus":"succeeded","ornnSearchCalls":1,"useSkillCalls":3,"workflowStartCalls":1,"artifactReads":2,"toolFailureCodes":[],"terminalStatus":"completed","stateVersion":28,"completedSteps":3,"totalSteps":3,"success":true,"ornnMountSucceeded":true},
+    "larkBotRetry": {
+      "reportedLocalTime": "16:06",
+      "runIdHash": "1436a2852f8d",
+      "initialTerminalStatus": "awaiting_tool_approval",
+      "initialStateVersion": 10,
+      "approvalResumeAccepted": true,
+      "terminalStatus": "failed",
+      "stateVersion": 18,
+      "failedStep": "resolve_contact",
+      "stableErrorCode": "NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN",
+      "success": false,
+      "resolvedCount": null,
+      "identifiersRedacted": true,
+      "senderConsentAllowAllServices": false,
+      "senderConsentAllowedServiceSlugs": ["aevatar", "chrono-llm-public", "ornn-api", "chrono-sandbox"],
+      "larkUserServicePresent": false,
+      "toolReceiptDefects": ["Skill workflow mounting failed", "scope_workflows_get outcome unverified", "scope_workflows_list outcome unverified"]
+    },
+    "larkBotRetryAfterServiceReview": {
+      "startedAt": "2026-08-05T10:29:03Z",
+      "runIdHash": "e491a2690b03",
+      "initialTerminalStatus": "awaiting_tool_approval",
+      "initialStateVersion": 10,
+      "approvalResumeAccepted": true,
+      "terminalStatus": "failed",
+      "stateVersion": 17,
+      "failedStep": "resolve_contact",
+      "stableErrorCode": "NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN",
+      "success": false,
+      "resolvedCount": null,
+      "identifiersRedacted": true,
+      "senderConsentGrantedAt": "2026-08-05T10:28:25.968Z",
+      "senderBindingCreatedAt": "2026-08-05T10:28:27.600Z",
+      "larkUserServiceIdHash": "a623c5a302b9",
+      "ornnWorkflowUserServiceIdHash": "a623c5a302b9",
+      "consentContainsMatchingLarkUserServiceId": true,
+      "bindingStillProducedServiceScopeForbidden": true
+    },
+    "developerAppDefaultServiceRepair": {
+      "updatedAt": "2026-08-05T10:36:32Z",
+      "clientName": "aevatar",
+      "clientActive": true,
+      "brokerCapabilityEnabled": true,
+      "previousDefaultServiceCatalogSlugs": ["chrono-llm-public", "aevatar", "chrono-sandbox", "ornn-api"],
+      "currentDefaultServiceCatalogSlugs": ["chrono-llm-public", "aevatar", "chrono-sandbox", "ornn-api", "api-lark-bot"],
+      "larkDefaultPresent": true,
+      "requiresFreshInit": true,
+      "postRepairFreshInitObserved": true,
+      "postRepairCase14RunObserved": true,
+      "defaultRepairSufficient": false
+    },
+    "freshInitBinding": {
+      "consentGrantedAt": "2026-08-05T11:34:40.784Z",
+      "bindingCreatedAt": "2026-08-05T11:34:42.242Z",
+      "consentAllowAllServices": true,
+      "consentAllowedServiceCount": 0,
+      "bindingLastUsedAt": "2026-08-05T13:36:45.455Z"
+    },
+    "larkBotRetryAfterFreshInit": {
+      "startedAt": "2026-08-05T13:36:36.915Z",
+      "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:e30fdd94",
+      "runIdHash": "93ece1c36951",
+      "terminalStatus": "failed",
+      "stateVersion": 14,
+      "failedStep": "resolve_contact",
+      "stableErrorCode": "NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN",
+      "success": false,
+      "resolvedCount": null,
+      "identifiersRedacted": true
+    },
+    "oauthResourceNarrowingDiagnosis": {
+      "evidenceType": "production-readback-plus-source-contract",
+      "aevatarAuthorizeIncludesExplicitCoreResources": true,
+      "aevatarAuthorizeIncludesLarkResource": false,
+      "nyxidNarrowsAllowAllAuthorizationCodeToExplicitResources": true,
+      "developerAppDefaultsAffectConsentHintsOnly": true,
+      "freshInitCanRepairCurrentBinding": false
+    },
+    "freshInitChannelReceiptDefects": [
+      "Skill workflow mounting failed",
+      "aevatar_start_workflow InvalidWorkflowYaml"
     ]
   },
   "scheduleValidation": {
@@ -114,21 +445,53 @@
     "endpoint": "/api/workflow/skills/{guid}/schedule",
     "cronExpression": "0 9 * * 1",
     "timezone": "Asia/Singapore",
-    "result": "平台阻塞",
+    "result": "生产阻塞；actor-owned 修复仅存在于本地未提交补丁",
     "httpStatus": 502,
-    "receiptCreated": false
+    "receiptCreated": false,
+    "currentDeploymentCommit": "0c4ff023",
+    "currentDeploymentRetested": false,
+    "currentDeploymentContainsActorOwnedRepair": false,
+    "localRepair": {
+      "branch": "fix/2026-08-05_schedule-audit-artifact",
+      "baseCommit": "e30fdd94a",
+      "committed": false,
+      "pushed": false,
+      "deployed": false,
+      "nyxidProductionRetested": false,
+      "latestTargetedTestsRetested": false,
+      "fullBuildAndGuardsPassed": false,
+      "implemented": [
+        "StudioMemberGAgent 持久化无 secret provisioning intent",
+        "精确 binding revision 等待、durable self-timeout 与 stale attempt rejection",
+        "后台按 VerifiedBindingId 重签短期 token",
+        "member read model 暴露 provisioning 状态、attempt、schedule/operation ID 与失败原因"
+      ],
+      "remainingEndpointGap": {
+        "endpoint": "/api/workflow/skills/{guid}/schedule",
+        "missingContract": [
+          "nullable scheduleId",
+          "scheduleProvisioningId",
+          "scheduleProvisioningStatus",
+          "bindingRunId",
+          "pending 时 HTTP 202",
+          "pending 时 member read model Location"
+        ]
+      }
+    },
+    "reason": "现网既有证据仍是 HTTP 502 且没有 typed receipt；0c4ff023 只包含更早的 replacement/revision 修复，不包含当前 actor-owned 补丁。真实 schedule 入口的异步 202/receipt/Location 映射仍待补齐，之后还需最新目标测试、全量 build/guards、提交部署和 fresh NyxID 生产复验"
   },
   "surfaceBoundary": {
     "apiChat": "验证 Assistant、Ornn、tool 与 workflow 核心链",
-    "larkBotAdditional": "还需验证 Lark webhook、NyxID channel relay、Bot 注册、会话映射、发送者解析与 Lark 回传",
-    "conclusion": "/api/chat 成功不能外推为 Lark Bot transport 成功"
+    "larkBotAdditional": "已验证 Lark webhook、NyxID channel relay、Bot 注册、会话映射、发送者解析与 Lark 回传",
+    "conclusion": "transport 已验证不等于 workflow 成功；Developer App 默认项补 api-lark-bot 后的 fresh /init 已创建 allow-all consent 与新 binding，但新 run 仍以 NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN committed failed；Aevatar 显式 core resource 请求使 NyxID 在授权码阶段缩窄 binding，默认项只影响 consent 提示，平台修复前重复 /init 无法关闭 blocker"
   },
   "knownBoundaries": [
-    {"capability":"通用 code_execute","status":"平台阻塞","reason":"committed NYXID_PROXY_UNAUTHORIZED"},
-    {"capability":"Lark contact batch_get_id","status":"平台阻塞","reason":"Lark 99991672，缺 contact:user.id:readonly"},
-    {"capability":"durable schedule","status":"平台阻塞","reason":"案例 15 schedule endpoint 返回 HTTP 502 且无 receipt"},
-    {"capability":"Lark Bot 自然语言 transport","status":"未验证","reason":"本轮使用 /api/chat，不包含 webhook/relay/回传链"},
-    {"capability":"#3161 published-operation authority 分支","status":"部分覆盖","reason":"Case 16 的 nyxid_request receipt/runtime 已 committed 通过；原报告方旧 scope 的 proxy-delegation-only published-operation 分支仍待其复测"},
-    {"capability":"#3184 typed tool approval resume","status":"批准路径通过","reason":"Case 17 在当前 scope 已用 nested toolApproval 取得 committed completed；拒绝终止与 durable preview 分支仍待单独验证"}
+    {"capability":"通用 code_execute","status":"已恢复","reason":"镜像 0c4ff023 上 Case 12 连续两次 committed completed，total_cents=16623"},
+    {"capability":"managed codex_exec","status":"平台阻塞","reason":"镜像 0c4ff023 上 Case 11 连续两次在 execute_probe 以 codex_execution_admission_denied committed failed；账号 managed credential readiness 同时为 ready"},
+    {"capability":"per-run typed tool approval","status":"契约回归","reason":"Cases 14 和 17 的 preview 仍为 approvalRequired=true，但本轮运行未出现 typed pending/resume 即 committed completed"},
+    {"capability":"durable schedule","status":"生产阻塞 / 本地修复未完成","reason":"旧证据为 HTTP 502 且无 receipt；0c4ff023 不包含当前 actor-owned 补丁。真实 skill schedule 入口仍缺异步 202/typed receipt/Location 映射，补齐后还需测试、门禁、提交部署和 fresh NyxID 复验"},
+    {"capability":"Lark Bot 自然语言 workflow","status":"已验证阻塞","reason":"默认项修复后的 fresh /init 已创建 allow-all consent 与新 binding；镜像 e30fdd94 的新 run 仍在 resolve_contact 以 NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN committed failed。Aevatar authorize 的显式 core resource 不含 Lark，NyxID 因而在授权码阶段缩窄 binding；重复 /init 无法修复"},
+    {"capability":"源财务 workflow 写入与排程分支","status":"安全限制未运行","reason":"P2 send、P1 v6、durable/weekly schedule 和 P1 v2 未运行；不能由 P2 no-send 或 P1 v5 submit=false 外推"},
+    {"capability":"#3184 typed tool approval resume","status":"回归","reason":"历史 run 8d6fc129f831 曾用 nested toolApproval 完成批准恢复；镜像 0c4ff023 的新 run 未观察到 per-run typed identity 即完成，拒绝路径因此不可达，durable preview 仍未验证"}
   ]
 }

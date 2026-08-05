@@ -1,0 +1,175 @@
+{
+  "generatedAt": "2026-08-05T08:59:14Z",
+  "sourceRepository": "aevatarAI/aevatar",
+  "anchorIssue": {
+    "number": 3161,
+    "author": "jianwei-su",
+    "createdAt": "2026-08-03T01:50:55Z",
+    "url": "https://github.com/aevatarAI/aevatar/issues/3161"
+  },
+  "selection": {
+    "rule": "同一仓库、同一作者、createdAt 早于 #3161、仅 issue 不含 pull request",
+    "issueCount": 11,
+    "issues": [2411, 2412, 2447, 2944, 2958, 2999, 3000, 3001, 3061, 3086, 3087]
+  },
+  "productionRegression": {
+    "entryPoint": "scripts/production_validate.rb",
+    "commandShape": "--cases 13,15,16 --run --timeout 420",
+    "transport": "nyxid proxy request aevatar",
+    "sideEffects": false,
+    "results": [
+      {
+        "case": "13",
+        "terminalStatus": "completed",
+        "stateVersion": 82,
+        "completedSteps": 12,
+        "totalSteps": 12,
+        "runIdHash": "b0684497103a",
+        "assertion": "typed PDF input、document_extract、字段归一化、审批历史只读去重均通过",
+        "sideEffects": false
+      },
+      {
+        "case": "15",
+        "terminalStatus": "completed",
+        "stateVersion": 73,
+        "completedSteps": 11,
+        "totalSteps": 11,
+        "runIdHash": "da7f37628c6a",
+        "assertion": "六路 Base GET、周度 2340/2400、月度 9360/9600 与差异计数均通过",
+        "sideEffects": false
+      },
+      {
+        "case": "16",
+        "terminalStatus": "completed",
+        "stateVersion": 31,
+        "completedSteps": 4,
+        "totalSteps": 4,
+        "runIdHash": "43de689e301c",
+        "assertion": "单次 Base GET 首步输出非空，provider_response_verified=true",
+        "sideEffects": false
+      }
+    ]
+  },
+  "issueCoverage": [
+    {
+      "issue": 2411,
+      "state": "closed",
+      "status": "partial",
+      "existingCases": ["15"],
+      "evidence": "Case 15 证明 workflow 内六路 NyxID 只读调用可完成",
+      "boundary": "未创建 durable schedule，不能证明 scopeOwnerNyxId 凭证从 schedule fire 透传到 run"
+    },
+    {
+      "issue": 2412,
+      "state": "closed",
+      "status": "partial",
+      "existingCases": ["13"],
+      "evidence": "Case 13 证明 attachment 到达 workflow 后的 typed file/document_extract 接收端可用",
+      "boundary": "未发送 Lark 消息，不能证明 relay attachment ingress 或完整回复投递"
+    },
+    {
+      "issue": 2447,
+      "state": "closed",
+      "status": "partial",
+      "existingCases": ["13"],
+      "evidence": "Case 13 用合成 PDF 完成 input_file_refs 到 document_extract",
+      "boundary": "直接 typed input 不等于 Lark file-card/recent attachment drain"
+    },
+    {
+      "issue": 2944,
+      "state": "closed",
+      "status": "semantic-replacement",
+      "existingCases": ["13", "15", "16"],
+      "evidence": "三个当前 canonical capability.nyxid_request 定义均通过 preview，已绑定 revision 可调用且 committed completed",
+      "boundary": "属于当前替代契约的语义覆盖，不重放已废弃的 legacy proof 或 direct nyxid_*__* authoring"
+    },
+    {
+      "issue": 2958,
+      "state": "closed",
+      "status": "historical-blocker-current-unverified",
+      "existingCases": ["15"],
+      "evidence": "Case 15 的业务 workflow 与 schedule 示例存在",
+      "boundary": "旧证据为 HTTP 502 且没有 typed receipt；0c4ff023 不包含当前 actor-owned provisioning 补丁，仍无法证明 fire、自愈或 overdue 可观测性"
+    },
+    {
+      "issue": 2999,
+      "state": "closed",
+      "status": "positive-control",
+      "existingCases": ["13", "15", "16"],
+      "evidence": "三个复用既有 revision 的 member 均保持 invocation ready 并 committed completed",
+      "boundary": "原报告方已将旧状态维护窗口现象定为当前不可复现，不能伪造冻结 registry 状态"
+    },
+    {
+      "issue": 3000,
+      "state": "open",
+      "status": "not-run",
+      "existingCases": ["15"],
+      "evidence": "仅有 schedule 契约示例",
+      "boundary": "精确回归要求创建 schedule 后 PUT 修改 target serviceId；最新部署未获准创建或修改 durable schedule，不能从代码部署外推行为成功"
+    },
+    {
+      "issue": 3001,
+      "state": "closed",
+      "status": "not-run",
+      "existingCases": ["15"],
+      "evidence": "Case 15 的旧 revision 仍可通过直接 member invoke 按需进入 workflow",
+      "boundary": "直接 invoke 不证明 scheduled dispatch 能按需 provision definition actor"
+    },
+    {
+      "issue": 3061,
+      "state": "closed",
+      "status": "not-independently-validated",
+      "existingCases": [],
+      "evidence": "issue 报告方已用真实 bot aevatar_invoke_team run 验证修复后关闭",
+      "boundary": "缺少本仓库独立 Lark channel canary；member 直调或 /api/chat 不等价于 channel background-delivery reservation 链"
+    },
+    {
+      "issue": 3086,
+      "state": "open",
+      "status": "partial",
+      "existingCases": ["13"],
+      "evidence": "Case 13 的 typed file_ref 接收端和 PDF document_extract committed completed",
+      "boundary": "仍缺真实 Lark image/PDF 消息自动传播到 invocation input_parts 的 E2E"
+    },
+    {
+      "issue": 3087,
+      "state": "open",
+      "status": "partial",
+      "existingCases": ["13"],
+      "evidence": "现有 /api/chat Case 13 已证明 public Ornn search/use_skill/workflow 核心链",
+      "boundary": "未证明 channel-bound authority 能搜索 owner-visible private skill，也未证明 channel ornn_search_skills typed receipt"
+    }
+  ],
+  "anchorCoverage": {
+    "issue": 3161,
+    "status": "validated",
+    "existingCases": ["16", "source-p2-no-send"],
+    "evidence": "Case 16 provider receipt/runtime 与源 P2 no-send published-operation authority 链均 committed completed",
+    "boundary": "只覆盖 no-send 只读执行；消息发送与 durable schedule 未运行"
+  },
+  "sourceWorkflowAcceptance": {
+    "deploymentCommit": "71a38ff5",
+    "source": "P2-budget-monitor/budget_monitor_weekly.shared-base.nosend.yaml",
+    "preview": {
+      "callSiteCount": 6,
+      "uniqueCallSiteCount": 6,
+      "readOnly": true,
+      "approvalRequired": false
+    },
+    "bindingStatus": "succeeded",
+    "contractReady": true,
+    "invokeCount": 1,
+    "runCatalogIncrease": 1,
+    "terminalStatus": "completed",
+    "lastSuccess": true,
+    "completedSteps": 8,
+    "totalSteps": 8,
+    "firstBaseStepOutputPresent": true,
+    "finalOutputPresent": true,
+    "typedErrorClasses": [],
+    "messagesSent": false,
+    "scheduleCreated": false
+  },
+  "newWorkflowAdded": false,
+  "newWorkflowReason": "未覆盖项位于 Lark channel 或 durable scheduler 外层；复制业务 YAML 不会增加有效覆盖"
+}

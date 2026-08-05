@@ -83,7 +83,13 @@ CASES = {
   "14" => {
     file: "14-lark-contact-batch-resolution.workflow.yaml",
     prompt: "解析验收入职邮箱，只返回是否解析成功和数量。",
-    approval_required: true
+    approval_required: true,
+    preview_contract: {
+      method: "post",
+      effectiveRisk: "write",
+      approvalRequired: true,
+      allowedExecutionModes: ["interactive"]
+    }
   },
   "15" => {
     file: "15-weekly-budget-variance-digest.workflow.yaml",
@@ -244,6 +250,11 @@ class ProductionValidator
       /user_service_id:\s*\S+/,
       "user_service_id: #{lark_service_id}"
     )
+    if @options.fetch(:run) && case_id == "14" &&
+        yaml.include?(%q{"emails":["acceptance-user@example.com"]})
+      raise ValidationError, "案例 14 真实运行拒绝 config.example.yaml 的示例邮箱；请先使用 config.local.yaml 物化"
+    end
+
     display_name = "公开验收案例 #{case_id}-#{Digest::SHA256.hexdigest(yaml)[0, 10]}"
     preview = preview_workflow(yaml, display_name)
     if config[:preview_contract]
@@ -435,6 +446,8 @@ class ProductionValidator
       approval = parse_stream_line(evidence, line)
       next unless approval
 
+      validate_approval_identity!(approval)
+      evidence[:typed_approval_identity_present] = true
       unless approval_allowed
         raise ValidationError, "运行等待 tool approval；必须显式允许对应的写入或只读批准后才会继续"
       end
@@ -446,20 +459,31 @@ class ProductionValidator
     end
     raise ValidationError, "运行未返回 run ID" unless evidence[:run_id]
 
-    detail = wait_for_run(member_id, evidence.fetch(:run_id), approval_allowed, approved_keys)
-    final_output = detail["finalOutput"] || evidence[:final_output]
-    success = detail.dig("summary", "status") == "completed" && detail.dig("summary", "success") == true
-    runtime_contract_evidence = success ? validate_runtime_contract(case_id, detail, final_output) : {}
+    detail = wait_for_run(member_id, evidence.fetch(:run_id), approval_allowed, approved_keys, evidence)
+    final_output = detail["finalOutput"]
+    final_output = evidence[:final_output] if final_output.to_s.strip.empty?
+    terminal_success = detail.dig("summary", "status") == "completed" && detail.dig("summary", "success") == true
+    runtime_contract_evidence = {}
+    contract_failure = nil
+    if terminal_success
+      begin
+        runtime_contract_evidence = validate_runtime_contract(case_id, detail, final_output, evidence)
+      rescue ValidationError => e
+        contract_failure = e.message
+      end
+    end
+    success = terminal_success && contract_failure.nil?
     {
       run: "已提交并查询 committed read model",
       runIdHash: Digest::SHA256.hexdigest(evidence.fetch(:run_id))[0, 12],
       terminalStatus: detail.dig("summary", "status"),
+      terminalSuccess: terminal_success,
       success: success,
       stateVersion: detail.dig("summary", "stateVersion"),
       completedSteps: detail.dig("statistics", "completedSteps"),
       totalSteps: detail.dig("statistics", "totalSteps"),
       finalOutput: sanitize_output(final_output),
-      failure: sanitize_output(terminal_failure(detail)),
+      failure: sanitize_output(contract_failure || terminal_failure(detail)),
       sideEffectAuthorized: side_effect,
       readOnlyApprovalAuthorized: read_only_approval
     }.merge(runtime_contract_evidence)
@@ -513,10 +537,10 @@ class ProductionValidator
     elsif custom && custom["name"] == "aevatar.tool_approval.pending"
       payload = custom.fetch("payload")
       return {
-        step_id: payload.fetch("stepId"),
-        execution_id: payload.fetch("executionId"),
-        tool_call_id: payload.fetch("toolCallId"),
-        approval_request_id: payload.fetch("approvalRequestId")
+        step_id: payload["stepId"],
+        execution_id: payload["executionId"],
+        tool_call_id: payload["toolCallId"],
+        approval_request_id: payload["approvalRequestId"]
       }
     elsif event["runFinished"]
       evidence[:final_output] = event.dig("runFinished", "result", "output")
@@ -526,7 +550,7 @@ class ProductionValidator
     nil
   end
 
-  def wait_for_run(member_id, run_id, approval_allowed, approved_keys = {})
+  def wait_for_run(member_id, run_id, approval_allowed, approved_keys = {}, evidence = {})
     deadline = Time.now + @options.fetch(:timeout)
     loop do
       detail = @client.request_json(
@@ -541,19 +565,21 @@ class ProductionValidator
         end
         raise ValidationError, "read model 缺少 typed tool approval identity" unless approval_step
         approval = approval_step.fetch("toolApproval")
-        key = approval.fetch("approvalRequestId")
+        key = approval["approvalRequestId"]
         unless approved_keys[key]
           unless approval_allowed
             raise ValidationError, "运行等待 tool approval；没有获得自动批准授权"
           end
-          approve(
-            member_id,
-            run_id,
-            step_id: approval_step.fetch("stepId"),
-            execution_id: approval.fetch("executionId"),
-            tool_call_id: approval.fetch("toolCallId"),
+          typed_approval = {
+            step_id: approval_step["stepId"],
+            execution_id: approval["executionId"],
+            tool_call_id: approval["toolCallId"],
             approval_request_id: key
-          )
+          }
+          validate_approval_identity!(typed_approval)
+          key = typed_approval.fetch(:approval_request_id)
+          evidence[:typed_approval_identity_present] = true
+          approve(member_id, run_id, typed_approval)
           approved_keys[key] = true
         end
       end
@@ -584,17 +610,40 @@ class ProductionValidator
     raise ValidationError, response["message"] || response["error"] unless response["accepted"] == true
   end
 
+  def validate_approval_identity!(approval)
+    required = %i[step_id execution_id tool_call_id approval_request_id]
+    return if required.all? { |key| !approval[key].to_s.strip.empty? }
+
+    raise ValidationError, "typed tool approval identity 不完整"
+  end
+
   def sanitize_output(output)
     return nil if output.nil?
     return scrub_identifiers(output) if output.is_a?(Hash) || output.is_a?(Array)
 
     scrub_identifiers(JSON.parse(output.to_s))
   rescue JSON::ParserError
-    output.to_s.gsub(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i, "<已脱敏>")[0, 800]
+    output.to_s
+      .gsub(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i, "<已脱敏>")
+      .gsub(/\b[0-9a-f]{32}\b/i, "<已脱敏>")
+      .slice(0, 800)
   end
 
-  def validate_runtime_contract(case_id, detail, final_output)
+  def validate_runtime_contract(case_id, detail, final_output, evidence = {})
     contract = case case_id
+               when "14"
+                 {
+                   step_id: "resolve_contact",
+                   expected_artifact: {
+                     "case" => "lark_contact_batch_resolution",
+                     "success" => true,
+                     "contact_api_reachable" => true,
+                     "resolved_count" => 1,
+                     "identifiers_redacted" => true,
+                     "side_effects" => false
+                   },
+                   approval_required: true
+                 }
                when "16"
                  {
                    step_id: "read_base_records",
@@ -627,9 +676,10 @@ class ProductionValidator
     typed_approval_present = false
     if contract.fetch(:approval_required)
       approval = first_step["toolApproval"]
-      typed_approval_present = approval.is_a?(Hash) &&
+      read_model_identity_present = approval.is_a?(Hash) &&
         %w[executionId toolCallId approvalRequestId].all? { |key| !approval[key].to_s.strip.empty? }
-      raise ValidationError, "案例 #{case_id} committed read model 缺少 typed approval identity" unless typed_approval_present
+      typed_approval_present = read_model_identity_present || evidence[:typed_approval_identity_present] == true
+      raise ValidationError, "案例 #{case_id} 运行缺少 typed approval identity" unless typed_approval_present
     end
 
     artifact = final_output.is_a?(String) ? JSON.parse(final_output) : final_output
@@ -659,12 +709,17 @@ class ProductionValidator
     case value
     when Hash
       value.each_with_object({}) do |(key, item), result|
-        result[key] = key.to_s.match?(/instance_code|diagnostic_id/i) && item.to_s != "" ? "<已脱敏>" : scrub_identifiers(item)
+        key_name = key.to_s
+        identifier_key = key_name.match?(/instance_code|diagnostic_id/i) || key_name.end_with?("_id", "Id", "ID")
+        sensitive_id = identifier_key && item.to_s != ""
+        result[key] = sensitive_id ? "<已脱敏>" : scrub_identifiers(item)
       end
     when Array
       value.map { |item| scrub_identifiers(item) }
     when String
-      value.gsub(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i, "<已脱敏>")
+      value
+        .gsub(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i, "<已脱敏>")
+        .gsub(/\b[0-9a-f]{32}\b/i, "<已脱敏>")
     else
       value
     end
