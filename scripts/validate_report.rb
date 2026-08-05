@@ -587,6 +587,15 @@ fail_validation("文字报告缺少最新全量回归口径") unless
 fail_validation("分析页缺少最新全量回归口径") unless
   html.include?("14 / 17") && html.include?("<code>0c4ff023</code>") &&
   html.include?("2 个审批契约回归")
+fail_validation("分析页阻塞状态未使用红色") unless
+  html.include?(".status-blocked { background: var(--red-soft); color: var(--red); }")
+fail_validation("分析页仍把已验证失败或回归显示为蓝色") if
+  html.match?(/<span class="status status-partial">[^<]*(?:契约回归|已验证阻塞)/)
+fail_validation("分析页契约回归红色状态数量错误") unless
+  html.scan(/<span class="status status-blocked">契约回归<\/span>/).length == 4
+fail_validation("分析页 Lark Bot 已验证阻塞未标红") unless
+  html.include?("<span class=\"status status-blocked\">已验证阻塞</span>") &&
+  html.include?("<span class=\"status status-blocked\">P1 已验证阻塞</span>")
 %w[USE_SKILL_MOUNT_FAILED CAPABILITY_ADMISSION_REBIND_REQUIRED].each do |closed_blocker|
   fail_validation("分析页仍把已关闭症状列为当前阻塞：#{closed_blocker}") if html.include?(closed_blocker)
 end

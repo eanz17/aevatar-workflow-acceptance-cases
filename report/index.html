@@ -145,7 +145,7 @@
     .status { display: inline-flex; min-height: 23px; align-items: center; border-radius: 999px; padding: 2px 8px; white-space: nowrap; font-size: 12px; font-weight: 600; }
     .status-covered, .status-passed { background: var(--green-soft); color: var(--green); }
     .status-partial { background: var(--blue-soft); color: var(--blue); }
-    .status-blocked { background: var(--amber-soft); color: var(--amber); }
+    .status-blocked { background: var(--red-soft); color: var(--red); }
     .status-missing { background: var(--red-soft); color: var(--red); }
     .status-info { background: var(--purple-soft); color: var(--purple); }
 
@@ -273,7 +273,7 @@
             <table aria-label="源版本族映射">
               <thead><tr><th>源版本族</th><th class="number">定义</th><th>新案例</th><th>已覆盖语义</th><th>剩余边界</th><th>判断</th></tr></thead>
               <tbody>
-                <tr data-source-family="base"><td class="family-name">Base 探针</td><td class="number">3</td><td>04、05、15-17</td><td>记录 GET、多源读取、受保护 POST、provider receipt、approval resume</td><td>16 通过；17 最新运行缺少 typed approval identity</td><td><span class="status status-partial">覆盖 / 契约回归</span></td></tr>
+                <tr data-source-family="base"><td class="family-name">Base 探针</td><td class="number">3</td><td>04、05、15-17</td><td>记录 GET、多源读取、受保护 POST、provider receipt、approval resume</td><td>16 通过；17 最新运行缺少 typed approval identity</td><td><span class="status status-blocked">覆盖 / 契约回归</span></td></tr>
                 <tr data-source-family="primitives"><td class="family-name">原语与执行探针</td><td class="number">5</td><td>01、03、11、12</td><td>转换、分支、foreach、managed codex、固定 code</td><td>12 已恢复；11 在 readiness=ready 时 admission denied</td><td><span class="status status-blocked">部分 / 阻塞</span></td></tr>
                 <tr data-source-family="onboarding"><td class="family-name">Lark Onboarding</td><td class="number">1</td><td>06</td><td>Base 申请、审批创建和实例回读</td><td>无新增缺口</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-source-family="invoice"><td class="family-name">发票审批</td><td class="number">7</td><td>02、03、09、13、14 + 源 P1 v5</td><td>媒体提取、财务规则、历史、去重、审批、contact</td><td>v5 submit=false 主链通过；审批提交、v6、旧 v2 未运行</td><td><span class="status status-partial">主链覆盖 / 写入未运行</span></td></tr>
@@ -289,7 +289,7 @@
           <div class="section-heading"><h2>能力覆盖矩阵</h2><p class="caption">按功能语义判断，不以文件数量替代</p></div>
           <div class="controls">
             <div class="field"><label for="family-filter">能力域</label><select id="family-filter"><option value="all">全部能力域</option><option value="基础原语">基础原语</option><option value="Base">Base</option><option value="Lark">Lark</option><option value="执行与调度">执行与调度</option><option value="Ornn 与聊天">Ornn 与聊天</option></select></div>
-            <div class="field"><label for="status-filter">证据状态</label><select id="status-filter"><option value="all">全部状态</option><option value="covered">覆盖</option><option value="partial">部分覆盖</option><option value="blocked">平台阻塞</option><option value="missing">未验证</option></select></div>
+            <div class="field"><label for="status-filter">证据状态</label><select id="status-filter"><option value="all">全部状态</option><option value="covered">覆盖</option><option value="partial">部分覆盖</option><option value="blocked">阻塞 / 回归</option><option value="missing">未验证</option></select></div>
             <output class="result-count" id="capability-count" aria-live="polite">显示 18 项能力</output>
           </div>
           <div class="table-wrap">
@@ -302,18 +302,18 @@
                 <tr data-family="Base" data-status="covered"><td>Base</td><td>记录、表目录、视图和多源 GET</td><td>真实 GET、精确聚合与源 P2 六调用断言</td><td>04、08、10、15 + 源 P2</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="Base" data-status="covered"><td>Base</td><td>managed NyxID provider receipt 回归</td><td>Case 16 committed 4/4；源 P2 published-operation 8/8</td><td>16 / #3161 + 源 P2</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="Base" data-status="covered"><td>Base</td><td>受保护记录 POST</td><td>typed approval 后 accepted</td><td>05</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="Base" data-status="partial"><td>Base</td><td>POST search typed pending/resume</td><td>历史 nested resume 通过；最新运行无 per-run approval identity</td><td>17 / #3184</td><td><span class="status status-partial">契约回归</span></td></tr>
+                <tr data-family="Base" data-status="blocked"><td>Base</td><td>POST search typed pending/resume</td><td>历史 nested resume 通过；最新运行无 per-run approval identity</td><td>17 / #3184</td><td><span class="status status-blocked">契约回归</span></td></tr>
                 <tr data-family="Lark" data-status="covered"><td>Lark</td><td>审批列表、详情、创建、回读和幂等</td><td>创建、回读与复跑 committed</td><td>03、06、09、10、13</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="Lark" data-status="covered"><td>Lark</td><td>文本私信与 interactive card</td><td>typed receipt 成功</td><td>07、08、10</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="执行与调度" data-status="blocked"><td>执行与调度</td><td>固定 managed codex_exec</td><td>readiness=ready；两次 <code>codex_execution_admission_denied</code></td><td>11</td><td><span class="status status-blocked">平台阻塞</span></td></tr>
                 <tr data-family="执行与调度" data-status="covered"><td>执行与调度</td><td>通用 code_execute</td><td>两次 committed；<code>total_cents=16623</code></td><td>12</td><td><span class="status status-covered">已恢复</span></td></tr>
                 <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>发票 OCR 与财务归一化规则</td><td>PDF 提取、SGD、金额和去重命中</td><td>13</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="Lark" data-status="partial"><td>Lark</td><td>contact batch_get_id</td><td>业务结果正确；最新运行缺少 per-run approval identity</td><td>14</td><td><span class="status status-partial">契约回归</span></td></tr>
+                <tr data-family="Lark" data-status="blocked"><td>Lark</td><td>contact batch_get_id</td><td>业务结果正确；最新运行缺少 per-run approval identity</td><td>14</td><td><span class="status status-blocked">契约回归</span></td></tr>
                 <tr data-family="Base" data-status="covered"><td>Base</td><td>预算周报/月报与差异公式</td><td>六路读取与六项数值断言</td><td>15</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="执行与调度" data-status="blocked"><td>执行与调度</td><td>durable weekly/monthly schedule</td><td>历史 HTTP 502；actor-owned 补丁尚未完成真实入口、测试与部署</td><td>15</td><td><span class="status status-blocked">生产仍阻塞</span></td></tr>
                 <tr data-family="Ornn 与聊天" data-status="partial"><td>Ornn 与聊天</td><td>skill 校验、发布、public 权限与回读</td><td>17/17 本地；15/17 服务端闭环</td><td>01-17</td><td><span class="status status-partial">部分覆盖</span></td></tr>
                 <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>/api/chat 自然语言选择和 workflow 终态</td><td>4 个 validated；1 个 committed typed failure</td><td>01、12-15</td><td><span class="status status-covered">核心链覆盖</span></td></tr>
-                <tr data-family="Ornn 与聊天" data-status="partial"><td>Ornn 与聊天</td><td>Lark Bot webhook/relay/回传</td><td>transport 与 typed approval resume 已验证；fresh /init 仍受 resource narrowing 阻塞</td><td>14</td><td><span class="status status-partial">已验证阻塞</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="blocked"><td>Ornn 与聊天</td><td>Lark Bot webhook/relay/回传</td><td>transport 与 typed approval resume 已验证；fresh /init 仍受 resource narrowing 阻塞</td><td>14</td><td><span class="status status-blocked">已验证阻塞</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -346,10 +346,10 @@
                 <tr data-result="blocked" data-effect="none"><td class="case-id">11</td><td><code>complex_codex_exec_validation</code></td><td class="number">4</td><td class="number">31</td><td class="assertion"><code>codex_execution_admission_denied</code>，连续两次</td><td><span class="status status-blocked">平台阻塞</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">12</td><td><code>safe_code_execute_validation</code></td><td class="number">4</td><td class="number">31</td><td class="assertion"><code>structured_receipt=true</code>、<code>total_cents=16623</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">13</td><td><code>invoice_ocr_policy_review</code></td><td class="number">12</td><td class="number">82</td><td class="assertion">PDF、SGD、金额、供应商与去重命中</td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="regression" data-effect="none"><td class="case-id">14</td><td><code>lark_contact_batch_resolution</code></td><td class="number">3</td><td class="number">25</td><td class="assertion">业务成功；<code>TOOL_APPROVAL_IDENTITY_NOT_OBSERVED</code></td><td><span class="status status-partial">契约回归</span></td></tr>
+                <tr data-result="regression" data-effect="none"><td class="case-id">14</td><td><code>lark_contact_batch_resolution</code></td><td class="number">3</td><td class="number">25</td><td class="assertion">业务成功；<code>TOOL_APPROVAL_IDENTITY_NOT_OBSERVED</code></td><td><span class="status status-blocked">契约回归</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">15</td><td><code>weekly_budget_variance_digest</code></td><td class="number">11</td><td class="number">73</td><td class="assertion">六路 Base、周/月差异、over=1、watch=1</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">16</td><td><code>nyxid_read_receipt_probe</code></td><td class="number">4</td><td class="number">31</td><td class="assertion">首步输出非空；<code>provider_response_verified=true</code></td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="regression" data-effect="none"><td class="case-id">17</td><td><code>lark_post_search_approval_probe</code></td><td class="number">4</td><td class="number">31</td><td class="assertion">业务成功；<code>TOOL_APPROVAL_IDENTITY_NOT_OBSERVED</code></td><td><span class="status status-partial">契约回归</span></td></tr>
+                <tr data-result="regression" data-effect="none"><td class="case-id">17</td><td><code>lark_post_search_approval_probe</code></td><td class="number">4</td><td class="number">31</td><td class="assertion">业务成功；<code>TOOL_APPROVAL_IDENTITY_NOT_OBSERVED</code></td><td><span class="status status-blocked">契约回归</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -391,9 +391,9 @@
           <div class="note"><p><strong>Durable schedule 状态：</strong>actor-owned durable provisioning 目前只是本地未提交补丁；真实 skill schedule 入口仍缺 pending <code>202</code>、typed receipt 和 member read-model <code>Location</code>。最新目标测试、全量门禁、部署与 fresh NyxID 证据均未完成，线上继续按 HTTP 502 阻塞展示。</p></div>
           <div class="gap-list">
             <div class="gap-row"><h3>Managed codex_exec</h3><div><span class="status status-blocked">P0 平台阻塞</span></div><p>Case 11 与 canonical managed payload 一致，账号 <code>execution_ready=true</code>；最新镜像仍连续两次在 <code>execute_probe</code> 以 <code>codex_execution_admission_denied</code> committed failed。</p></div>
-            <div class="gap-row"><h3>Per-run typed approval</h3><div><span class="status status-partial">P0 契约回归</span></div><p>Cases 14、17 的 preview 均为 <code>approvalRequired=true</code>，本轮却没有 typed pending/resume 即 completed。历史批准路径保留，但当前运行不能按严格契约计为通过。</p></div>
+            <div class="gap-row"><h3>Per-run typed approval</h3><div><span class="status status-blocked">P0 契约回归</span></div><p>Cases 14、17 的 preview 均为 <code>approvalRequired=true</code>，本轮却没有 typed pending/resume 即 completed。历史批准路径保留，但当前运行不能按严格契约计为通过。</p></div>
             <div class="gap-row"><h3>Durable schedule</h3><div><span class="status status-blocked">生产仍阻塞</span></div><p>既有案例 15 schedule POST 返回 HTTP 502，未创建 typed receipt。本地 Actor 补丁已覆盖 intent、binding revision、durable timeout、token 重签、stale completion 与 member read model，但真实 <code>/api/workflow/skills/{guid}/schedule</code> 还未承接 nullable schedule ID、provisioning ID/status、binding run ID、pending <code>202</code> 与 <code>Location</code>。补齐后仍需最新测试、全量门禁、提交部署和 NyxID 生产复验。</p></div>
-            <div class="gap-row"><h3>Lark Bot sender service grant</h3><div><span class="status status-partial">P1 已验证阻塞</span></div><p>镜像 <code>8cf280e2</code> 的直接 run 与 <code>/api/chat</code> 均 committed 通过；前两次 Bot 重试在批准后以 <code>NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN</code> failed。默认项补 <code>api-lark-bot</code> 后的 fresh <code>/init</code> 已创建 allow-all consent 与新 binding，但镜像 <code>e30fdd94</code> 的第三次 run <code>93ece1c36951</code> 仍以同一错误 failed。根因是 Aevatar authorize 的显式 core resource 不含 Lark，NyxID 在授权码阶段据此缩窄 binding；重复 <code>/init</code> 无效。channel-only 的 skill mount、workflow get/list 与 invalid-YAML receipt 缺陷仍保留。</p></div>
+            <div class="gap-row"><h3>Lark Bot sender service grant</h3><div><span class="status status-blocked">P1 已验证阻塞</span></div><p>镜像 <code>8cf280e2</code> 的直接 run 与 <code>/api/chat</code> 均 committed 通过；前两次 Bot 重试在批准后以 <code>NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN</code> failed。默认项补 <code>api-lark-bot</code> 后的 fresh <code>/init</code> 已创建 allow-all consent 与新 binding，但镜像 <code>e30fdd94</code> 的第三次 run <code>93ece1c36951</code> 仍以同一错误 failed。根因是 Aevatar authorize 的显式 core resource 不含 Lark，NyxID 在授权码阶段据此缩窄 binding；重复 <code>/init</code> 无效。channel-only 的 skill mount、workflow get/list 与 invalid-YAML receipt 缺陷仍保留。</p></div>
             <div class="gap-row"><h3>财务源定义安全边界</h3><div><span class="status status-partial">未运行</span></div><p>P2 send、P1 v6、durable/weekly schedule 和 P1 v2 旧定义受安全或 authority 边界限制未运行；P2 no-send 与 P1 v5 <code>submit=false</code> 的成功不能替代这些分支。</p></div>
           </div>
         </div>
