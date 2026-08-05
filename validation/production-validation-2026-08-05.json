@@ -1,11 +1,13 @@
 {
   "date": "2026-08-05",
+  "updatedAtUtc": "2026-08-05T17:06:58Z",
   "deployedCommit": "f7f543c5",
   "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:f7f543c5",
   "ingress": "nyxid proxy request aevatar",
   "scope": "已脱敏",
   "larkUserServiceHash": "a623c5a302b9",
   "currentDeployment": {
+    "observedAtUtc": "2026-08-05T17:06:58Z",
     "deployedCommit": "f7f543c5",
     "healthyReplicas": "1/1",
     "containsFixCommits": ["03389d0ae", "71a38ff59", "7ad633e6f", "e30fdd94a", "53e20f9ba", "748f98e7d", "f7f543c51"],
@@ -472,7 +474,7 @@
     "endpoint": "/api/workflow/skills/{guid}/schedule",
     "cronExpression": "0 9 * * 1",
     "timezone": "Asia/Singapore",
-    "result": "生产已验证阻塞：入口与异步状态链通过，authority contract provider 缺失",
+    "result": "生产已验证阻塞；只读源码窄修复已推送，待部署端到端复验",
     "historicalHttpStatus": 502,
     "confirmationHttpStatus": 200,
     "admissionHttpStatus": 202,
@@ -521,10 +523,29 @@
         "blindMutationRetryPerformed": false
       },
       "sourceDiagnosis": {
+        "deploymentCommit": "f7f543c51",
         "realOperationAuthorizationProviderRegistered": false,
         "fallbackProvider": "UnavailableNyxIdScheduledOperationAuthorizationPort",
         "fallbackDecision": "AuthorityContractUnavailable"
       }
+    },
+    "sourceRepair": {
+      "commit": "7a7781067",
+      "branch": "origin/feature/integrate",
+      "pushed": true,
+      "deployed": false,
+      "currentProductionImage": "docker.io/aelfdevops/aevatar-console-backend:f7f543c5",
+      "policy": "完整 Durable proof、binder grant 与 service catalog 校验后，binder-attested READ_ONLY GET/HEAD/OPTIONS 不再要求独立 operation-authority preview；NyxID 仍在每次 runtime proxy 请求时校验当前权限",
+      "case15Applicable": true,
+      "case15Methods": ["get"],
+      "case15CallSiteCount": 6,
+      "writeAndDestructiveRemainFailClosed": true,
+      "productionProofStillRequired": [
+        "provisioning committed succeeded",
+        "scheduleId 与 operationId 非空",
+        "schedule 可读取",
+        "至少一次真实触发并取得 workflow committed terminal"
+      ]
     },
     "localRepair": {
       "branch": "fix/2026-08-05_schedule-audit-artifact",
@@ -604,7 +625,7 @@
         }
       }
     },
-    "reason": "f7f543c51 已部署 actor-owned 修复。Fresh NyxID 验证确认 200 confirmation_required、202 typed provisioning receipt、binding committed succeeded 和 member read model 可见；随后 provisioning 以 NyxIdOperationAuthorityContractUnavailable committed failed，未产生 schedule/operation ID。源码只注册 UnavailableNyxIdScheduledOperationAuthorizationPort，故 HTTP 502、receipt 与持久状态缺口已关闭，但真实 operation authority provider 和 schedule 创建仍阻塞"
+    "reason": "f7f543c51 已部署 actor-owned 修复。Fresh NyxID 验证确认 200 confirmation_required、202 typed provisioning receipt、binding committed succeeded 和 member read model 可见；随后 provisioning 以 NyxIdOperationAuthorityContractUnavailable committed failed，未产生 schedule/operation ID。7a7781067 已在 origin/feature/integrate 对 binder-attested READ_ONLY GET/HEAD/OPTIONS 增加窄放行，但当前生产仍是 f7f543c5，尚未包含该提交，也没有 schedule 创建、读取或真实触发证据"
   },
   "surfaceBoundary": {
     "apiChat": "验证 Assistant、Ornn、tool 与 workflow 核心链",
@@ -615,7 +636,7 @@
     {"capability":"通用 code_execute","status":"已恢复","reason":"镜像 0c4ff023 上 Case 12 连续两次 committed completed，total_cents=16623"},
     {"capability":"managed codex_exec","status":"已恢复","reason":"镜像 f7f543c5 上 Case 11 committed completed，30/30 步，固定输出 CODEX_EXEC_READY、五项 typed gate 与 parallel_check_count=5 全部命中；历史 0c4ff023 admission denied 证据保留"},
     {"capability":"per-run typed tool approval","status":"契约回归","reason":"Cases 14 和 17 的 preview 仍为 approvalRequired=true，但本轮运行未出现 typed pending/resume 即 committed completed"},
-    {"capability":"durable schedule","status":"生产已验证阻塞","reason":"f7f543c51 上 fresh NyxID 请求按 200 confirmation_required -> 202 typed provisioning receipt 工作，binding committed succeeded；provisioning 随后以 NyxIdOperationAuthorityContractUnavailable committed failed，schedule/operation ID 为空。Aevatar 当前只注册 unavailable fallback，需实现并注册真实 operation authority provider"},
+    {"capability":"durable schedule","status":"生产阻塞 / 源码待部署","reason":"f7f543c51 上 fresh NyxID 请求按 200 confirmation_required -> 202 typed provisioning receipt 工作，binding committed succeeded；provisioning 随后以 NyxIdOperationAuthorityContractUnavailable committed failed，schedule/operation ID 为空。7a7781067 已为 binder-attested READ_ONLY GET/HEAD/OPTIONS 增加窄放行，但当前生产镜像仍为 f7f543c5，必须部署后重新验证 schedule 创建、读取与真实触发"},
     {"capability":"Lark Bot 自然语言 workflow","status":"已验证阻塞","reason":"默认项修复后的 fresh /init 已创建 allow-all consent 与新 binding；镜像 e30fdd94 的新 run 仍在 resolve_contact 以 NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN committed failed。Aevatar authorize 的显式 core resource 不含 Lark，NyxID 因而在授权码阶段缩窄 binding；重复 /init 无法修复"},
     {"capability":"源财务 workflow 写入与排程分支","status":"安全限制未运行","reason":"P2 send、P1 v6、durable/weekly schedule 和 P1 v2 未运行；不能由 P2 no-send 或 P1 v5 submit=false 外推"},
     {"capability":"#3184 typed tool approval resume","status":"回归","reason":"历史 run 8d6fc129f831 曾用 nested toolApproval 完成批准恢复；镜像 0c4ff023 的新 run 未观察到 per-run typed identity 即完成，拒绝路径因此不可达，durable preview 仍未验证"}

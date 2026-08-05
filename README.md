@@ -8,7 +8,7 @@
 
 ## 当前结论
 
-验证日期：2026-08-05。
+验证基线日期：2026-08-05；状态更新：2026-08-06。
 
 - 17/17 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
 - 17/17 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
@@ -18,7 +18,7 @@
 - 案例 15 又在生产镜像 `d7844b5e` 上完成 artifact actor identity 回归：Assistant 读取到 committed typed artifact 并明确报告 `Completed`，没有再把最终结果误报为 pending。
 - 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
 - 源财务 P2 no-send、P1 v5 sanitized image + `submit=false` 和 PDF attachment probe 的既有 `71a38ff5` 证据分别为 8/8、14/14、2/2 completed，均有 `lastSuccess=true` 和非空 final output。
-- Durable schedule 修复提交 `748f98e7d` 已进入 `origin/feature/integrate` 并随生产镜像 `f7f543c5` 部署。Fresh NyxID 验证得到 HTTP 200 `confirmation_required`、六个只读 Durable call site，以及 HTTP 202 typed provisioning receipt；member binding committed `succeeded`。随后 provisioning 在首次 attempt 以 `NyxIdOperationAuthorityContractUnavailable` committed `failed`，没有 schedule/operation ID。旧 HTTP 502、无 receipt 和状态不可见问题已经关闭，但端到端 schedule 仍是生产已验证阻塞；源码当前只注册 `UnavailableNyxIdScheduledOperationAuthorizationPort`。目标测试为 23/23、1730/1730、152/152 通过，Mainnet composition 1/1、Studio DI/executor 11/11、solution build、架构/边界门禁和 `slow_test_guards.sh` 已通过；全量 solution test 发现的 fixture、boot、admitted terminal 修复与 Redis 7.2.3 测试仍待完整复测。
+- Durable schedule 修复提交 `748f98e7d` 已进入 `origin/feature/integrate` 并随生产镜像 `f7f543c5` 部署。Fresh NyxID 验证得到 HTTP 200 `confirmation_required`、六个只读 Durable call site，以及 HTTP 202 typed provisioning receipt；member binding committed `succeeded`。随后 provisioning 在首次 attempt 以 `NyxIdOperationAuthorityContractUnavailable` committed `failed`，没有 schedule/operation ID。提交 `7a7781067` 已推送到 `origin/feature/integrate`，在完整 Durable proof、binder grant 与 service catalog 校验后，仅允许 binder 已证明为 `READ_ONLY` 的 GET/HEAD/OPTIONS 跳过独立 operation-authority preview；POST、WRITE 与 DESTRUCTIVE 仍 fail-closed。该窄修复适用于案例 15 的六个 GET，但截至 2026-08-06 生产仍是 `f7f543c5`，尚未包含该提交，因此最近一次生产事实仍是已验证阻塞，不能写成端到端通过。目标测试为 23/23、1730/1730、152/152 通过，Mainnet composition 1/1、Studio DI/executor 11/11、solution build、架构/边界门禁和 `slow_test_guards.sh` 已通过；全量 solution test 发现的 fixture、boot、admitted terminal 修复与 Redis 7.2.3 测试仍待完整复测。
 - `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 per-run typed approval、durable schedule、Lark sender binding/channel canary，以及受安全约束未运行的发送、审批和排程定义。
 - 已检查 #3161 作者此前在 `aevatarAI/aevatar` 提交的全部 11 条 issue，并用 13、15、16 做新一轮只读 committed 回归；没有为 channel/scheduler 外层缺口复制无效 workflow。详见 [定向回归报告](report/2026-08-05-issue-3161-author-regression.md) 与 [机器摘要](validation/issue-3161-author-regression-2026-08-05.json)。
 
@@ -80,7 +80,7 @@
 
 ### 15 周度/月度预算差异摘要
 
-六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron；`f7f543c5` 上的新生产证据已覆盖 confirmation、HTTP 202 receipt、binding 和 member read model，但 provisioning 因 `NyxIdOperationAuthorityContractUnavailable` committed failed，未创建 schedule。
+六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron；`f7f543c5` 上的新生产证据已覆盖 confirmation、HTTP 202 receipt、binding 和 member read model，但 provisioning 因 `NyxIdOperationAuthorityContractUnavailable` committed failed，未创建 schedule。源码提交 `7a7781067` 已针对该定义的六个 binder-attested GET 放宽独立 operation-authority gate，仍待部署后验证 provisioning、schedule 读取与真实触发。
 
 ### 16 NyxID 只读 provider receipt
 
