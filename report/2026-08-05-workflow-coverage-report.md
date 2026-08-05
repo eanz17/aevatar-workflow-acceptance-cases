@@ -13,8 +13,8 @@
 
 ## 总结
 
-- 17/17 个公开 workflow 通过本地静态校验；16/17 个通过 production explicit-request preview，仅 17 尚未 production preview。
-- 直接生产运行取得 14 个 committed `completed` 和 2 个 committed `failed`；仅 17 尚未真实运行。
+- 17/17 个公开 workflow 通过本地静态校验和 production explicit-request preview。
+- 直接生产运行取得 15 个 committed `completed` 和 2 个 committed `failed`；全部 17 个案例均已有 committed terminal evidence。
 - 本地 17/17 个 Ornn skill 与 workflow 一一对应；原有 15/17 个通过服务端格式校验并公开回读，新增两个尚未发布。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
 - `/api/chat` 自然语言验证 5 个代表案例，3 个取得 committed `completed` 和业务断言，2 个取得 committed `failed` 和稳定 typed blocker。
@@ -25,7 +25,7 @@
 
 | 源版本族 | 非 n8n 定义数 | 新仓库案例 | 已覆盖语义 | 生产边界 | 判断 |
 |---|---:|---|---|---|---|
-| Base 探针 | 3 | 04、05、15-17 | 记录 GET、多源读取、受保护 POST、provider receipt、typed approval resume | 16 已通过；17 待 production preview/runtime | 覆盖 / approval resume 待完成 |
+| Base 探针 | 3 | 04、05、15-17 | 记录 GET、多源读取、受保护 POST、provider receipt、typed approval resume | 16 与 17 批准路径已通过；17 拒绝/durable 分支待验证 | 覆盖 / 负向边界待完成 |
 | 原语与执行探针 | 5 | 01、03、11、12 | `assign`、`transform`、分支、`foreach`、managed `codex_exec`、固定 `code_execute` | `code_execute` 真实运行被 `NYXID_PROXY_UNAUTHORIZED` 阻塞 | 部分覆盖 / 平台阻塞 |
 | Lark Onboarding | 1 | 06 | Base 申请、审批 payload、创建与实例回读 | 源 Aevatar e2e 语义已覆盖 | 覆盖 |
 | 发票审批 | 7 | 02、03、09、13、14 | 图片/PDF、提取、SGD/金额/供应商规则、历史、去重、审批、contact | contact 缺 `contact:user.id:readonly`；通用代码执行仍阻塞 | 部分覆盖 / 平台阻塞 |
@@ -42,7 +42,7 @@
 | 14 | Lark `contact/v3/users/batch_get_id` | 通过 | committed `failed`，`stateVersion=15`，`NYXID_PROXY_HTTP_400` / Lark `99991672` | 精确调用覆盖，权限阻塞 |
 | 15 | 六路 Base、预算周报/月报、schedule | 通过 | workflow committed `completed`，`stateVersion=73`；schedule HTTP 502 | 核心业务覆盖，durable schedule 阻塞 |
 | 16 | managed workflow NyxID provider receipt | 静态与 preview 通过；单次 `get`、read-only、无需批准 | committed `completed`，`stateVersion=31`，4/4 步 | #3161 receipt/runtime 最小回归通过；authority 分支不在覆盖范围 |
-| 17 | POST search typed pending/resume | 静态通过；preview 待验证 | 未运行 | #3184 批准继续与拒绝终止均待 committed 证据 |
+| 17 | POST search typed pending/resume | 静态与 preview 通过；单次 `post`、write、需要批准 | 批准路径 committed `completed`，`stateVersion=34`，4/4 步 | #3184 批准恢复通过；拒绝/durable 分支待验证 |
 
 ## Ornn 发布证据
 
@@ -81,7 +81,7 @@
 3. Schedule：案例 15 的 `/api/workflow/skills/{guid}/schedule` 返回 HTTP 502，没有 typed receipt。
 4. Lark Bot transport：本轮只验证 `/api/chat`，未覆盖 webhook、NyxID channel relay、会话映射和 Lark 回传。
 5. `#3161` 范围边界：Case 16 已用 `nyxid_request` 取得 committed `completed`，证明共同 receipt/runtime 平面可用；issue 虽已关闭，原报告方 proxy-delegation-only 旧 scope 的 `nyxid_operation` authority 分支仍需其自身的 post-fix 证据。
-6. `#3184` resume：pending 状态已经 typed 化并可观察，但原报告方的 resume 在返回 `accepted=true` 后没有推进 state version。当前源码要求三项 approval identity 位于 nested `toolApproval`，并明确规定 `202` 只表示命令进入 actor inbox；仍需 Case 17 的 committed 终态证明。
+6. `#3184` 负向与 durable 边界：Case 17 已使用 nested `toolApproval` 取得批准路径 committed `completed`，证明 resume 已被运行时消费；拒绝终止与 durable preview 尚未单独执行。
 
 ## #3161 与 #3184 定向回归
 
@@ -89,9 +89,9 @@
 
 Case 16 的 production preview 确认只有一个 `get` 调用点、`effectiveRisk=read_only`、`approvalRequired=false`。真实 run committed `completed`，`stateVersion=31`，4/4 步完成，首个 tool step 输出非空，最终 typed artifact 为 `success=true`、`provider_response_verified=true`、`side_effects=false`，没有 auth、authority、receipt、readiness 或 admission error。它精确回归 #3161 最初的 receiptless runtime 症状；因为新案例必须使用 `capability.nyxid_request`，报告不会把它写成 published `nyxid_operation` authority fallback 的完整覆盖。
 
-Case 17 使用不会修改数据的 Base `records/search` POST，但保留 POST 的保守 write 风险。批准路径必须先收到 `aevatar.tool_approval.pending`，再用该事件的 `stepId` 和 nested `toolApproval.executionId/toolCallId/approvalRequestId` 调用 resume；只有 run committed `completed` 且 `approval_resumed=true` 才通过。拒绝路径必须使用新的 run，committed 终态应明确为 approval rejected，且没有 outbound request。Durable preview 预期仍应得到 typed `DURABLE_AUTHORIZATION_UNAVAILABLE`，不能通过 bind-time confirmation 或人工 approval 推断可调度。
+Case 17 使用不会修改数据的 Base `records/search` POST，但保留 POST 的保守 write 风险。Production preview 确认单次 `post`、`approvalRequired=true`；批准路径收到 `aevatar.tool_approval.pending` 后，使用事件中的 `stepId` 和 nested `toolApproval.executionId/toolCallId/approvalRequestId` 调用 resume。运行 committed `completed`，`stateVersion=34`，4/4 步完成，首步输出与 approval identity 非空，最终 `approval_resumed=true`、`side_effects=false`。拒绝路径仍必须使用新的 run，committed 终态应明确为 approval rejected，且没有 outbound request；durable preview 也仍应单独验证 typed `DURABLE_AUTHORIZATION_UNAVAILABLE`。
 
-本轮已完成 Case 16 的 production preview、bind 和 committed run，判定为“通过”。Case 17 未执行 production preview、bind 或 run，仍标记“待验证”，不是“已验证阻塞”。
+本轮已完成 Case 16 与 Case 17 批准路径的 production preview、bind 和 committed run，两者均判定为“通过”。Case 17 的拒绝终止与 durable preview 不由批准路径外推，继续作为独立待验证边界。
 
 ## #3182 证据边界
 

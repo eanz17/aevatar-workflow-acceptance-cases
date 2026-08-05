@@ -594,28 +594,57 @@ class ProductionValidator
   end
 
   def validate_runtime_contract(case_id, detail, final_output)
-    return {} unless case_id == "16"
+    contract = case case_id
+               when "16"
+                 {
+                   step_id: "read_base_records",
+                   expected_artifact: {
+                     "success" => true,
+                     "provider_response_verified" => true,
+                     "side_effects" => false
+                   },
+                   approval_required: false
+                 }
+               when "17"
+                 {
+                   step_id: "search_base_records",
+                   expected_artifact: {
+                     "success" => true,
+                     "approval_resumed" => true,
+                     "side_effects" => false
+                   },
+                   approval_required: true
+                 }
+               else
+                 return {}
+               end
 
-    first_step = Array(detail["steps"]).find { |step| step["stepId"] == "read_base_records" }
+    first_step = Array(detail["steps"]).find { |step| step["stepId"] == contract.fetch(:step_id) }
     unless first_step && first_step["success"] == true && !first_step["outputPreview"].to_s.strip.empty?
-      raise ValidationError, "案例 16 committed read model 缺少非空首步输出"
+      raise ValidationError, "案例 #{case_id} committed read model 缺少非空首步输出"
+    end
+
+    typed_approval_present = false
+    if contract.fetch(:approval_required)
+      approval = first_step["toolApproval"]
+      typed_approval_present = approval.is_a?(Hash) &&
+        %w[executionId toolCallId approvalRequestId].all? { |key| !approval[key].to_s.strip.empty? }
+      raise ValidationError, "案例 #{case_id} committed read model 缺少 typed approval identity" unless typed_approval_present
     end
 
     artifact = final_output.is_a?(String) ? JSON.parse(final_output) : final_output
-    expected = {
-      "success" => true,
-      "provider_response_verified" => true,
-      "side_effects" => false
-    }
+    expected = contract.fetch(:expected_artifact)
     actual = expected.keys.to_h { |key| [key, artifact.is_a?(Hash) ? artifact[key] : nil] }
-    raise ValidationError, "案例 16 最终 artifact 契约不匹配：#{actual.inspect}" unless actual == expected
+    raise ValidationError, "案例 #{case_id} 最终 artifact 契约不匹配：#{actual.inspect}" unless actual == expected
 
-    {
+    evidence = {
       firstToolStepOutputPresent: true,
       finalArtifactVerified: true
     }
+    evidence[:typedApprovalIdentityPresent] = true if typed_approval_present
+    evidence
   rescue JSON::ParserError => e
-    raise ValidationError, "案例 16 最终 artifact 不是有效 JSON：#{e.message}"
+    raise ValidationError, "案例 #{case_id} 最终 artifact 不是有效 JSON：#{e.message}"
   end
 
   def terminal_failure(detail)

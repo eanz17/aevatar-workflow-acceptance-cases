@@ -11,12 +11,12 @@
 验证日期：2026-08-05。
 
 - 17/17 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
-- 16/17 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview；仅 17 尚未做 production preview。
-- 直接 workflow 运行中，14/17 取得 committed `completed` 终态；12 和 14 取得 committed `failed` 终态及 typed blocker；仅 17 尚未真实运行。
+- 17/17 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
+- 直接 workflow 运行中，15/17 取得 committed `completed` 终态；12 和 14 取得 committed `failed` 终态及 typed blocker，全部 17 个案例均已有 committed terminal evidence。
 - 本地 17/17 个 Ornn skill 与 workflow 字节一致；原有 15/17 个线上 `.1` 版本已 public 并回读，新增两个 skill 尚未发布。
 - `/api/chat` 已用自然语言验证 01、12、13、14、15：3/5 取得 committed `completed` 与业务断言，2/5 取得 committed `failed` 与稳定 typed blocker。
 - 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
-- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 `code_execute` 授权、Lark contact 权限、durable schedule、Lark Bot transport、#3161 的 published-operation authority 分支，以及 #3184 的定向生产复测。
+- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 `code_execute` 授权、Lark contact 权限、durable schedule、Lark Bot transport、#3161 的 published-operation authority 分支，以及 #3184 的拒绝终止与 durable preview 分支。
 
 `preview`、`202 Accepted`、Assistant 正常结束、模型文案和 pending artifact 都不等于 workflow 成功。逐案例证据见 [生产验证摘要](validation/production-validation-2026-08-05.json)，完整对比见 [分析页面](report/index.html)。
 
@@ -40,7 +40,7 @@
 | 14 | `lark_contact_batch_resolution` | 3 | `contact/v3/users/batch_get_id`、标识脱敏 | 平台阻塞，Lark `99991672` | 无 |
 | 15 | `weekly_budget_variance_digest` | 11 | 六路 Base、预算差异、周报/月报、schedule 契约 | committed 通过，`stateVersion=73` | 无 |
 | 16 | `nyxid_read_receipt_probe` | 4 | 单次 Base GET、provider receipt、首步输出与终态 | committed 通过，`stateVersion=31` | 无 |
-| 17 | `lark_post_search_approval_probe` | 4 | 语义只读 POST、typed pending、nested resume | 仅静态校验；production preview/runtime 待验证 | 无 |
+| 17 | `lark_post_search_approval_probe` | 4 | 语义只读 POST、typed pending、nested resume | 批准路径 committed 通过，`stateVersion=34` | 无 |
 
 12 和 14 的失败是验收结果，不是缺少测试：两条 run 均进入 workflow 并产生 committed terminal evidence。12 暴露 `chrono-sandbox /execute` 的生产认证契约与 catalog 不一致；14 暴露绑定 Lark Bot 缺少 `contact:user.id:readonly`。
 
@@ -68,7 +68,7 @@
 
 ### 17 POST 搜索批准恢复
 
-调用语义只读的 Lark Base `records/search` POST，不创建或修改记录。协议按 POST 保守分类为 write 并要求 per-run typed approval；只有收到 `aevatar.tool_approval.pending`，使用其中的 `stepId` 及 nested `toolApproval.executionId/toolCallId/approvalRequestId` 恢复，并最终 committed `completed`，才能判为通过。拒绝路径必须 committed 失败且不得发出外部请求。该案例针对 #3184，当前只有静态证据。
+调用语义只读的 Lark Base `records/search` POST，不创建或修改记录。Production preview 确认单次 `post`、`effectiveRisk=write`、`approvalRequired=true`；真实 run 收到 typed pending 后，使用 `stepId` 及 nested `toolApproval.executionId/toolCallId/approvalRequestId` 恢复，最终 committed `completed`，`stateVersion=34`，4/4 步完成。首步输出与 approval identity 均非空，artifact 为 `success=true`、`approval_resumed=true`、`side_effects=false`。这证明 #3184 的批准恢复主路径在当前 scope 可用；拒绝终止和 durable preview 仍需独立运行。
 
 ## Ornn skills
 
@@ -185,7 +185,7 @@ Case 17 必须逐行消费 SSE 并在 pending 出现时立即发送 nested `tool
 - 只有 typed receipt、run ID、业务断言和 committed terminal evidence 齐全，才可写成 workflow 通过。
 - `code_execute`、contact 和 schedule 的现有阻塞不得通过 mock 成功结果掩盖。
 - #3161 已关闭，Case 16 已覆盖共同 receipt/runtime 平面，但不覆盖 published-operation authority 分支；原报告方旧 scope 的最终复测不能由本次正向结果替代。
-- #3184 仍开放；pending 可观察不等于 resume 已被运行时消费，必须继续读取 committed 终态。
+- #3184 仍开放；Case 17 已证明批准 resume 被运行时消费并 committed 完成，但拒绝终止和 durable preview 仍需独立证据。
 - 不得提交 token、真实组织标识、业务载荷、审批表单或未脱敏运行证据。
 
 新增和维护案例的完整规则见 [AGENTS.md](AGENTS.md)。
