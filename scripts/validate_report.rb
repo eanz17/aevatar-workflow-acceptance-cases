@@ -248,31 +248,37 @@ fail_validation("案例 15 /api/chat 汇总未同步 artifact identity 回归") 
 
 current_deployment = summary.fetch("currentDeployment")
 fail_validation("当前部署证据不完整") unless
-  summary["updatedAtUtc"] == "2026-08-05T17:06:58Z" &&
-  summary["deployedCommit"] == "f7f543c5" &&
-  summary["deploymentImage"].to_s.end_with?("f7f543c5") &&
-  current_deployment["observedAtUtc"] == "2026-08-05T17:06:58Z" &&
-  current_deployment["deployedCommit"] == "f7f543c5" &&
+  summary["updatedAtUtc"] == "2026-08-05T17:29:05Z" &&
+  summary["deployedCommit"] == "7a7781067" &&
+  summary["deploymentImage"].to_s.end_with?("7a778106") &&
+  current_deployment["observedAtUtc"] == "2026-08-05T17:26:26Z" &&
+  current_deployment["deployedCommit"] == "7a7781067" &&
   current_deployment["healthyReplicas"] == "1/1" &&
   current_deployment["containsFixCommits"] ==
-    %w[03389d0ae 71a38ff59 7ad633e6f e30fdd94a 53e20f9ba 748f98e7d f7f543c51] &&
+    %w[03389d0ae 71a38ff59 7ad633e6f e30fdd94a 53e20f9ba 748f98e7d f7f543c51 7a7781067] &&
+  current_deployment["productionVerificationWindowUtc"] == {
+    "startedAt" => "2026-08-05T17:26:26Z",
+    "completedAt" => "2026-08-05T17:29:05Z"
+  } &&
   current_deployment.fetch("postDeploymentLogCounters").values.all?(&:zero?)
 
 schedule = summary.fetch("scheduleValidation")
 fail_validation("Durable schedule 最新生产复验摘要漂移") unless
   schedule["case"] == "15" &&
   schedule["endpoint"] == "/api/workflow/skills/{guid}/schedule" &&
-  schedule["result"] == "生产已验证阻塞；只读源码窄修复已推送，待部署端到端复验" &&
+  schedule["result"] == "生产端到端通过" &&
   schedule["historicalHttpStatus"] == 502 &&
   schedule["confirmationHttpStatus"] == 200 && schedule["admissionHttpStatus"] == 202 &&
-  schedule["receiptCreated"] == true && schedule["scheduleCreated"] == false &&
-  schedule["currentDeploymentCommit"] == "f7f543c51" &&
-  schedule["currentDeploymentImage"].to_s.end_with?("f7f543c5") &&
+  schedule["receiptCreated"] == true && schedule["scheduleCreated"] == true &&
+  schedule["currentDeploymentCommit"] == "7a7781067" &&
+  schedule["currentDeploymentImage"].to_s.end_with?("7a778106") &&
   schedule["currentDeploymentHealthyReplicas"] == "1/1" &&
   schedule["currentDeploymentRetested"] == true &&
   schedule["currentDeploymentContainsActorOwnedRepair"] == true
 schedule_production = schedule.fetch("productionRetest")
 fail_validation("Durable schedule 生产 confirmation/admission 证据不完整") unless
+  schedule_production["startedAtUtc"] == "2026-08-05T17:26:26Z" &&
+  schedule_production["completedAtUtc"] == "2026-08-05T17:29:05Z" &&
   schedule_production["ingress"] == "nyxid proxy request aevatar" &&
   schedule_production["confirmationStatus"] == "confirmation_required" &&
   schedule_production["explicitRequestCount"] == 6 &&
@@ -288,45 +294,80 @@ fail_validation("Durable schedule typed provisioning receipt 不完整或包含�
   schedule_admission["bindingRunIdPresent"] == true &&
   schedule_admission["scheduleProvisioningIdPresent"] == true &&
   schedule_admission["responseHeadersCaptured"] == false &&
+  schedule_admission.values_at("memberIdHash", "bindingRunIdHash", "scheduleProvisioningIdHash") ==
+    %w[2fc83c8989c6 8a0d32b472c2 fc428d5f11e1] &&
   %w[memberIdHash bindingRunIdHash scheduleProvisioningIdHash]
     .all? { |field| schedule_admission[field].to_s.match?(/\A[0-9a-f]{12}\z/) }
 schedule_member = schedule_production.fetch("memberReadModel")
-fail_validation("Durable schedule committed terminal 证据不完整") unless
+fail_validation("Durable schedule provisioning committed terminal 证据不完整") unless
   schedule_member["bindingStatus"] == "succeeded" && schedule_member["bindingStateVersion"] == 7 &&
-  schedule_member["provisioningStatus"] == "failed" && schedule_member["provisioningStateVersion"] == 9 &&
+  schedule_member["provisioningStatus"] == "succeeded" && schedule_member["provisioningStateVersion"] == 9 &&
   schedule_member["attemptCount"] == 1 &&
-  schedule_member["failureCode"] == "NyxIdOperationAuthorityContractUnavailable" &&
-  schedule_member["failureMessage"] == "nyxid_operation_authority_contract_unavailable" &&
-  schedule_member["scheduleIdPresent"] == false && schedule_member["operationIdPresent"] == false
-schedule_logs = schedule_production.fetch("logEvidence")
-schedule_diagnosis = schedule_production.fetch("sourceDiagnosis")
-fail_validation("Durable schedule 日志或源码根因证据不完整") unless
-  schedule_logs["confirmationRequestCompletedWith"] == 200 &&
-  schedule_logs["confirmedRequestCompletedWith"] == 202 &&
-  schedule_logs["provisioningFailedEventCommitted"] == true &&
-  schedule_logs["blindMutationRetryPerformed"] == false &&
-  schedule_diagnosis["deploymentCommit"] == "f7f543c51" &&
-  schedule_diagnosis["realOperationAuthorizationProviderRegistered"] == false &&
-  schedule_diagnosis["fallbackProvider"] == "UnavailableNyxIdScheduledOperationAuthorizationPort" &&
-  schedule_diagnosis["fallbackDecision"] == "AuthorityContractUnavailable"
+  schedule_member["scheduleIdPresent"] == true && schedule_member["operationIdPresent"] == true &&
+  schedule_member["scheduleIdHash"] == "2d92b5efd16b" &&
+  schedule_member["operationIdHash"] == "ff9d4b6f8431"
+schedule_read = schedule_production.fetch("scheduleRead")
+fail_validation("Durable schedule 回读证据不完整") unless
+  schedule_read == {
+    "found" => true,
+    "enabled" => true,
+    "cronExpression" => "0 9 * * 1",
+    "timezone" => "Asia/Singapore"
+  }
+schedule_fire = schedule_production.fetch("manualFire")
+fail_validation("Durable schedule 单次触发证据不完整") unless
+  schedule_fire["requestCount"] == 1 && schedule_fire["fireCount"] == 1 &&
+  schedule_fire["failureCount"] == 0 &&
+  schedule_fire["runNowCommandIdHash"] == "4400a293b5c3" &&
+  schedule_fire["correlationIdHash"] == "be1c552cc035"
+schedule_terminal = schedule_production.fetch("workflowTerminal")
+fail_validation("Durable schedule workflow committed terminal 不完整") unless
+  schedule_terminal["runIdHash"] == "eedcf95201b6" &&
+  schedule_terminal["terminalStatus"] == "completed" && schedule_terminal["success"] == true &&
+  schedule_terminal["completedSteps"] == 11 && schedule_terminal["totalSteps"] == 11 &&
+  schedule_terminal["stateVersion"] == 73 &&
+  schedule_terminal["finalArtifact"] == {
+    "case" => "weekly_budget_variance_digest",
+    "success" => true,
+    "live_base_reads_ok" => true,
+    "weekly_actual" => 2340,
+    "weekly_budget" => 2400,
+    "monthly_projected_actual" => 9360,
+    "monthly_budget" => 9600,
+    "over_count" => 1,
+    "watch_count" => 1,
+    "side_effects" => false
+  }
+schedule_request = schedule_production.fetch("requestEvidence")
+schedule_history = schedule.fetch("historicalRegression")
+fail_validation("Durable schedule 请求或历史回归证据不完整") unless
+  schedule_request["confirmationRequestCompletedWith"] == 200 &&
+  schedule_request["confirmedRequestCompletedWith"] == 202 &&
+  schedule_request["blindMutationRetryPerformed"] == false &&
+  schedule_history["deploymentCommit"] == "f7f543c51" &&
+  schedule_history["deploymentImage"].to_s.end_with?("f7f543c5") &&
+  schedule_history["provisioningStatus"] == "failed" &&
+  schedule_history["failureCode"] == "NyxIdOperationAuthorityContractUnavailable" &&
+  schedule_history["fallbackProvider"] == "UnavailableNyxIdScheduledOperationAuthorizationPort" &&
+  schedule_history["fallbackDecision"] == "AuthorityContractUnavailable"
 schedule_source_repair = schedule.fetch("sourceRepair")
-fail_validation("Durable schedule 只读源码窄修复证据不完整或被误标为已部署") unless
+fail_validation("Durable schedule 只读源码窄修复生产证据不完整") unless
   schedule_source_repair["commit"] == "7a7781067" &&
   schedule_source_repair["branch"] == "origin/feature/integrate" &&
   schedule_source_repair["pushed"] == true &&
-  schedule_source_repair["deployed"] == false &&
-  schedule_source_repair["currentProductionImage"].to_s.end_with?("f7f543c5") &&
+  schedule_source_repair["deployed"] == true &&
+  schedule_source_repair["currentProductionImage"].to_s.end_with?("7a778106") &&
   schedule_source_repair["policy"].include?("binder-attested READ_ONLY GET/HEAD/OPTIONS") &&
   schedule_source_repair["policy"].include?("NyxID") &&
   schedule_source_repair["case15Applicable"] == true &&
   schedule_source_repair["case15Methods"] == ["get"] &&
   schedule_source_repair["case15CallSiteCount"] == 6 &&
   schedule_source_repair["writeAndDestructiveRemainFailClosed"] == true &&
-  schedule_source_repair["productionProofStillRequired"] == [
+  schedule_source_repair["productionProofValidated"] == [
     "provisioning committed succeeded",
     "scheduleId 与 operationId 非空",
     "schedule 可读取",
-    "至少一次真实触发并取得 workflow committed terminal"
+    "单次 run-now 触发并取得 workflow committed terminal"
   ]
 schedule_repair = schedule.fetch("localRepair")
 fail_validation("Durable schedule 提交、推送与部署状态不完整") unless
@@ -335,7 +376,7 @@ fail_validation("Durable schedule 提交、推送与部署状态不完整") unle
   schedule_repair["commit"] == "748f98e7d" &&
   %w[committed pushed deployed nyxidProductionRetested]
     .all? { |field| schedule_repair[field] == true } &&
-  schedule_repair["fullBuildAndGuardsPassed"] == false &&
+  schedule_repair["fullBuildAndGuardsPassed"] == true &&
   schedule_repair["latestTargetedTestsRetested"] == true
 schedule_endpoint_contract = schedule_repair.fetch("skillScheduleEndpointContract")
 fail_validation("Durable schedule 真实入口契约记录不完整") unless
@@ -374,25 +415,27 @@ fail_validation("Durable schedule 本地测试证据不完整") unless
     "slow test",
     "docs lint"
   ] &&
-  schedule_tests["remainingChecks"] == [
-    "dotnet test aevatar.slnx --nologo",
-    "重新验证全量测试发现的 fixture、boot script 与 admitted tool terminal 修复",
-    "使用 Redis 7.2.3 复跑 AgentToolAdmissionLedgerTests"
-  ] &&
-  schedule_tests.dig("capabilitiesProject", "passed") == 637 &&
-  schedule_tests.dig("capabilitiesProject", "failed") == 4 &&
-  schedule_tests.dig("capabilitiesProject", "environmentalFailures") == true &&
-  schedule_tests.dig("fullSolutionRun", "passed") == false &&
+  schedule_tests["remainingChecks"] == [] &&
+  schedule_tests.dig("capabilitiesProject", "passed") == 642 &&
+  schedule_tests.dig("capabilitiesProject", "failed") == 0 &&
+  schedule_tests.dig("capabilitiesProject", "environmentalFailures") == false &&
+  schedule_tests.dig("fullSolutionRun", "passed") == true &&
+  schedule_tests.dig("fullSolutionRun", "secondFullRunPassed") == true &&
+  schedule_tests.dig("fullSolutionRun", "isolatedRetryPassed") == true &&
   schedule_tests.dig("fullSolutionRun", "localFixesPrepared")&.length == 3 &&
-  schedule_tests.dig("fullSolutionRun", "environmentBoundary").to_s.include?("Redis")
+  schedule_tests.dig("fullSolutionRun", "verificationWorktreeContainsUncommittedFixes") == true &&
+  schedule_tests.dig("fullSolutionRun", "verificationWorktreeUncommittedFileCount") == 4 &&
+  schedule_tests.dig("fullSolutionRun", "redisVersionUsed") == "7.2.3"
 schedule_boundary = summary.fetch("knownBoundaries").find { |item| item["capability"] == "durable schedule" }
-fail_validation("Durable schedule known boundary 未同步最新生产 blocker") unless
+fail_validation("Durable schedule known boundary 未同步生产恢复") unless
   schedule_boundary &&
-  schedule_boundary["status"] == "生产阻塞 / 源码待部署" &&
-  schedule_boundary["reason"].include?("200 confirmation_required -> 202 typed provisioning receipt") &&
+  schedule_boundary["status"] == "已恢复" &&
+  schedule_boundary["reason"].include?("200 confirmation_required -> 202 typed pending_binding receipt") &&
+  schedule_boundary["reason"].include?("fireCount=1") &&
+  schedule_boundary["reason"].include?("11/11 committed completed") &&
   schedule_boundary["reason"].include?("NyxIdOperationAuthorityContractUnavailable") &&
   schedule_boundary["reason"].include?("7a7781067") &&
-  schedule_boundary["reason"].include?("当前生产镜像仍为 f7f543c5")
+  schedule_boundary["reason"].include?("f7f543c5")
 
 financial = summary.fetch("sourceFinancialAcceptance")
 p2_no_send = financial.fetch("p2NoSend")
@@ -663,7 +706,7 @@ expected_html_counts = {
   "能力矩阵" => [/<tr data-family=/, 18],
   "直接证据" => [/<tr data-result=/, 17],
   "自然语言证据" => [/<tr data-chat-case=/, 5],
-  "阻塞项" => [/<div class="gap-row">/, 4],
+  "阻塞项" => [/<div class="gap-row">/, 3],
   "修复记录" => [/<div class="repair-item">/, 13]
 }
 expected_html_counts.each do |label, (pattern, expected)|
@@ -693,57 +736,54 @@ fail_validation("分析页缺少三项财务源 workflow 成功证据") unless
   html.include?("data-source-financial-acceptance=\"validated\"")
 fail_validation("报告把安全限制未运行的财务分支伪报为成功") unless
   [readme, report, html].all? { |document| document.include?("P2 send") && document.include?("P1 v6") }
-fail_validation("README 缺少 Durable schedule 最新生产复验边界") unless
+fail_validation("README 缺少 Durable schedule 生产闭环") unless
   readme.include?("Durable schedule 修复提交 `748f98e7d`") &&
-  readme.include?("生产镜像 `f7f543c5` 部署") &&
+  readme.include?("生产镜像 `7a778106` 部署") &&
   readme.include?("HTTP 200 `confirmation_required`") &&
-  readme.include?("HTTP 202 typed provisioning receipt") &&
+  readme.include?("HTTP 202 typed `pending_binding` receipt") &&
   readme.include?("`NyxIdOperationAuthorityContractUnavailable`") &&
-  readme.include?("没有 schedule/operation ID") &&
-  readme.include?("提交 `7a7781067` 已推送到 `origin/feature/integrate`") &&
-  readme.include?("仅允许 binder 已证明为 `READ_ONLY` 的 GET/HEAD/OPTIONS") &&
-  readme.include?("截至 2026-08-06 生产仍是 `f7f543c5`") &&
-  readme.include?("目标测试为 23/23、1730/1730、152/152 通过") &&
-  readme.include?("Mainnet composition 1/1、Studio DI/executor 11/11") &&
-  readme.include?("`slow_test_guards.sh` 已通过") &&
-  readme.include?("Redis 7.2.3 测试仍待完整复测")
-fail_validation("文字报告缺少 Durable schedule 分阶段修复状态") unless
+  readme.include?("schedule/operation ID 均非空") &&
+  readme.include?("`fireCount=1`") && readme.include?("`failureCount=0`") &&
+  readme.include?("workflow 11/11 committed `completed`") &&
+  readme.include?("第二轮全量 solution test") && readme.include?("642/642 Capabilities") &&
+  readme.include?("另含 4 个尚未提交的 fixture/boot/admitted-terminal 修复文件")
+fail_validation("文字报告缺少 Durable schedule 分阶段生产闭环") unless
   report.include?("## Durable schedule 修复进度") &&
-  report.include?("历史 production 证据仍保留 HTTP 502") &&
+  report.include?("历史 HTTP 502") &&
   report.include?("`748f98e7d` 已提交、推送并部署") &&
   report.include?("真实验收入口") &&
   report.include?("HTTP 200 `confirmation_required`") && report.include?("HTTP 202 typed receipt") &&
-  report.include?("binding committed `succeeded`") &&
+  report.include?("binding/provisioning committed success") &&
   report.include?("`NyxIdOperationAuthorityContractUnavailable`") &&
-  report.include?("`7a7781067` 已进入 `origin/feature/integrate`") &&
+  report.include?("`7a7781067` 已进入 `origin/feature/integrate` 并随镜像 `7a778106` 部署") &&
   report.include?("仅 binder-attested `READ_ONLY` GET/HEAD/OPTIONS") &&
-  report.include?("尚未部署，不能算生产通过") &&
+  report.include?("schedule/operation ID 均非空") &&
+  report.include?("`fireCount=1`") && report.include?("`failureCount=0`") &&
+  report.include?("11/11 committed `completed`") &&
   report.include?("23/23") && report.include?("1730/1730") && report.include?("152/152") &&
   report.include?("Mainnet DI composition 1/1") && report.include?("Studio DI/executor 11/11") &&
-  report.include?("`slow_test_guards.sh` 通过") && report.include?("全量测试未绿")
-fail_validation("分析页缺少 Durable schedule 最新生产阻塞边界") unless
-  html.include?("Durable schedule 状态") &&
-  html.include?("生产已验证阻塞") &&
+  report.include?("Capabilities 642/642") && report.include?("第二轮全量 solution test") &&
+  report.include?("另含 4 个未提交的 fixture/boot/admitted-terminal 修复文件")
+fail_validation("分析页缺少 Durable schedule 生产闭环") unless
+  html.include?("Durable schedule 已恢复") &&
+  html.include?("生产端到端通过") &&
   html.include?("Durable schedule provisioning") &&
-  html.include?("提交 <code>748f98e7d</code> 已随 <code>f7f543c5</code> 部署") &&
+  html.include?("<code>748f98e7d</code> 与 <code>7a7781067</code> 已随生产镜像 <code>7a778106</code> 部署") &&
   html.include?("HTTP 200 <code>confirmation_required</code>") &&
-  html.include?("HTTP 202 typed provisioning receipt") &&
+  html.include?("HTTP 202 typed <code>pending_binding</code> receipt") &&
   html.include?("<code>NyxIdOperationAuthorityContractUnavailable</code>") &&
-  html.include?("<code>7a7781067</code>") &&
-  html.include?("binder-attested READ_ONLY GET/HEAD/OPTIONS") &&
-  html.include?("截至 2026-08-06 生产仍是 <code>f7f543c5</code>") &&
-  html.include?("23/23、1730/1730、152/152") &&
-  html.include?("1/1 Mainnet composition") &&
-  html.include?("11/11 Studio DI/executor") &&
-  html.include?("全量测试发现的后续本地修复")
-false_schedule_success_claims = [
-  "Durable schedule 端到端通过",
-  "schedule provisioning succeeded",
-  "已验证真实触发",
-  "schedule/operation ID 均非空"
+  html.include?("schedule/operation ID 均非空") &&
+  html.include?("fire=1/failure=0") &&
+  html.include?("workflow 11/11 committed <code>completed</code>") &&
+  html.include?("隔离工作树另含 4 个未提交的测试修复文件")
+stale_schedule_claims = [
+  "线上阻塞 / 源码待部署",
+  "当前待部署和真实 schedule E2E 复验",
+  "截至 2026-08-06 生产仍是",
+  "全量测试未绿"
 ]
-false_schedule_success_claims.each do |claim|
-  fail_validation("报告伪报 Durable schedule 端到端成功：#{claim}") if
+stale_schedule_claims.each do |claim|
+  fail_validation("报告仍包含过期 Durable schedule 状态：#{claim}") if
     [readme, report, html].any? { |document| document.include?(claim) }
 end
 fail_validation("README 缺少最新全量回归口径") unless
@@ -829,4 +869,4 @@ fail_validation("定向报告仍把 #3161 authority 写成待复测") unless
   focused_report.include?("补齐了 #3161 的真实 published-operation authority 主链") &&
   focused_report.include?("只覆盖 no-send 只读执行")
 
-puts "通过 报告案例=17 财务源验收=3 源版本族=7 能力矩阵=18 自然语言=5 阻塞=4 修复记录=13"
+puts "通过 报告案例=17 财务源验收=3 源版本族=7 能力矩阵=18 自然语言=5 阻塞=3 修复记录=13"

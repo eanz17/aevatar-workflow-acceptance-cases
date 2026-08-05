@@ -12,14 +12,14 @@
 
 - 17/17 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
 - 17/17 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
-- 最近一次 17-case 全量回归使用生产镜像 `0c4ff023`；随后案例 11 在修复镜像 `f7f543c5` 上完成定向复验。按逐案例最新证据，17 个终态均为 committed `completed`，严格判定为 15/17 通过和 2 个审批契约回归（14、17）。当前镜像 `f7f543c5` 没有整体重跑 17 个案例，不能外推为最新镜像已全量回归。
+- 最近一次 17-case 全量回归使用生产镜像 `0c4ff023`；随后案例 11 在修复镜像 `f7f543c5` 上完成定向复验。按逐案例最新证据，17 个终态均为 committed `completed`，严格判定为 15/17 通过和 2 个审批契约回归（14、17）。当前镜像 `7a778106` 没有整体重跑 17 个案例，不能外推为最新镜像已全量回归。
 - 本地 17/17 个 Ornn skill 与 workflow 字节一致；原有 15/17 个线上 `.1` 版本已 public 并回读，新增两个 skill 尚未发布。
 - `/api/chat` 已用自然语言验证 01、12、13、14、15：4/5 取得 committed `completed` 与业务断言，1/5 取得 committed `failed` 与稳定 typed blocker。
 - 案例 15 又在生产镜像 `d7844b5e` 上完成 artifact actor identity 回归：Assistant 读取到 committed typed artifact 并明确报告 `Completed`，没有再把最终结果误报为 pending。
 - 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
 - 源财务 P2 no-send、P1 v5 sanitized image + `submit=false` 和 PDF attachment probe 的既有 `71a38ff5` 证据分别为 8/8、14/14、2/2 completed，均有 `lastSuccess=true` 和非空 final output。
-- Durable schedule 修复提交 `748f98e7d` 已进入 `origin/feature/integrate` 并随生产镜像 `f7f543c5` 部署。Fresh NyxID 验证得到 HTTP 200 `confirmation_required`、六个只读 Durable call site，以及 HTTP 202 typed provisioning receipt；member binding committed `succeeded`。随后 provisioning 在首次 attempt 以 `NyxIdOperationAuthorityContractUnavailable` committed `failed`，没有 schedule/operation ID。提交 `7a7781067` 已推送到 `origin/feature/integrate`，在完整 Durable proof、binder grant 与 service catalog 校验后，仅允许 binder 已证明为 `READ_ONLY` 的 GET/HEAD/OPTIONS 跳过独立 operation-authority preview；POST、WRITE 与 DESTRUCTIVE 仍 fail-closed。该窄修复适用于案例 15 的六个 GET，但截至 2026-08-06 生产仍是 `f7f543c5`，尚未包含该提交，因此最近一次生产事实仍是已验证阻塞，不能写成端到端通过。目标测试为 23/23、1730/1730、152/152 通过，Mainnet composition 1/1、Studio DI/executor 11/11、solution build、架构/边界门禁和 `slow_test_guards.sh` 已通过；全量 solution test 发现的 fixture、boot、admitted terminal 修复与 Redis 7.2.3 测试仍待完整复测。
-- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 per-run typed approval、durable schedule、Lark sender binding/channel canary，以及受安全约束未运行的发送、审批和排程定义。
+- Durable schedule 修复提交 `748f98e7d` 的 actor-owned provisioning 链和 `7a7781067` 的 binder-attested 只读窄放行均已随生产镜像 `7a778106` 部署。2026-08-06 SGT 的 fresh NyxID 验证取得 HTTP 200 `confirmation_required`、六个只读 Durable call site 和 HTTP 202 typed `pending_binding` receipt；binding committed `succeeded`（state 7），provisioning 首次 attempt committed `succeeded`（state 9），schedule/operation ID 均非空。schedule 回读为 enabled，Cron `0 9 * * 1`、时区 `Asia/Singapore`；单次 `run-now` 后 `fireCount=1`、`failureCount=0`，workflow 11/11 committed `completed`（state 73），六路 Base 与预算断言全部命中。`f7f543c5` 上的 `NyxIdOperationAuthorityContractUnavailable` 只作为历史回归背景保留；POST、WRITE 与 DESTRUCTIVE 仍 fail-closed。隔离工作树的第二轮全量 solution test、642/642 Capabilities、solution split、架构与全部专项门禁均通过；该测试工作树基于 `7a7781067`，另含 4 个尚未提交的 fixture/boot/admitted-terminal 修复文件，不把它们写成已部署内容。
+- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 per-run typed approval、Lark sender binding/channel canary，以及受安全约束未运行的源发送、审批和排程定义。公开案例 15 的 Durable schedule 已通过，不替代未运行的源财务 schedule 分支。
 - 已检查 #3161 作者此前在 `aevatarAI/aevatar` 提交的全部 11 条 issue，并用 13、15、16 做新一轮只读 committed 回归；没有为 channel/scheduler 外层缺口复制无效 workflow。详见 [定向回归报告](report/2026-08-05-issue-3161-author-regression.md) 与 [机器摘要](validation/issue-3161-author-regression-2026-08-05.json)。
 
 `preview`、`202 Accepted`、Assistant 正常结束、模型文案和 pending artifact 都不等于 workflow 成功。逐案例证据见 [生产验证摘要](validation/production-validation-2026-08-05.json)，完整对比见 [分析页面](report/index.html)。
@@ -34,7 +34,7 @@
 | `invoice_file_chain.v5.workflow.json` | exact JSON；5 个唯一 call site；sanitized PNG；`submit=false` | 一次瞬时 524 经无副作用单步探针对照后仅重跑一次；最终 14/14 实际步骤 completed，`lastSuccess=true`，final output 非空 | 图片抽取、只读 lookup、preview presentation 通过；提交三步未执行，无 approval、无 Lark 写入 |
 | PDF attachment probe | 无副作用 PDF 输入 | run catalog +1，2/2 completed，`lastSuccess=true`；extract 与 final output 非空 | PDF 附件接收与抽取主链通过 |
 
-源目录中明确未运行：P2 send workflow、P1 v6、durable/weekly schedule、P1 v2 旧定义，以及修复后的真实 Lark attachment/skill lookup canary。前四项受安全或 authority 边界限制；公开验收案例 15 的 schedule 失败不能替代源排程定义证据。最后一项仍是 `#3087` 的独立 channel E2E 缺口，不能从 `/api/chat` 或 member invoke 外推。
+源目录中明确未运行：P2 send workflow、P1 v6、durable/weekly schedule、P1 v2 旧定义，以及修复后的真实 Lark attachment/skill lookup canary。前四项受安全或 authority 边界限制；公开验收案例 15 的 schedule 成功不能替代源排程定义证据。最后一项仍是 `#3087` 的独立 channel E2E 缺口，不能从 `/api/chat` 或 member invoke 外推。
 
 ## 工作流矩阵
 
@@ -80,7 +80,7 @@
 
 ### 15 周度/月度预算差异摘要
 
-六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron；`f7f543c5` 上的新生产证据已覆盖 confirmation、HTTP 202 receipt、binding 和 member read model，但 provisioning 因 `NyxIdOperationAuthorityContractUnavailable` committed failed，未创建 schedule。源码提交 `7a7781067` 已针对该定义的六个 binder-attested GET 放宽独立 operation-authority gate，仍待部署后验证 provisioning、schedule 读取与真实触发。
+六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron；生产镜像 `7a778106` 上已完成 confirmation、HTTP 202 typed receipt、binding/provisioning committed success、schedule 回读和单次 `run-now`。触发后 `fireCount=1`、`failureCount=0`，workflow 11/11 committed `completed`，最终 artifact 与直接运行断言一致。
 
 ### 16 NyxID 只读 provider receipt
 

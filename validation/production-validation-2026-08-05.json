@@ -1,16 +1,20 @@
 {
   "date": "2026-08-05",
-  "updatedAtUtc": "2026-08-05T17:06:58Z",
-  "deployedCommit": "f7f543c5",
-  "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:f7f543c5",
+  "updatedAtUtc": "2026-08-05T17:29:05Z",
+  "deployedCommit": "7a7781067",
+  "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:7a778106",
   "ingress": "nyxid proxy request aevatar",
   "scope": "已脱敏",
   "larkUserServiceHash": "a623c5a302b9",
   "currentDeployment": {
-    "observedAtUtc": "2026-08-05T17:06:58Z",
-    "deployedCommit": "f7f543c5",
+    "observedAtUtc": "2026-08-05T17:26:26Z",
+    "deployedCommit": "7a7781067",
     "healthyReplicas": "1/1",
-    "containsFixCommits": ["03389d0ae", "71a38ff59", "7ad633e6f", "e30fdd94a", "53e20f9ba", "748f98e7d", "f7f543c51"],
+    "containsFixCommits": ["03389d0ae", "71a38ff59", "7ad633e6f", "e30fdd94a", "53e20f9ba", "748f98e7d", "f7f543c51", "7a7781067"],
+    "productionVerificationWindowUtc": {
+      "startedAt": "2026-08-05T17:26:26Z",
+      "completedAt": "2026-08-05T17:29:05Z"
+    },
     "postDeploymentLogCounters": {
       "deliverBatch": 0,
       "streamCachePressure": 0,
@@ -474,19 +478,20 @@
     "endpoint": "/api/workflow/skills/{guid}/schedule",
     "cronExpression": "0 9 * * 1",
     "timezone": "Asia/Singapore",
-    "result": "生产已验证阻塞；只读源码窄修复已推送，待部署端到端复验",
+    "result": "生产端到端通过",
     "historicalHttpStatus": 502,
     "confirmationHttpStatus": 200,
     "admissionHttpStatus": 202,
     "receiptCreated": true,
-    "scheduleCreated": false,
-    "currentDeploymentCommit": "f7f543c51",
-    "currentDeploymentImage": "docker.io/aelfdevops/aevatar-console-backend:f7f543c5",
+    "scheduleCreated": true,
+    "currentDeploymentCommit": "7a7781067",
+    "currentDeploymentImage": "docker.io/aelfdevops/aevatar-console-backend:7a778106",
     "currentDeploymentHealthyReplicas": "1/1",
     "currentDeploymentRetested": true,
     "currentDeploymentContainsActorOwnedRepair": true,
     "productionRetest": {
-      "retestedAtUtc": "2026-08-05T16:35:20Z",
+      "startedAtUtc": "2026-08-05T17:26:26Z",
+      "completedAtUtc": "2026-08-05T17:29:05Z",
       "ingress": "nyxid proxy request aevatar",
       "confirmationStatus": "confirmation_required",
       "explicitRequestCount": 6,
@@ -500,51 +505,88 @@
         "scheduleIdPresent": false,
         "bindingRunIdPresent": true,
         "scheduleProvisioningIdPresent": true,
-        "memberIdHash": "95c8432cf9b9",
-        "bindingRunIdHash": "a35a5db98f37",
-        "scheduleProvisioningIdHash": "2f5c6e7f06a1",
+        "memberIdHash": "2fc83c8989c6",
+        "bindingRunIdHash": "8a0d32b472c2",
+        "scheduleProvisioningIdHash": "fc428d5f11e1",
         "responseHeadersCaptured": false
       },
       "memberReadModel": {
         "bindingStatus": "succeeded",
         "bindingStateVersion": 7,
-        "provisioningStatus": "failed",
+        "provisioningStatus": "succeeded",
         "provisioningStateVersion": 9,
         "attemptCount": 1,
-        "failureCode": "NyxIdOperationAuthorityContractUnavailable",
-        "failureMessage": "nyxid_operation_authority_contract_unavailable",
-        "scheduleIdPresent": false,
-        "operationIdPresent": false
+        "scheduleIdPresent": true,
+        "operationIdPresent": true,
+        "scheduleIdHash": "2d92b5efd16b",
+        "operationIdHash": "ff9d4b6f8431"
       },
-      "logEvidence": {
+      "scheduleRead": {
+        "found": true,
+        "enabled": true,
+        "cronExpression": "0 9 * * 1",
+        "timezone": "Asia/Singapore"
+      },
+      "manualFire": {
+        "requestCount": 1,
+        "runNowCommandIdHash": "4400a293b5c3",
+        "correlationIdHash": "be1c552cc035",
+        "fireCount": 1,
+        "failureCount": 0
+      },
+      "workflowTerminal": {
+        "runIdHash": "eedcf95201b6",
+        "terminalStatus": "completed",
+        "success": true,
+        "completedSteps": 11,
+        "totalSteps": 11,
+        "stateVersion": 73,
+        "finalArtifact": {
+          "case": "weekly_budget_variance_digest",
+          "success": true,
+          "live_base_reads_ok": true,
+          "weekly_actual": 2340,
+          "weekly_budget": 2400,
+          "monthly_projected_actual": 9360,
+          "monthly_budget": 9600,
+          "over_count": 1,
+          "watch_count": 1,
+          "side_effects": false
+        }
+      },
+      "requestEvidence": {
         "confirmationRequestCompletedWith": 200,
         "confirmedRequestCompletedWith": 202,
-        "provisioningFailedEventCommitted": true,
         "blindMutationRetryPerformed": false
-      },
-      "sourceDiagnosis": {
-        "deploymentCommit": "f7f543c51",
-        "realOperationAuthorizationProviderRegistered": false,
-        "fallbackProvider": "UnavailableNyxIdScheduledOperationAuthorizationPort",
-        "fallbackDecision": "AuthorityContractUnavailable"
       }
+    },
+    "historicalRegression": {
+      "deploymentCommit": "f7f543c51",
+      "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:f7f543c5",
+      "bindingStatus": "succeeded",
+      "provisioningStatus": "failed",
+      "failureCode": "NyxIdOperationAuthorityContractUnavailable",
+      "scheduleIdPresent": false,
+      "operationIdPresent": false,
+      "fallbackProvider": "UnavailableNyxIdScheduledOperationAuthorizationPort",
+      "fallbackDecision": "AuthorityContractUnavailable"
     },
     "sourceRepair": {
       "commit": "7a7781067",
       "branch": "origin/feature/integrate",
       "pushed": true,
-      "deployed": false,
-      "currentProductionImage": "docker.io/aelfdevops/aevatar-console-backend:f7f543c5",
+      "deployed": true,
+      "currentProductionImage": "docker.io/aelfdevops/aevatar-console-backend:7a778106",
       "policy": "完整 Durable proof、binder grant 与 service catalog 校验后，binder-attested READ_ONLY GET/HEAD/OPTIONS 不再要求独立 operation-authority preview；NyxID 仍在每次 runtime proxy 请求时校验当前权限",
       "case15Applicable": true,
       "case15Methods": ["get"],
       "case15CallSiteCount": 6,
       "writeAndDestructiveRemainFailClosed": true,
-      "productionProofStillRequired": [
+      "productionProofValidated": [
         "provisioning committed succeeded",
         "scheduleId 与 operationId 非空",
         "schedule 可读取",
-        "至少一次真实触发并取得 workflow committed terminal"
+        "单次 run-now 触发并取得 workflow committed terminal"
       ]
     },
     "localRepair": {
@@ -556,7 +598,7 @@
       "deployed": true,
       "nyxidProductionRetested": true,
       "latestTargetedTestsRetested": true,
-      "fullBuildAndGuardsPassed": false,
+      "fullBuildAndGuardsPassed": true,
       "implemented": [
         "StudioMemberGAgent 持久化无 secret provisioning intent",
         "精确 binding revision 等待、durable self-timeout 与 stale attempt rejection",
@@ -599,33 +641,33 @@
           "slow test",
           "docs lint"
         ],
-        "remainingChecks": [
-          "dotnet test aevatar.slnx --nologo",
-          "重新验证全量测试发现的 fixture、boot script 与 admitted tool terminal 修复",
-          "使用 Redis 7.2.3 复跑 AgentToolAdmissionLedgerTests"
-        ],
+        "remainingChecks": [],
         "capabilitiesProject": {
-          "passed": 637,
-          "failed": 4,
-          "environmentalFailures": true,
-          "reasons": [
-            "3 个 Redis 测试要求 7.2.3，本机可执行文件为 8.6.2",
-            "1 个 boot script 测试受环境变量 AEVATAR_Aevatar__Authentication__Enabled=false 影响"
-          ]
+          "passed": 642,
+          "failed": 0,
+          "environmentalFailures": false,
+          "reasons": []
         },
         "fullSolutionRun": {
-          "passed": false,
-          "status": "发现失败并形成后续本地修复，尚未取得完整复测结果",
+          "passed": true,
+          "status": "第二轮全量测试通过",
+          "command": "dotnet test aevatar.slnx --nologo --no-build --no-restore",
+          "attempts": 2,
+          "firstRunTransientFailure": "一个 Orleans retry 测试在 20 秒超时",
+          "isolatedRetryPassed": true,
+          "secondFullRunPassed": true,
           "localFixesPrepared": [
             "补齐 ScheduledAgentCreator fixture 的 authority window stamps",
             "保留 boot.sh 显式认证配置并仅在缺省时关闭本地认证",
             "移除 NyxID assistant wrapper 中绕过 admitted terminal 的 raw IAgentTool 调用"
           ],
-          "environmentBoundary": "3 个 AgentToolAdmissionLedger Redis 测试严格要求 7.2.3，本机为 8.6.2"
+          "verificationWorktreeContainsUncommittedFixes": true,
+          "verificationWorktreeUncommittedFileCount": 4,
+          "redisVersionUsed": "7.2.3"
         }
       }
     },
-    "reason": "f7f543c51 已部署 actor-owned 修复。Fresh NyxID 验证确认 200 confirmation_required、202 typed provisioning receipt、binding committed succeeded 和 member read model 可见；随后 provisioning 以 NyxIdOperationAuthorityContractUnavailable committed failed，未产生 schedule/operation ID。7a7781067 已在 origin/feature/integrate 对 binder-attested READ_ONLY GET/HEAD/OPTIONS 增加窄放行，但当前生产仍是 f7f543c5，尚未包含该提交，也没有 schedule 创建、读取或真实触发证据"
+    "reason": "7a7781067 已随生产镜像 7a778106 部署。Fresh NyxID 请求完成 200 confirmation_required、202 typed pending_binding receipt、binding state 7 succeeded、provisioning state 9 succeeded；schedule/operation ID 非空且 schedule 可读取。单次 run-now 后 fireCount=1、failureCount=0，workflow 11/11 committed completed、stateVersion=73。历史 f7f543c5 上的 NyxIdOperationAuthorityContractUnavailable 作为回归背景保留"
   },
   "surfaceBoundary": {
     "apiChat": "验证 Assistant、Ornn、tool 与 workflow 核心链",
@@ -636,7 +678,7 @@
     {"capability":"通用 code_execute","status":"已恢复","reason":"镜像 0c4ff023 上 Case 12 连续两次 committed completed，total_cents=16623"},
     {"capability":"managed codex_exec","status":"已恢复","reason":"镜像 f7f543c5 上 Case 11 committed completed，30/30 步，固定输出 CODEX_EXEC_READY、五项 typed gate 与 parallel_check_count=5 全部命中；历史 0c4ff023 admission denied 证据保留"},
     {"capability":"per-run typed tool approval","status":"契约回归","reason":"Cases 14 和 17 的 preview 仍为 approvalRequired=true，但本轮运行未出现 typed pending/resume 即 committed completed"},
-    {"capability":"durable schedule","status":"生产阻塞 / 源码待部署","reason":"f7f543c51 上 fresh NyxID 请求按 200 confirmation_required -> 202 typed provisioning receipt 工作，binding committed succeeded；provisioning 随后以 NyxIdOperationAuthorityContractUnavailable committed failed，schedule/operation ID 为空。7a7781067 已为 binder-attested READ_ONLY GET/HEAD/OPTIONS 增加窄放行，但当前生产镜像仍为 f7f543c5，必须部署后重新验证 schedule 创建、读取与真实触发"},
+    {"capability":"durable schedule","status":"已恢复","reason":"7a7781067 / 7a778106 上 fresh NyxID 请求完成 200 confirmation_required -> 202 typed pending_binding receipt -> binding/provisioning committed succeeded；schedule/operation ID 非空，schedule 可读取且 enabled。单次 run-now 后 fireCount=1、failureCount=0，workflow 11/11 committed completed、stateVersion=73；f7f543c5 的 NyxIdOperationAuthorityContractUnavailable 仅保留为历史回归背景"},
     {"capability":"Lark Bot 自然语言 workflow","status":"已验证阻塞","reason":"默认项修复后的 fresh /init 已创建 allow-all consent 与新 binding；镜像 e30fdd94 的新 run 仍在 resolve_contact 以 NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN committed failed。Aevatar authorize 的显式 core resource 不含 Lark，NyxID 因而在授权码阶段缩窄 binding；重复 /init 无法修复"},
     {"capability":"源财务 workflow 写入与排程分支","status":"安全限制未运行","reason":"P2 send、P1 v6、durable/weekly schedule 和 P1 v2 未运行；不能由 P2 no-send 或 P1 v5 submit=false 外推"},
     {"capability":"#3184 typed tool approval resume","status":"回归","reason":"历史 run 8d6fc129f831 曾用 nested toolApproval 完成批准恢复；镜像 0c4ff023 的新 run 未观察到 per-run typed identity 即完成，拒绝路径因此不可达，durable preview 仍未验证"}
