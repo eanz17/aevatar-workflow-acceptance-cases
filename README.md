@@ -12,14 +12,14 @@
 
 - 17/17 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
 - 17/17 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
-- 最新生产镜像 `0c4ff023` 上，17/17 个案例均已真实运行：16 个 committed `completed`、1 个 committed `failed`；按严格契约判定为 14/17 通过、1 个运行阻塞（11）和 2 个审批契约回归（14、17）。
+- 最近一次 17-case 全量回归使用生产镜像 `0c4ff023`；随后案例 11 在修复镜像 `f7f543c5` 上完成定向复验。按逐案例最新证据，17 个终态均为 committed `completed`，严格判定为 15/17 通过和 2 个审批契约回归（14、17）。当前镜像 `f7f543c5` 没有整体重跑 17 个案例，不能外推为最新镜像已全量回归。
 - 本地 17/17 个 Ornn skill 与 workflow 字节一致；原有 15/17 个线上 `.1` 版本已 public 并回读，新增两个 skill 尚未发布。
 - `/api/chat` 已用自然语言验证 01、12、13、14、15：4/5 取得 committed `completed` 与业务断言，1/5 取得 committed `failed` 与稳定 typed blocker。
 - 案例 15 又在生产镜像 `d7844b5e` 上完成 artifact actor identity 回归：Assistant 读取到 committed typed artifact 并明确报告 `Completed`，没有再把最终结果误报为 pending。
 - 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
 - 源财务 P2 no-send、P1 v5 sanitized image + `submit=false` 和 PDF attachment probe 的既有 `71a38ff5` 证据分别为 8/8、14/14、2/2 completed，均有 `lastSuccess=true` 和非空 final output。
-- Durable schedule 的既有生产证据仍是 HTTP 502 且没有 typed receipt。actor-owned durable provisioning 目前只存在于 Aevatar 的本地未提交补丁；真实 `/api/workflow/skills/{guid}/schedule` 入口还需补齐 pending `202`、typed receipt 和 member read-model `Location`。这批修改尚未提交、部署或用 NyxID 生产复验，不计入通过统计。
-- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 managed `codex_exec` admission、per-run typed approval、durable schedule、Lark sender binding/channel canary，以及受安全约束未运行的发送、审批和排程定义。
+- Durable schedule 修复提交 `748f98e7d` 已进入 `origin/feature/integrate` 并随生产镜像 `f7f543c5` 部署。Fresh NyxID 验证得到 HTTP 200 `confirmation_required`、六个只读 Durable call site，以及 HTTP 202 typed provisioning receipt；member binding committed `succeeded`。随后 provisioning 在首次 attempt 以 `NyxIdOperationAuthorityContractUnavailable` committed `failed`，没有 schedule/operation ID。旧 HTTP 502、无 receipt 和状态不可见问题已经关闭，但端到端 schedule 仍是生产已验证阻塞；源码当前只注册 `UnavailableNyxIdScheduledOperationAuthorizationPort`。目标测试为 23/23、1730/1730、152/152 通过，Mainnet composition 1/1、Studio DI/executor 11/11、solution build、架构/边界门禁和 `slow_test_guards.sh` 已通过；全量 solution test 发现的 fixture、boot、admitted terminal 修复与 Redis 7.2.3 测试仍待完整复测。
+- `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 per-run typed approval、durable schedule、Lark sender binding/channel canary，以及受安全约束未运行的发送、审批和排程定义。
 - 已检查 #3161 作者此前在 `aevatarAI/aevatar` 提交的全部 11 条 issue，并用 13、15、16 做新一轮只读 committed 回归；没有为 channel/scheduler 外层缺口复制无效 workflow。详见 [定向回归报告](report/2026-08-05-issue-3161-author-regression.md) 与 [机器摘要](validation/issue-3161-author-regression-2026-08-05.json)。
 
 `preview`、`202 Accepted`、Assistant 正常结束、模型文案和 pending artifact 都不等于 workflow 成功。逐案例证据见 [生产验证摘要](validation/production-validation-2026-08-05.json)，完整对比见 [分析页面](report/index.html)。
@@ -34,7 +34,7 @@
 | `invoice_file_chain.v5.workflow.json` | exact JSON；5 个唯一 call site；sanitized PNG；`submit=false` | 一次瞬时 524 经无副作用单步探针对照后仅重跑一次；最终 14/14 实际步骤 completed，`lastSuccess=true`，final output 非空 | 图片抽取、只读 lookup、preview presentation 通过；提交三步未执行，无 approval、无 Lark 写入 |
 | PDF attachment probe | 无副作用 PDF 输入 | run catalog +1，2/2 completed，`lastSuccess=true`；extract 与 final output 非空 | PDF 附件接收与抽取主链通过 |
 
-明确未运行：P2 send workflow、P1 v6、durable/weekly schedule、P1 v2 旧定义，以及修复后的真实 Lark attachment/skill lookup canary。前四项受安全或 authority 边界限制；最后一项仍是 `#3087` 的独立 channel E2E 缺口，不能从 `/api/chat` 或 member invoke 外推。
+源目录中明确未运行：P2 send workflow、P1 v6、durable/weekly schedule、P1 v2 旧定义，以及修复后的真实 Lark attachment/skill lookup canary。前四项受安全或 authority 边界限制；公开验收案例 15 的 schedule 失败不能替代源排程定义证据。最后一项仍是 `#3087` 的独立 channel E2E 缺口，不能从 `/api/chat` 或 member invoke 外推。
 
 ## 工作流矩阵
 
@@ -50,7 +50,7 @@
 | 08 | `saas_license_optimization_digest` | 19 | 六路 Base、标准化、摘要、interactive card | 最新 preview 分支 completed，六源汇总正确 | 无；未发送卡片 |
 | 09 | `contractor_access_package_approval` | 25 | 附件、LLM、身份目录、历史去重、审批创建与验证 | 最新 preview 分支 completed，`approval_created=false` | 无；历史 submit/idempotent 分支另有通过证据 |
 | 10 | `monthly_access_certification` | 23 | 月末门禁、聚合、审批、提醒与完成通知 | 最新 preview 分支 completed，审批和消息均未创建 | 无；历史写入分支另有通过证据 |
-| 11 | `complex_codex_exec_validation` | 32 | 固定 managed probe、五项 gate、receipt 恢复、并行证据 | 连续两次 committed failed，`codex_execution_admission_denied` | 无 |
+| 11 | `complex_codex_exec_validation` | 32 | 固定 managed probe、五项 gate、receipt 恢复、并行证据 | committed 通过，30/30 步，`parallel_check_count=5` | 无 |
 | 12 | `safe_code_execute_validation` | 4 | 固定 JavaScript、结构化 receipt、金额断言 | 连续两次 committed 通过，`total_cents=16623` | 无 |
 | 13 | `invoice_ocr_policy_review` | 10 | 合成 PDF、字段提取、SGD/金额归一化、历史去重 | committed 通过，`stateVersion=82` | 无 |
 | 14 | `lark_contact_batch_resolution` | 3 | `contact/v3/users/batch_get_id`、标识脱敏 | 业务 completed；未观察到 preview 要求的 typed approval identity，契约回归 | 无 |
@@ -58,13 +58,13 @@
 | 16 | `nyxid_read_receipt_probe` | 4 | 单次 Base GET、provider receipt、首步输出与终态 | committed 通过，`stateVersion=31` | 无 |
 | 17 | `lark_post_search_approval_probe` | 4 | 语义只读 POST、typed pending、nested resume | 业务 completed；未观察到 typed pending/resume，契约回归 | 无 |
 
-最新全量回归使用部署镜像 `0c4ff023`。11 在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；12 则连续两次恢复为 committed `completed`。14 和 17 的业务 artifact 均成功，但本轮没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
+最新全量回归使用部署镜像 `0c4ff023`。其中 11 曾在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；修复镜像 `f7f543c5` 部署后，11 的定向复验已 committed `completed`。12 的连续两次成功证据继续保留。14 和 17 的业务 artifact 均成功，但没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
 
 ## 新增能力证据
 
 ### 11 managed `codex_exec`
 
-固定 probe 与公开 canonical sample payload 完全一致，账号 readiness 为 enabled、eligible、active、`execution_ready=true`。但最新镜像上两次真实运行都在 `execute_probe` 以 `codex_execution_admission_denied` committed failed，`stateVersion=31`。这排除了输入漂移和账号未就绪，当前判定为平台 admission 阻塞。
+固定 probe 与公开 canonical sample payload 完全一致，账号 readiness 为 enabled、eligible、active、`execution_ready=true`。历史镜像 `0c4ff023` 上两次真实运行都在 `execute_probe` 以 `codex_execution_admission_denied` committed failed；根因是 Aevatar 把 managed Agent Key 放入 `Authorization: Bearer`，NyxID 的 `forward_access_token` 策略漂移后又把同一 bearer 转发到 chrono-sandbox。提交 `f7f543c51` 改为专用 `X-API-Key` 入口认证并保持 `Authorization` 缺失。镜像 `f7f543c5` 上的定向复验 committed `completed`，`stateVersion=179`，30/30 步完成，固定输出 `CODEX_EXEC_READY`、五项 typed gate、脱敏 `diagnostic_id` 与 `parallel_check_count=5` 全部命中，`side_effects=false`。
 
 ### 12 安全 `code_execute`
 
@@ -80,7 +80,7 @@
 
 ### 15 周度/月度预算差异摘要
 
-六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron；历史 API 证据为 HTTP 502 且无 receipt，actor-owned 修复仍是本地未提交补丁，尚未形成新的生产证据。
+六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron；`f7f543c5` 上的新生产证据已覆盖 confirmation、HTTP 202 receipt、binding 和 member read model，但 provisioning 因 `NyxIdOperationAuthorityContractUnavailable` committed failed，未创建 schedule。
 
 ### 16 NyxID 只读 provider receipt
 
