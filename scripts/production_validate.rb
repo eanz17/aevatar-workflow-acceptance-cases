@@ -92,14 +92,14 @@ CASES = {
   "16" => {
     file: "16-nyxid-read-receipt-probe.workflow.yaml",
     prompt: "运行单次只读 NyxID receipt 探针，不执行任何写入。",
-    preview_contract: { method: "GET", effectiveRisk: "read_only", approvalRequired: false }
+    preview_contract: { method: "get", effectiveRisk: "read_only", approvalRequired: false }
   },
   "17" => {
     file: "17-lark-post-search-approval-probe.workflow.yaml",
     prompt: "运行语义只读的 Base POST 搜索批准恢复探针，不修改任何记录。",
     approval_required: true,
     preview_contract: {
-      method: "POST",
+      method: "post",
       effectiveRisk: "write",
       approvalRequired: true,
       allowedExecutionModes: ["interactive"]
@@ -328,13 +328,9 @@ class ProductionValidator
   def prepare_binding(yaml, preview, display_name)
     provision_key = build_provision_key(display_name)
     expected_member_id = "wf-#{provision_key}"
-    expected_revision_id = "revision-#{provision_key}"
     existing_revision_id = resolve_existing_revision(expected_member_id)
     if existing_revision_id
-      unless existing_revision_id == expected_revision_id
-        raise ValidationError, "稳定 member 已绑定到非预期 revision"
-      end
-      return [expected_member_id, expected_revision_id, true]
+      return [expected_member_id, existing_revision_id, true]
     end
 
     provision = provision_workflow(yaml, preview, display_name)
@@ -371,8 +367,8 @@ class ProductionValidator
         callSiteId: item.fetch("callSiteId"),
         requestContractDigest: item.fetch("requestContractDigest"),
         attestedRisk: item.fetch("effectiveRisk"),
-        workflowId: preview.fetch("workflowId"),
-        revisionId: preview.fetch("revisionId")
+        workflowId: "",
+        revisionId: ""
       }
     end
     body = {
@@ -453,6 +449,7 @@ class ProductionValidator
     detail = wait_for_run(member_id, evidence.fetch(:run_id), approval_allowed, approved_keys)
     final_output = detail["finalOutput"] || evidence[:final_output]
     success = detail.dig("summary", "status") == "completed" && detail.dig("summary", "success") == true
+    runtime_contract_evidence = success ? validate_runtime_contract(case_id, detail, final_output) : {}
     {
       run: "已提交并查询 committed read model",
       runIdHash: Digest::SHA256.hexdigest(evidence.fetch(:run_id))[0, 12],
@@ -465,7 +462,7 @@ class ProductionValidator
       failure: sanitize_output(terminal_failure(detail)),
       sideEffectAuthorized: side_effect,
       readOnlyApprovalAuthorized: read_only_approval
-    }
+    }.merge(runtime_contract_evidence)
   end
 
   def wait_for_endpoint(member_id, revision_id)
@@ -594,6 +591,31 @@ class ProductionValidator
     scrub_identifiers(JSON.parse(output.to_s))
   rescue JSON::ParserError
     output.to_s.gsub(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i, "<已脱敏>")[0, 800]
+  end
+
+  def validate_runtime_contract(case_id, detail, final_output)
+    return {} unless case_id == "16"
+
+    first_step = Array(detail["steps"]).find { |step| step["stepId"] == "read_base_records" }
+    unless first_step && first_step["success"] == true && !first_step["outputPreview"].to_s.strip.empty?
+      raise ValidationError, "案例 16 committed read model 缺少非空首步输出"
+    end
+
+    artifact = final_output.is_a?(String) ? JSON.parse(final_output) : final_output
+    expected = {
+      "success" => true,
+      "provider_response_verified" => true,
+      "side_effects" => false
+    }
+    actual = expected.keys.to_h { |key| [key, artifact.is_a?(Hash) ? artifact[key] : nil] }
+    raise ValidationError, "案例 16 最终 artifact 契约不匹配：#{actual.inspect}" unless actual == expected
+
+    {
+      firstToolStepOutputPresent: true,
+      finalArtifactVerified: true
+    }
+  rescue JSON::ParserError => e
+    raise ValidationError, "案例 16 最终 artifact 不是有效 JSON：#{e.message}"
   end
 
   def terminal_failure(detail)

@@ -13,15 +13,31 @@
     "placeholderCount": 16
   },
   "productionPreview": {
-    "passed": 15,
+    "passed": 16,
     "failed": 0,
-    "unverified": 2,
+    "unverified": 1,
     "executionMode": "interactive"
   },
   "directRuntimeSummary": {
-    "passed": 13,
+    "passed": 14,
     "platformBlocked": 2,
-    "unverified": 2
+    "unverified": 1
+  },
+  "case16Validation": {
+    "validatedAt": "2026-08-05T08:33:06Z",
+    "ingress": "nyxid proxy request aevatar",
+    "scopeHash": "237314c29964",
+    "larkUserServiceHash": "a623c5a302b9",
+    "runIdHash": "a2e226a74d8f",
+    "preview": {"callSiteCount":1,"method":"get","effectiveRisk":"read_only","approvalRequired":false,"allowedExecutionModes":["interactive"]},
+    "binding": "复用现有 revision",
+    "terminalStatus": "completed",
+    "stateVersion": 31,
+    "completedSteps": 4,
+    "totalSteps": 4,
+    "toolCallSteps": 1,
+    "firstToolStepOutputPresent": true,
+    "finalArtifact": {"success":true,"provider_response_verified":true,"side_effects":false}
   },
   "runtime": [
     {"case":"01","result":"通过","terminalStatus":"completed","stateVersion":80,"assertion":"ready_for_review=true","sideEffects":false},
@@ -39,7 +55,7 @@
     {"case":"13","result":"通过","terminalStatus":"completed","stateVersion":82,"assertion":"PDF 提取、SGD/金额/供应商归一化、审批历史与精确去重均命中","sideEffects":false},
     {"case":"14","result":"平台阻塞","terminalStatus":"failed","stateVersion":15,"assertion":"resolve_contact committed failed","blockerCode":"NYXID_PROXY_HTTP_400","downstreamCode":"99991672","blocker":"绑定 Lark Bot 缺少 contact:user.id:readonly","sideEffects":false},
     {"case":"15","result":"通过","terminalStatus":"completed","stateVersion":73,"assertion":"六路 Base GET、周度 2340/2400、月度 9360/9600、over=1、watch=1","sideEffects":false},
-    {"case":"16","result":"待验证","terminalStatus":null,"stateVersion":null,"assertion":"预期 success=true、provider_response_verified=true、side_effects=false","issue":"#3161","sideEffects":false},
+    {"case":"16","result":"通过","terminalStatus":"completed","stateVersion":31,"completedSteps":4,"totalSteps":4,"runIdHash":"a2e226a74d8f","firstToolStepOutputPresent":true,"finalArtifactVerified":true,"assertion":"单次 Base GET、首步输出非空、success=true、provider_response_verified=true、side_effects=false","issue":"#3161","sideEffects":false},
     {"case":"17","result":"待验证","terminalStatus":null,"stateVersion":null,"assertion":"预期 typed pending/resume 后 success=true、approval_resumed=true、side_effects=false","issue":"#3184","sideEffects":false}
   ],
   "ornnPublication": {
@@ -94,7 +110,7 @@
     {"capability":"Lark contact batch_get_id","status":"平台阻塞","reason":"Lark 99991672，缺 contact:user.id:readonly"},
     {"capability":"durable schedule","status":"平台阻塞","reason":"案例 15 schedule endpoint 返回 HTTP 502 且无 receipt"},
     {"capability":"Lark Bot 自然语言 transport","status":"未验证","reason":"本轮使用 /api/chat，不包含 webhook/relay/回传链"},
-    {"capability":"#3161 published-operation authority 分支","status":"范围待复测","reason":"issue 已关闭且正向环境通过；原报告方旧 scope 的 proxy-delegation-only 分支仍待其复测"},
+    {"capability":"#3161 published-operation authority 分支","status":"部分覆盖","reason":"Case 16 的 nyxid_request receipt/runtime 已 committed 通过；原报告方旧 scope 的 proxy-delegation-only published-operation 分支仍待其复测"},
     {"capability":"#3184 typed tool approval resume","status":"修复中","reason":"pending 已可观察；当前 nested toolApproval schema 在原报告方 scope 尚未取得 post-fix committed 终态证据"}
   ]
 }

@@ -6,7 +6,7 @@ require "yaml"
 ROOT = File.expand_path("..", __dir__)
 EXPECTED_CASES = (1..17).map { |number| format("%02d", number) }.freeze
 EXPECTED_BLOCKED = %w[12 14].freeze
-EXPECTED_UNVERIFIED = %w[16 17].freeze
+EXPECTED_UNVERIFIED = %w[17].freeze
 REPORT_DATE = "2026-08-05"
 
 def fail_validation(message)
@@ -19,13 +19,13 @@ summary = JSON.parse(File.read(summary_path))
 runtime = summary.fetch("runtime")
 
 fail_validation("静态验证摘要不是 17/17") unless summary.dig("staticValidation", "passed") == 17
-fail_validation("production preview 已验证数不是 15/17") unless summary.dig("productionPreview", "passed") == 15 &&
-  summary.dig("productionPreview", "unverified") == 2
+fail_validation("production preview 已验证数不是 16/17") unless summary.dig("productionPreview", "passed") == 16 &&
+  summary.dig("productionPreview", "unverified") == 1
 fail_validation("production runtime 案例数不是 17") unless runtime.length == 17
 fail_validation("production runtime 案例编号不完整") unless runtime.map { |item| item.fetch("case") } == EXPECTED_CASES
-fail_validation("直接 runtime 通过数不是 13") unless summary.dig("directRuntimeSummary", "passed") == 13
+fail_validation("直接 runtime 通过数不是 14") unless summary.dig("directRuntimeSummary", "passed") == 14
 fail_validation("直接 runtime 平台阻塞数不是 2") unless summary.dig("directRuntimeSummary", "platformBlocked") == 2
-fail_validation("直接 runtime 待验证数不是 2") unless summary.dig("directRuntimeSummary", "unverified") == 2
+fail_validation("直接 runtime 待验证数不是 1") unless summary.dig("directRuntimeSummary", "unverified") == 1
 
 runtime.each do |item|
   case_id = item.fetch("case")
@@ -45,6 +45,24 @@ runtime.each do |item|
     fail_validation("案例 #{case_id} 缺少 stateVersion") unless item["stateVersion"].is_a?(Integer)
   end
 end
+
+case16 = summary.fetch("case16Validation")
+fail_validation("案例 16 preview 调用点不是单次只读 GET") unless
+  case16.dig("preview", "callSiteCount") == 1 &&
+  case16.dig("preview", "method") == "get" &&
+  case16.dig("preview", "effectiveRisk") == "read_only" &&
+  case16.dig("preview", "approvalRequired") == false
+fail_validation("案例 16 不是 committed completed") unless
+  case16["terminalStatus"] == "completed" && case16["stateVersion"].is_a?(Integer)
+fail_validation("案例 16 步骤或首步输出证据不完整") unless
+  case16["completedSteps"] == 4 && case16["totalSteps"] == 4 &&
+  case16["toolCallSteps"] == 1 && case16["firstToolStepOutputPresent"] == true
+fail_validation("案例 16 最终 artifact 断言失败") unless case16.fetch("finalArtifact") == {
+  "success" => true,
+  "provider_response_verified" => true,
+  "side_effects" => false
+}
+fail_validation("案例 16 run hash 格式错误") unless case16["runIdHash"].to_s.match?(/\A[0-9a-f]{12}\z/)
 
 ornn = summary.fetch("ornnPublication")
 fail_validation("本地 Ornn skill 数不是 17") unless ornn.fetch("localSkillCount") == 17
