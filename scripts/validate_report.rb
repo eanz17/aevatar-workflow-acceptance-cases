@@ -806,29 +806,61 @@ fail_validation("Lark channel E2E 机器证据摘要漂移") unless
   channel_e2e["requiredDeploymentCommit"] == "de801ca70a37db624b27155c1870d0c99ad93b7c" &&
   channel_e2e["summary"] == {
     "total" => 3,
-    "passed" => 1,
+    "passed" => 3,
     "failed" => 0,
-    "pendingDeployment" => 2,
+    "pendingDeployment" => 0,
     "pendingExecution" => 0
   }
 channel_results = channel_e2e.fetch("results")
 fail_validation("Lark channel E2E 案例编号不完整") unless
   channel_results.map { |item| item["case"] } == %w[20 21 22]
-fail_validation("Lark channel E2E Case 20/21 待部署状态不完整") unless
-  channel_results.first(2).all? do |item|
-    item["status"] == "pending-deployment" &&
-      item["requiredDeploymentCommit"] == "de801ca70a37db624b27155c1870d0c99ad93b7c" &&
-      item["readyProductionWorkloadTraceable"] == false &&
-      item["deploymentCommit"].nil? && item["deploymentImage"].nil? &&
-      item["deploymentDigest"].nil? && item["observedAtUtc"].nil? &&
-      item["larkInboundObserved"].nil? && item["channelAgentRunStarted"].nil? &&
-      item["ornnSearchConfirmed"].nil? && item["exactSkillResolved"].nil? &&
-      item["mountApprovalCardObserved"].nil? && item["mountApprovalDecisionDispatchCount"].nil? &&
-      item["workflowStartCalls"].nil? && item["newWorkflowRunCount"].nil? &&
-      item["committedTerminalObserved"].nil? && item["terminalStatus"].nil? &&
-      item["finalArtifact"].nil? && item["stableErrorCode"].nil? &&
-      item["rawIdentifiersPersisted"] == false
-  end
+channel_case_20 = channel_results.fetch(0)
+fail_validation("Lark channel E2E Case 20 缺少首次 mount 批准与 committed 证据") unless
+  channel_case_20["status"] == "passed" &&
+  channel_case_20["requiredDeploymentCommit"] == "de801ca70a37db624b27155c1870d0c99ad93b7c" &&
+  channel_case_20["requiredAncestorsPresent"] == true &&
+  channel_case_20["readyProductionWorkloadTraceable"] == true &&
+  channel_case_20["mountApprovalCardCount"] == 1 &&
+  channel_case_20["mountApprovalDecisionDispatchCount"] == 1 &&
+  channel_case_20["mountApprovalIdentityMatched"] == true &&
+  channel_case_20["sameAgentRunResolved"] == true &&
+  channel_case_20["sameAgentRunResumed"] == true &&
+  channel_case_20["useSkillReceiptStatus"] == "Completed" &&
+  channel_case_20["mountExecuted"] == true &&
+  channel_case_20["workflowStartCalls"] == 1 &&
+  channel_case_20["newWorkflowRunCount"] == 1 &&
+  channel_case_20["workflowApprovalCardCount"] == 1 &&
+  channel_case_20["workflowApprovalDecisionDispatchCount"] == 1 &&
+  channel_case_20["sameWorkflowRunResumed"] == true &&
+  channel_case_20["terminalStatus"] == "completed" &&
+  channel_case_20["workflowTerminalResultCount"] == 1 &&
+  channel_case_20["workflowRunHash"] == "e18081f2211b" &&
+  channel_case_20["committedStateVersion"] == 30 &&
+  channel_case_20["completedSteps"] == 3 && channel_case_20["totalSteps"] == 3 &&
+  channel_case_20["requestParametersRedacted"] == true &&
+  channel_case_20["outputPreviewIdentifiersRedacted"] == true &&
+  channel_case_20["timelineIdentifiersRedacted"] == true &&
+  channel_case_20["rawIdentifiersPersisted"] == false
+channel_case_21 = channel_results.fetch(1)
+fail_validation("Lark channel E2E Case 21 缺少首次 mount 拒绝证据") unless
+  channel_case_21["status"] == "passed" &&
+  channel_case_21["requiredDeploymentCommit"] == "de801ca70a37db624b27155c1870d0c99ad93b7c" &&
+  channel_case_21["requiredAncestorsPresent"] == true &&
+  channel_case_21["readyProductionWorkloadTraceable"] == true &&
+  channel_case_21["mountApprovalCardCount"] == 1 &&
+  channel_case_21["mountApprovalDecisionDispatchCount"] == 1 &&
+  channel_case_21["mountApprovalIdentityMatched"] == true &&
+  channel_case_21["sameAgentRunResolved"] == true &&
+  channel_case_21["sameAgentRunResumed"] == false &&
+  channel_case_21["useSkillReceiptStatus"] == "Denied" &&
+  channel_case_21["stableErrorCode"] == "approval_denied" &&
+  channel_case_21["mountExecuted"] == false &&
+  channel_case_21["workflowApprovalCardCount"] == 0 &&
+  channel_case_21["workflowStartCalls"] == 0 &&
+  channel_case_21["newWorkflowRunCount"] == 0 &&
+  channel_case_21["committedTerminalObserved"] == false &&
+  channel_case_21["finalArtifact"].nil? &&
+  channel_case_21["rawIdentifiersPersisted"] == false
 channel_history = channel_e2e.fetch("history")
 fail_validation("Lark channel E2E 未保留旧提示词失败历史") unless
   channel_history.length == 1 &&
@@ -1058,21 +1090,24 @@ end
 report = File.read(File.join(ROOT, "report", "#{REPORT_DATE}-workflow-coverage-report.md"))
 fail_validation("README 缺少 25 workflows + 3 channel + 21 risk cases 口径") unless
   readme.include?("25 个 workflow + 3 个 Lark channel E2E case + 21 个风险验收 case") &&
-  readme.include?("当前严格状态为 1 passed、2 pending-deployment") &&
+  readme.include?("3/3 个 Lark channel E2E case 已严格通过") &&
   readme.include?("`de801ca70`") && readme.include?("`InvalidWorkflowYaml`")
 fail_validation("文字报告缺少 #3210 的 mount 与 workflow 运行期审批 channel cases") unless
   report.include?("## Lark channel E2E 案例（#3210）") &&
   report.include?("Case 20") && report.include?("Case 21") && report.include?("Case 22") &&
   report.include?("`approval_denied`") && report.include?("`awaiting_tool_approval`") &&
-  report.include?("`InvalidWorkflowYaml`") && report.include?("`08cdd96d61dd`")
-fail_validation("分析页缺少等待部署的 Lark channel E2E 状态") unless
-  html.include?("1 / 3") && html.include?("Lark channel E2E 严格通过") &&
-  html.scan(/<tr data-channel-case="(?:20|21)" data-channel-status="pending-deployment">/).length == 2 &&
-  html.scan(/<tr data-channel-case="(?:20|21)"[^>]*>.*?<span class="status status-pending">pending-deployment<\/span>.*?<\/tr>/m).length == 2 &&
-  html.scan(/<tr data-channel-case="22" data-channel-status="passed">.*?<span class="status status-passed">validated<\/span>.*?<\/tr>/m).length == 1
-pending_channel_html_rows = html.scan(/<tr data-channel-case="(?:20|21)"[^>]*>.*?<\/tr>/m)
-fail_validation("分析页把待部署 channel case 渲染成绿色") if
-  pending_channel_html_rows.any? { |row| row.include?("status-passed") }
+  report.include?("`InvalidWorkflowYaml`") && report.include?("`e18081f2211b`") &&
+  report.include?("`08cdd96d61dd`")
+channel_html_rows = html.scan(/<tr data-channel-case="(?:20|21|22)"[^>]*>.*?<\/tr>/m)
+fail_validation("分析页缺少 3/3 Lark channel E2E 严格通过状态") unless
+  html.include?("3 / 3") && html.include?("Lark channel E2E 严格通过") &&
+  channel_html_rows.length == 3 &&
+  channel_html_rows.all? do |row|
+    row.include?('data-channel-status="passed"') &&
+      row.include?('<span class="status status-passed">validated</span>') &&
+      !row.include?("status-pending")
+  end &&
+  html.include?("e18081f2211b") && html.include?("approval_denied")
 fail_validation("文字报告缺少案例 11 managed codex_exec 修复闭环") unless
   report.include?("## Managed codex_exec 修复与生产复验") &&
   report.include?("`Authorization: Bearer`") && report.include?("`forward_access_token=true`") &&

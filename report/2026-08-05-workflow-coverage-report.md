@@ -14,7 +14,7 @@
 ## 总结
 
 - 25/25 个公开 workflow 通过本地静态校验和 production explicit-request preview；`production_validate.rb` 与 `assistant_validate.rb` 共用 25/25 个 strict artifact contract。
-- 另有 3 个既有 Lark channel E2E case 和 21 个 risk case。Channel 当前严格状态为 1 passed、2 pending-deployment；risk 汇总为 12 passed、2 blocked、2 failed、0 pending-execution、5 not-configured。
+- 另有 3 个 Lark channel E2E case 和 21 个 risk case。Channel 当前严格状态为 3/3 passed；risk 汇总为 12 passed、2 blocked、2 failed、0 pending-execution、5 not-configured。
 - 旧 01-20 保留既有 committed 基线；新增 21-25 当前最新结果为 5/5 completed。Cases 05/24/25 fresh 写探针共创建 4 条固定合成记录，随后连同 2 条同契约历史残留精确清理；回读匹配数为 0，未匹配记录未触碰。
 - 本地 25/25 个 Ornn skill 与 workflow 一一对应；missing-only 只发布原缺失 6 个，19 个既有精确项跳过；发布后的正式 verify-only 与独立 catalog 验证器均确认 25/25 格式、名称、版本与 public 状态精确一致。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
@@ -40,11 +40,11 @@
 
 | Case | 决策 | 必须观察到的通过证据 | 当前状态 |
 |---|---|---|---|
-| Case 20 | approved | 显式“挂载”进入 typed recovery；mount 卡/callback 各 1 次并恢复同一 AgentRun；`use_skill=Completed`、`mount_executed=true`；workflow 工具卡/callback 各 1 次并恢复同一 run；普通 AgentRun 可见回复与 awaiting 文本均为 0；3/3 committed 脱敏 artifact 命中 | `pending-deployment` |
-| Case 21 | rejected | 显式“挂载”进入 typed recovery；mount 卡/callback 各 1 次；typed `Denied` / `approval_denied`；`mount_executed=false`；workflow 卡、start 与 run 增量均为 0 | `pending-deployment` |
+| Case 20 | approved | 显式“挂载”进入 typed recovery；mount 卡/callback 各 1 次并恢复同一 AgentRun；`use_skill=Completed`、`mount_executed=true`；workflow 工具卡/callback 各 1 次并恢复同一 run；普通 AgentRun 可见回复与 awaiting 文本均为 0；唯一新 run `e18081f2211b` committed state 30、3/3，脱敏 artifact 命中 | `passed` |
+| Case 21 | rejected | 显式“挂载”进入 typed recovery；mount 卡/callback 各 1 次；同一挂起 AgentRun 返回 typed `Denied` / `approval_denied`；`mount_executed=false`；workflow 卡、start 与目标 run 增量均为 0 | `passed` |
 | Case 22 | approved | skill 已挂载且不出现新 mount 审批；workflow start 恰好 1 次且新 run 晚于 Lark inbound；run committed 到 `awaiting_tool_approval`；workflow 审批卡与 callback 各一次；同一 workflow run 恢复；普通 AgentRun 可见回复为 0；3/3 steps、stateVersion 30、脱敏 committed artifact 精确命中 | `passed` |
 
-Case 20/21 等待 `de801ca70` 进入 Ready 生产 workload，部署前不保存伪运行字段。旧 `ee031038` 上的“请使用”提示未进入精确 skill recovery，并在 fallback 创建 run 前以 `InvalidWorkflowYaml` 失败、目标 run 增量为 0；该结果作为历史负证据保留。Case 22 所需提交已包含在 Ready 镜像 `ee031038`，fresh Lark inbound 后唯一新增 workflow run 进入 `awaiting_tool_approval`，审批卡只决策一次，同一 run 恢复并 committed `completed`、3/3；公开 run hash 为 `08cdd96d61dd`。
+Case 20/21 已在 Ready 镜像 `de801ca7` 上执行真实 Lark 入站。Case 20 先出现唯一 `use_skill` mount 卡，批准后同一 AgentRun 恢复并启动唯一 workflow run；该 run 再经唯一 `nyxid_proxy` 卡批准后 committed `completed`、state 30、3/3，公开 hash 为 `e18081f2211b`，request/output/timeline 联系人标识均已脱敏。Case 21 只拒绝唯一 mount 卡，得到 typed `Denied` / `approval_denied`，未 mount、未启动 workflow，目标 run catalog 增量为 0；拒绝窗口发生的生产前滚 `49244090` 直接包含 `de801ca70`，未产生重复 callback。旧 `ee031038` / `InvalidWorkflowYaml` 结果继续作为历史负证据。Case 22 的已挂载路径公开 run hash `08cdd96d61dd` 继续证明 workflow 运行期批准恢复。
 
 ## 可靠性与准入风险验收（2026-08-06）
 

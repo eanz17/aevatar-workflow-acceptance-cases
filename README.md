@@ -13,7 +13,7 @@
 - 25/25 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验；`production_validate.rb` 与 `assistant_validate.rb` 共用 25/25 个严格业务 artifact contract，committed `completed` 本身不再足以判绿。
 - 25/25 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。旧 01-20 保留既有 committed 基线；21/22/23 在用 `config.local.yaml` 重新物化后 fresh committed `completed`，分别为 7/7、8/8、4/4 且 artifact 精确命中。此前三项同时出现的 `NYXID_PROXY_HTTP_400` 已确认来自共享 `build/workflows/` 被示例配置覆盖，不是 Aevatar 回归；24/25 保留最近一次 5/5、8/8 completed 的 typed approval 证据。
 - 新增 21/22/23 无副作用；24/25 在本轮显式授权和 typed approval 下分别完成 1 次、2 次 resume。本轮 Cases 05/24/25 共创建 4 条固定合成 Base 探针记录，随后连同 2 条同契约历史残留精确清理；回读匹配数为 0，未匹配记录未触碰。
-- 3/3 个既有 Lark channel E2E case 通过静态契约校验，当前严格状态为 1 passed、2 pending-deployment：Case 22 已完成 workflow tool approval 与 committed 3/3；Cases 20/21 已改用显式“挂载”意图并等待 `de801ca70` 进入 Ready 生产 workload。旧提示词在 `ee031038` 上以 `InvalidWorkflowYaml` 失败、run 增量为 0 的结果保留为历史负证据，不冒充新 case 的当前结果。
+- 3/3 个 Lark channel E2E case 已严格通过。Ready 镜像 `de801ca7` 上，Case 20 的显式挂载先完成唯一 mount 审批与同一 AgentRun 恢复，再完成唯一 workflow 工具审批；新 run `e18081f2211b` committed 3/3、state 30 且脱敏 artifact 精确命中。Case 21 的唯一 mount 卡被拒绝后返回 typed `Denied` / `approval_denied`，mount、workflow start 与目标 run 增量均为 0。Case 22 的既有挂载 workflow 审批链继续通过；旧 `ee031038` / `InvalidWorkflowYaml` 结果只保留为历史负证据。
 - 案例 19 public skill 已升级并精确回读为 `1.1`。Direct synthetic fixture run hash `e6d17331400b` 为 committed `completed`、`stateVersion=30`、4/4；fresh Lark canary 在 6 条既有目标 run 的隔离基线上只新增 1 条，run hash `03c3f4ded68e` 为 committed `completed`、`stateVersion=32`、4/4，typed artifact 精确命中 `lark_bot_ingress_validated=true`、文件名/正文/SHA-256、脱敏和无副作用断言，严格状态升级为 `validated`。Lark 文件卡片为 114 字节，committed descriptor/extraction 因尾随 LF 归一化为 113 字节；历史 `service_catalog_missing` blocker 已关闭，Risk 24 严格通过。
 - 本地 25/25 个 Ornn skill 与 workflow 字节一致，25/25 通过服务端格式校验并按精确名称、版本公开回读。本轮 missing-only 发布只创建并公开了原先缺失的 Case 19 与 21-25 六个 skill，19 个既有精确匹配项未上传、未改权限。
 - `/api/chat` 已在 Ready 镜像 `ee031038` 上 fresh 验证 01、12、13、14、15：5/5 均取得 committed `completed`、严格业务 artifact 且 `workflowValidationStatus=validated`。12 和 14 的 Assistant 最终文案仍描述旧的 Running/Awaiting 状态，严格判定只采用 authoritative committed artifact，不能让模型文案覆盖机器证据。
@@ -33,6 +33,7 @@
 
 | 时间（SGT） | 验证层 | 目标 | 结果 | 证据 / blocker | 下一步 |
 |---|---|---|---|---|---|
+| 2026-08-06 23:47 | Case 20/21 真实 Lark 首次挂载闭环 | Ready `de801ca7`；前滚 `49244090` 包含目标提交 | 2/2 严格通过 | Case 20：mount 卡/callback=1、同一 AgentRun 恢复、workflow 卡/callback=1、唯一新 run `e18081f2211b` committed 3/3 state 30、artifact 与 observatory 脱敏通过；Case 21：mount 卡/callback=1、typed `Denied` / `approval_denied`、mount/start/run delta=0；前滚期间无身份猜测或重复回调 | 同步机器摘要与报告，门禁通过后关闭 #3210 |
 | 2026-08-06 23:25 | Case 20/21 首次挂载契约补强 | `de801ca70`；验收定义与机器摘要 | 等待部署 | “使用/use/加载/load”与“挂载/mount”已分流；Case 20 明确要求 mount 卡与 workflow 工具卡各 1 张、两次 callback 各 1 次；Case 21 只拒绝 mount 卡并要求 workflow start/run delta 均为 0；旧 `ee031038` / `InvalidWorkflowYaml` 记录转入历史 | 推送验收定义，核验 Ready 部署后执行真实 Lark 批准与拒绝路径 |
 | 2026-08-06 22:55 | Risk/channel/report 一致性门禁 | 当前工作树 | 通过 | `validate_risk_cases.rb`：21 项为 12 passed、2 blocked、2 failed、5 not-configured；`validate_channel_cases.rb`：1 passed、2 failed；`validate_report.rb`、JSON 解析与 `git diff --check` 全部通过 | 定位 Cases 20/21 在 AgentRun fallback 中产生 `InvalidWorkflowYaml` 的源码根因 |
 | 2026-08-06 22:54 | Risk 25/26 证据重算与 README/report 回写 | Ready `ee031038`；fresh Lark Case 22 与 Assistant Case 12 | 通过证据已收敛，待一致性门禁 | Risk 25 的 sender binding、精确 Lark UserService grant、同 run approval resume 与 contact artifact 全部由 Case 22 命中；Risk 26 按原 `/api/chat` 入口 4/4 completed，`total_cents=16623`、`side_effects=false`；汇总更新为 12 passed、2 blocked、2 failed、5 not-configured | 运行 risk、channel 与 report validator；通过后定位 Cases 20/21 的 `InvalidWorkflowYaml` |
@@ -250,11 +251,11 @@
 
 | # | Channel case | 用户决策 | 严格通过条件 | 当前状态 |
 |---:|---|---|---|---|
-| 20 | `lark_agent_run_skill_approval_approved` | 批准 | 显式“挂载”触发精确 skill recovery；mount 审批卡与 callback 各 1 次；同一 AgentRun 恢复且 `use_skill=Completed`、`mount_executed=true`；随后 workflow 工具审批卡与 callback 各 1 次；同一 workflow run 恢复；普通 AgentRun 可见回复与 awaiting 文本均为 0；3/3 committed 脱敏 artifact 精确命中 | `pending-deployment`：等待 `de801ca70` Ready |
-| 21 | `lark_agent_run_skill_approval_rejected` | 拒绝 | 显式“挂载”触发精确 skill recovery；mount 审批卡与 callback 各 1 次；同一挂起调用返回 typed `Denied` / `approval_denied`；`mount_executed=false`；workflow 审批卡、workflow start 与 run catalog 增量均为 0 | `pending-deployment`：等待 `de801ca70` Ready |
+| 20 | `lark_agent_run_skill_approval_approved` | 批准 | 显式“挂载”触发精确 skill recovery；mount 审批卡与 callback 各 1 次；同一 AgentRun 恢复且 `use_skill=Completed`、`mount_executed=true`；随后 workflow 工具审批卡与 callback 各 1 次；同一 workflow run 恢复；普通 AgentRun 可见回复与 awaiting 文本均为 0；3/3 committed 脱敏 artifact 精确命中 | `passed` |
+| 21 | `lark_agent_run_skill_approval_rejected` | 拒绝 | 显式“挂载”触发精确 skill recovery；mount 审批卡与 callback 各 1 次；同一挂起调用返回 typed `Denied` / `approval_denied`；`mount_executed=false`；workflow 审批卡、workflow start 与 run catalog 增量均为 0 | `passed` |
 | 22 | `lark_workflow_runtime_tool_approval_approved` | 批准 | skill 已挂载且不出现新 mount 审批；workflow start=1；新 run 晚于本次 Lark inbound 启动；审批卡投递与回调各一次；同一 workflow run 恢复；3/3 steps、stateVersion 30、脱敏 artifact 精确命中 | `passed` |
 
-Case 20/21 的新目标修复提交为 `de801ca70a37db624b27155c1870d0c99ad93b7c`，生产 Ready 证据和真实 Lark 运行字段在部署前保持为空。旧 `ee031038` 上的“请使用”提示未进入精确 skill recovery，并在 fallback 创建 run 前以 `InvalidWorkflowYaml` 失败；该结果只保留为被新显式挂载契约取代的历史负证据。Case 22 的目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入生产；最新真实运行 hash `08cdd96d61dd` committed `completed`，workflow 审批卡与 CardAction 各一次，普通 AgentRun 可见回复为 0，最终 relay 为 1，观测详情未持久化原始联系人标识。Bot 文案、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功仍不能替代这些证据。
+Case 20/21 的目标修复提交 `de801ca70a37db624b27155c1870d0c99ad93b7c` 已由 Ready 镜像 `de801ca7` 真实验证，当前 Ready 前滚 `49244090` 直接包含该提交。Case 20 新 run hash `e18081f2211b` committed `completed`、state 30、3/3，workflow 审批前后保持同一 run，observatory 的 request/output/timeline 均只含脱敏标记。Case 21 拒绝回调期间发生无损前滚，但同一挂起 AgentRun 返回 typed `Denied` / `approval_denied`，目标 workflow catalog 增量仍为 0。旧 `ee031038` / `InvalidWorkflowYaml` 结果只作为历史负证据保留。Case 22 最新真实运行 hash `08cdd96d61dd` 继续证明已挂载路径的 workflow 审批恢复。Bot 文案、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功仍不能替代这些证据。
 
 最新全量回归使用部署镜像 `0c4ff023`。其中 11 曾在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；修复镜像 `f7f543c5` 部署后，11 的定向复验已 committed `completed`。12 的连续两次成功证据继续保留。14 和 17 的业务 artifact 均成功，但没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
 
@@ -452,7 +453,7 @@ Case 19 的 `--run` 仍只验证 direct synthetic fixture，预期 `lark_bot_ing
 - #3161 已关闭；Case 16 覆盖共同 receipt/runtime 平面，源 P2 no-send 又在当前部署上覆盖 published-operation authority 主链并 committed 完成。该结论只适用于 no-send 只读执行，不外推到消息发送或 durable schedule。
 - #3184 仍开放；Case 17 的历史 run 证明过批准 resume，但最新 `0c4ff023` run 未观察到 typed pending/resume，当前记为契约回归。拒绝路径在此状态下不可达，durable preview 仍需独立证据。
 - Case 19 已有静态、preview、direct committed 与 fresh Lark committed 4/4 证据；public skill 版本为 `1.1`，最新 run hash `03c3f4ded68e` 的 typed artifact 明确给出 `lark_bot_ingress_validated=true`，114 字节文件卡片与 113 字节 committed extraction 的尾随 LF 归一化已分层记录，Risk 24 严格通过。
-- Case 20/21 分别覆盖 #3210 的首次 skill mount 批准和拒绝路径，当前等待 `de801ca70` 部署；旧 `InvalidWorkflowYaml` 只保留为“使用”提示词的历史负证据。Case 22 的 workflow 运行期批准路径已由真实 Lark 审批卡、同一 run continuation 和 committed artifact 严格通过，但不能外推 Case 20/21。
+- Case 20/21 已在包含 `de801ca70` 的生产 Ready workload 上分别严格通过首次 skill mount 批准和拒绝路径；Case 22 的已挂载 workflow 运行期批准路径也已通过。旧 `InvalidWorkflowYaml` 只保留为“使用”提示词的历史负证据，不能覆盖这三条 fresh channel 结果。
 - 不得提交 token、真实组织标识、业务载荷、审批表单或未脱敏运行证据。
 
 新增和维护案例的完整规则见 [AGENTS.md](AGENTS.md)。
