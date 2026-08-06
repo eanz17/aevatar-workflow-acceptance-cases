@@ -14,7 +14,7 @@
 ## 总结
 
 - 25/25 个公开 workflow 通过本地静态校验和 production explicit-request preview；`production_validate.rb` 与 `assistant_validate.rb` 共用 25/25 个 strict artifact contract。
-- 另有 3 个既有 Lark channel E2E case 和 21 个 risk case。Channel fresh 严格结果为 1 passed、2 failed；risk 汇总为 12 passed、2 blocked、2 failed、0 pending-execution、5 not-configured。
+- 另有 3 个既有 Lark channel E2E case 和 21 个 risk case。Channel 当前严格状态为 1 passed、2 pending-deployment；risk 汇总为 12 passed、2 blocked、2 failed、0 pending-execution、5 not-configured。
 - 旧 01-20 保留既有 committed 基线；新增 21-25 当前最新结果为 5/5 completed。Cases 05/24/25 fresh 写探针共创建 4 条固定合成记录，随后连同 2 条同契约历史残留精确清理；回读匹配数为 0，未匹配记录未触碰。
 - 本地 25/25 个 Ornn skill 与 workflow 一一对应；missing-only 只发布原缺失 6 个，19 个既有精确项跳过；发布后的正式 verify-only 与独立 catalog 验证器均确认 25/25 格式、名称、版本与 public 状态精确一致。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
@@ -40,11 +40,11 @@
 
 | Case | 决策 | 必须观察到的通过证据 | 当前状态 |
 |---|---|---|---|
-| Case 20 | approved | 真实 Lark inbound/relay 已观察；未搜索/解析精确 skill，未出现新的 mount 审批卡；`aevatar_start_workflow` 在创建 run 前以 `InvalidWorkflowYaml` 失败，目标 run 增量 0 | `failed` |
-| Case 21 | rejected | 真实 Lark inbound/relay 已观察；未出现可拒绝的新 mount 审批卡，未分发决策；`aevatar_start_workflow` 在创建 run 前以 `InvalidWorkflowYaml` 失败，目标 run 增量 0 | `failed` |
+| Case 20 | approved | 显式“挂载”进入 typed recovery；mount 卡/callback 各 1 次并恢复同一 AgentRun；`use_skill=Completed`、`mount_executed=true`；workflow 工具卡/callback 各 1 次并恢复同一 run；普通 AgentRun 可见回复与 awaiting 文本均为 0；3/3 committed 脱敏 artifact 命中 | `pending-deployment` |
+| Case 21 | rejected | 显式“挂载”进入 typed recovery；mount 卡/callback 各 1 次；typed `Denied` / `approval_denied`；`mount_executed=false`；workflow 卡、start 与 run 增量均为 0 | `pending-deployment` |
 | Case 22 | approved | skill 已挂载且不出现新 mount 审批；workflow start 恰好 1 次且新 run 晚于 Lark inbound；run committed 到 `awaiting_tool_approval`；workflow 审批卡与 callback 各一次；同一 workflow run 恢复；普通 AgentRun 可见回复为 0；3/3 steps、stateVersion 30、脱敏 committed artifact 精确命中 | `passed` |
 
-Case 22 所需提交已包含在 Ready 镜像 `ee031038`。fresh Lark inbound 后唯一新增 workflow run 进入 `awaiting_tool_approval`，审批卡只决策一次，同一 run 恢复并 committed `completed`、3/3；公开 run hash 为 `08cdd96d61dd`。Case 20/21 的 `InvalidWorkflowYaml` 缺陷不能由 Case 22、Bot 文案、direct Case 14 或 `/api/chat` 成功外推关闭。
+Case 20/21 等待 `de801ca70` 进入 Ready 生产 workload，部署前不保存伪运行字段。旧 `ee031038` 上的“请使用”提示未进入精确 skill recovery，并在 fallback 创建 run 前以 `InvalidWorkflowYaml` 失败、目标 run 增量为 0；该结果作为历史负证据保留。Case 22 所需提交已包含在 Ready 镜像 `ee031038`，fresh Lark inbound 后唯一新增 workflow run 进入 `awaiting_tool_approval`，审批卡只决策一次，同一 run 恢复并 committed `completed`、3/3；公开 run hash 为 `08cdd96d61dd`。
 
 ## 可靠性与准入风险验收（2026-08-06）
 

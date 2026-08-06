@@ -7,15 +7,21 @@ require "yaml"
 ROOT = File.expand_path("..", __dir__)
 CASE_DIR = File.join(ROOT, "channel-cases")
 EVIDENCE_PATH = File.join(ROOT, "validation", "production-validation-2026-08-05.json")
-EVIDENCE_BASELINE_COMMIT = "9f67c528174ac477bb144d6bd1525444e7c971cf"
+EVIDENCE_BASELINE_COMMIT = "de801ca70a37db624b27155c1870d0c99ad93b7c"
 REQUIRED_DEPLOYMENT_COMMITS = {
   "20" => EVIDENCE_BASELINE_COMMIT,
   "21" => EVIDENCE_BASELINE_COMMIT,
   "22" => "3f62ff62bcb32f7fb7c97aea8a7920aadd29d398"
 }.freeze
 REQUIRED_ANCESTOR_COMMITS = {
-  "20" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183],
-  "21" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183],
+  "20" => %w[
+    b3784feef dd12cd6a6 452d72ec5 b7cacf183 9f67c5281
+    330bfa74f a452d4917 f5e51e99f 3f62ff62b
+  ],
+  "21" => %w[
+    b3784feef dd12cd6a6 452d72ec5 b7cacf183 9f67c5281
+    330bfa74f a452d4917 f5e51e99f 3f62ff62b
+  ],
   "22" => %w[
     b3784feef dd12cd6a6 452d72ec5 b7cacf183 9f67c5281
     330bfa74f a452d4917 f5e51e99f
@@ -42,7 +48,9 @@ WORKFLOW_IDENTITY_FIELDS = %w[
 OBSERVATION_FIELDS = %w[
   larkInboundObserved channelAgentRunStarted ornnSearchConfirmed exactSkillResolved
   approvalCardObserved approvalPendingExposedToModel approvalDecisionDispatched
-  approvalDecisionDispatchCount approvalIdentityMatched sameAgentRunResolved sameAgentRunResumed
+  approvalDecisionDispatchCount approvalIdentityMatched
+  mountApprovalCardObserved mountApprovalCardCount mountApprovalDecisionDispatched
+  mountApprovalDecisionDispatchCount mountApprovalIdentityMatched sameAgentRunResolved sameAgentRunResumed
   useSkillReceiptStatus mountExecuted workflowStartCalls newWorkflowRunCount
   workflowRunStartedAfterInbound
   skillAlreadyMounted newMountApprovalCardObserved newMountApprovalDecisionDispatchCount
@@ -155,9 +163,21 @@ cases.each do |path, spec|
     spec.dig("safety", "synthetic_input_only") == true &&
     spec.dig("safety", "side_effects") == false &&
     spec.dig("safety", "raw_identifiers_persisted") == false
-  expected_identity_fields = case_id == "22" ? WORKFLOW_IDENTITY_FIELDS : AGENT_RUN_IDENTITY_FIELDS
-  fail_validation("案例 #{case_id} 审批身份字段不完整") unless
-    spec.dig("identity", "exact_match_required") == expected_identity_fields
+  if case_id == "20"
+    fail_validation("案例 20 两层审批身份字段不完整") unless
+      spec.dig("identity", "mount_approval_exact_match_required") == AGENT_RUN_IDENTITY_FIELDS &&
+      spec.dig("identity", "workflow_approval_exact_match_required") == WORKFLOW_IDENTITY_FIELDS
+  elsif case_id == "21"
+    fail_validation("案例 21 mount 审批身份字段不完整") unless
+      spec.dig("identity", "mount_approval_exact_match_required") == AGENT_RUN_IDENTITY_FIELDS
+  else
+    fail_validation("案例 22 workflow 审批身份字段不完整") unless
+      spec.dig("identity", "exact_match_required") == WORKFLOW_IDENTITY_FIELDS
+  end
+  if %w[20 21].include?(case_id)
+    fail_validation("案例 #{case_id} 必须显式请求挂载 skill") unless
+      spec.dig("trigger", "prompt") == "请挂载 lark-contact-batch-resolution skill，解析 1 个合成联系人标识，并只返回脱敏结果。"
+  end
   if case_id == "22"
     fail_validation("案例 22 未固定已挂载且无新 mount 审批前置条件") unless
       spec["preconditions"] == {
@@ -212,20 +232,39 @@ fail_validation("案例 20 批准链证据契约不完整") unless approved == {
   "channel_agent_run_started" => true,
   "ornn_search_confirmed" => true,
   "exact_skill_resolved" => true,
-  "approval_card_observed" => true,
+  "mount_approval_card_observed" => true,
+  "mount_approval_card_count" => 1,
   "approval_pending_exposed_to_model" => false,
-  "approval_decision_dispatched" => true,
-  "approval_decision_dispatch_count" => 1,
-  "approval_identity_matched" => true,
+  "mount_approval_decision_dispatched" => true,
+  "mount_approval_decision_dispatch_count" => 1,
+  "mount_approval_identity_matched" => true,
   "same_agent_run_resolved" => true,
   "same_agent_run_resumed" => true,
   "use_skill_receipt_status" => "Completed",
   "mount_executed" => true,
   "workflow_start_calls" => 1,
+  "ordinary_agent_run_visible_reply_count" => 0,
+  "awaiting_tool_approval_visible_text_count" => 0,
   "new_workflow_run_count" => 1,
+  "workflow_run_started_after_inbound" => true,
+  "awaiting_tool_approval_observed" => true,
+  "workflow_approval_card_observed" => true,
+  "workflow_approval_card_count" => 1,
+  "workflow_approval_decision_dispatched" => true,
+  "workflow_approval_decision_dispatch_count" => 1,
+  "workflow_approval_identity_matched" => true,
+  "same_workflow_run_resumed" => true,
   "committed_terminal_observed" => true,
   "terminal_status" => "completed",
   "reply_relay_observed" => true,
+  "workflow_terminal_result_count" => 1,
+  "workflow_run_hash_redacted" => true,
+  "committed_state_version_observed" => true,
+  "completed_steps" => 3,
+  "total_steps" => 3,
+  "request_parameters_redacted" => true,
+  "output_preview_identifiers_redacted" => true,
+  "timeline_identifiers_redacted" => true,
   "final_artifact" => expected_artifact,
   "raw_identifiers_persisted" => false
 }
@@ -236,17 +275,25 @@ fail_validation("案例 21 拒绝链证据契约不完整") unless rejected == {
   "channel_agent_run_started" => true,
   "ornn_search_confirmed" => true,
   "exact_skill_resolved" => true,
-  "approval_card_observed" => true,
+  "mount_approval_card_observed" => true,
+  "mount_approval_card_count" => 1,
   "approval_pending_exposed_to_model" => false,
-  "approval_decision_dispatched" => true,
-  "approval_decision_dispatch_count" => 1,
-  "approval_identity_matched" => true,
+  "mount_approval_decision_dispatched" => true,
+  "mount_approval_decision_dispatch_count" => 1,
+  "mount_approval_identity_matched" => true,
   "same_agent_run_resolved" => true,
   "same_agent_run_resumed" => false,
   "use_skill_receipt_status" => "Denied",
   "stable_error_code" => "approval_denied",
   "mount_executed" => false,
   "workflow_start_calls" => 0,
+  "awaiting_tool_approval_observed" => false,
+  "workflow_approval_card_observed" => false,
+  "workflow_approval_card_count" => 0,
+  "workflow_approval_decision_dispatched" => false,
+  "workflow_approval_decision_dispatch_count" => 0,
+  "workflow_approval_identity_matched" => false,
+  "same_workflow_run_resumed" => false,
   "new_workflow_run_count" => 0,
   "committed_terminal_observed" => false,
   "terminal_status" => nil,
@@ -270,6 +317,7 @@ expected_summary = {
   "total" => 3,
   "passed" => counts["passed"],
   "failed" => counts["failed"],
+  "pendingDeployment" => counts["pending-deployment"],
   "pendingExecution" => counts["pending-execution"]
 }
 fail_validation("机器证据汇总与逐案例状态不一致") unless summary.fetch("summary") == expected_summary
@@ -319,22 +367,43 @@ results.each do |item|
       common == [true, true, true, true, false, true]
 
     if case_id == "20"
-      fail_validation("案例 20 批准后未严格完成 mount 与单次 workflow") unless
-        item["approvalCardObserved"] == true && item["approvalDecisionDispatched"] == true &&
-        item["approvalDecisionDispatchCount"] == 1 && item["approvalIdentityMatched"] == true &&
+      fail_validation("案例 20 批准后未严格完成两层审批、mount 与单次 workflow") unless
+        item["mountApprovalCardObserved"] == true && item["mountApprovalCardCount"] == 1 &&
+        item["mountApprovalDecisionDispatched"] == true &&
+        item["mountApprovalDecisionDispatchCount"] == 1 &&
+        item["mountApprovalIdentityMatched"] == true &&
         item["sameAgentRunResolved"] == true &&
         item["sameAgentRunResumed"] == true && item["useSkillReceiptStatus"] == "Completed" &&
         item["mountExecuted"] == true && item["workflowStartCalls"] == 1 &&
-        item["newWorkflowRunCount"] == 1 && item["committedTerminalObserved"] == true &&
-        item["terminalStatus"] == "completed" && item["finalArtifact"] == expected_artifact &&
+        item["ordinaryAgentRunVisibleReplyCount"] == 0 &&
+        item["awaitingToolApprovalVisibleTextCount"] == 0 &&
+        item["newWorkflowRunCount"] == 1 && item["workflowRunStartedAfterInbound"] == true &&
+        item["awaitingToolApprovalObserved"] == true && item["workflowApprovalCardObserved"] == true &&
+        item["workflowApprovalCardCount"] == 1 &&
+        item["workflowApprovalDecisionDispatched"] == true &&
+        item["workflowApprovalDecisionDispatchCount"] == 1 &&
+        item["workflowApprovalIdentityMatched"] == true && item["sameWorkflowRunResumed"] == true &&
+        item["committedTerminalObserved"] == true && item["terminalStatus"] == "completed" &&
+        item["workflowTerminalResultCount"] == 1 &&
+        item["workflowRunHash"].to_s.match?(/\A[0-9a-f]{12}\z/) &&
+        item["committedStateVersion"].is_a?(Integer) && item["completedSteps"] == 3 &&
+        item["totalSteps"] == 3 && item["requestParametersRedacted"] == true &&
+        item["outputPreviewIdentifiersRedacted"] == true &&
+        item["timelineIdentifiersRedacted"] == true && item["finalArtifact"] == expected_artifact &&
         item["stableErrorCode"].nil?
     elsif case_id == "21"
       fail_validation("案例 21 拒绝后未严格终止") unless
-        item["approvalCardObserved"] == true && item["approvalDecisionDispatched"] == true &&
-        item["approvalDecisionDispatchCount"] == 1 && item["approvalIdentityMatched"] == true &&
+        item["mountApprovalCardObserved"] == true && item["mountApprovalCardCount"] == 1 &&
+        item["mountApprovalDecisionDispatched"] == true &&
+        item["mountApprovalDecisionDispatchCount"] == 1 &&
+        item["mountApprovalIdentityMatched"] == true &&
         item["sameAgentRunResolved"] == true &&
         item["sameAgentRunResumed"] == false && item["useSkillReceiptStatus"] == "Denied" &&
         item["stableErrorCode"] == "approval_denied" && item["mountExecuted"] == false &&
+        item["awaitingToolApprovalObserved"] == false && item["workflowApprovalCardObserved"] == false &&
+        item["workflowApprovalCardCount"] == 0 && item["workflowApprovalDecisionDispatched"] == false &&
+        item["workflowApprovalDecisionDispatchCount"] == 0 &&
+        item["workflowApprovalIdentityMatched"] == false && item["sameWorkflowRunResumed"] == false &&
         item["workflowStartCalls"] == 0 && item["newWorkflowRunCount"] == 0 &&
         item["committedTerminalObserved"] == false && item["terminalStatus"].nil? &&
         item["finalArtifact"].nil?
@@ -381,4 +450,4 @@ end
 raw_case_text = paths.map { |path| File.read(path) }.join("\n")
 fail_validation("案例定义中出现 UUID") if raw_case_text.match?(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i)
 
-puts "通过 Channel E2E 案例=#{results.length} passed=#{counts['passed']} failed=#{counts['failed']} pending-execution=#{counts['pending-execution']}"
+puts "通过 Channel E2E 案例=#{results.length} passed=#{counts['passed']} failed=#{counts['failed']} pending-deployment=#{counts['pending-deployment']} pending-execution=#{counts['pending-execution']}"

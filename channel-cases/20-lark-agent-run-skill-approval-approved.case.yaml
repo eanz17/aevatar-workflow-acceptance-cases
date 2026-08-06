@@ -3,23 +3,28 @@ case: "20"
 name: lark_agent_run_skill_approval_approved
 title: Lark AgentRun 批准 skill mount 后继续执行
 issue: "#3210"
-status: failed
+status: pending-deployment
 surface: lark_private_bot
 target:
   skill: lark-contact-batch-resolution
   workflow: lark_contact_batch_resolution
   direct_workflow_case: "14"
-  required_deployment_commit: 9f67c528174ac477bb144d6bd1525444e7c971cf
+  required_deployment_commit: de801ca70a37db624b27155c1870d0c99ad93b7c
   required_ancestor_commits:
     - b3784feef
     - dd12cd6a6
     - 452d72ec5
     - b7cacf183
+    - 9f67c5281
+    - 330bfa74f
+    - a452d4917
+    - f5e51e99f
+    - 3f62ff62b
 trigger:
   decision: approved
-  prompt: 请使用 lark-contact-batch-resolution 解析 1 个合成联系人标识，并只返回脱敏结果。
+  prompt: 请挂载 lark-contact-batch-resolution skill，解析 1 个合成联系人标识，并只返回脱敏结果。
 identity:
-  exact_match_required:
+  mount_approval_exact_match_required:
     - agent_run_id
     - approval_request_id
     - tool_request_id
@@ -29,6 +34,13 @@ identity:
     - sender_id
     - registration_scope_id
     - conversation_key
+  workflow_approval_exact_match_required:
+    - actor_id
+    - run_id
+    - step_id
+    - execution_id
+    - tool_call_id
+    - approval_request_id
 safety:
   synthetic_input_only: true
   side_effects: false
@@ -38,20 +50,39 @@ required_evidence:
   channel_agent_run_started: true
   ornn_search_confirmed: true
   exact_skill_resolved: true
-  approval_card_observed: true
+  mount_approval_card_observed: true
+  mount_approval_card_count: 1
   approval_pending_exposed_to_model: false
-  approval_decision_dispatched: true
-  approval_decision_dispatch_count: 1
-  approval_identity_matched: true
+  mount_approval_decision_dispatched: true
+  mount_approval_decision_dispatch_count: 1
+  mount_approval_identity_matched: true
   same_agent_run_resolved: true
   same_agent_run_resumed: true
   use_skill_receipt_status: Completed
   mount_executed: true
   workflow_start_calls: 1
+  ordinary_agent_run_visible_reply_count: 0
+  awaiting_tool_approval_visible_text_count: 0
   new_workflow_run_count: 1
+  workflow_run_started_after_inbound: true
+  awaiting_tool_approval_observed: true
+  workflow_approval_card_observed: true
+  workflow_approval_card_count: 1
+  workflow_approval_decision_dispatched: true
+  workflow_approval_decision_dispatch_count: 1
+  workflow_approval_identity_matched: true
+  same_workflow_run_resumed: true
   committed_terminal_observed: true
   terminal_status: completed
   reply_relay_observed: true
+  workflow_terminal_result_count: 1
+  workflow_run_hash_redacted: true
+  committed_state_version_observed: true
+  completed_steps: 3
+  total_steps: 3
+  request_parameters_redacted: true
+  output_preview_identifiers_redacted: true
+  timeline_identifiers_redacted: true
   final_artifact:
     case: lark_contact_batch_resolution
     success: true

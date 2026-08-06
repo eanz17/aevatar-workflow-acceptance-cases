@@ -399,14 +399,14 @@
         </div>
 
         <div class="section">
-          <div class="section-heading"><h2>Lark channel E2E 历史基线</h2><p class="caption">#3210 · 独立于 direct workflow 的审批回调验收</p></div>
-          <div class="note"><p><strong>严格结果：1 passed、2 failed。</strong>Case 22 已在 fresh Lark inbound 后完成 workflow 工具审批卡、同一 run 恢复、3/3 steps 与脱敏 committed artifact 验证。Cases 20/21 均在 mount 审批前以 <code>InvalidWorkflowYaml</code> 阻塞，目标 run 增量为 0。</p></div>
+          <div class="section-heading"><h2>Lark channel E2E 当前状态与历史基线</h2><p class="caption">#3210 · 独立于 direct workflow 的审批回调验收</p></div>
+          <div class="note"><p><strong>当前严格状态：1 passed、2 pending-deployment。</strong>Case 22 已完成 workflow 工具审批卡、同一 run 恢复、3/3 steps 与脱敏 committed artifact 验证。Cases 20/21 已改用显式“挂载”意图并等待 <code>de801ca70</code> Ready；旧 <code>ee031038</code> / <code>InvalidWorkflowYaml</code> 结果作为历史负证据保留。</p></div>
           <div class="table-wrap">
             <table aria-label="Lark channel E2E 证据">
               <thead><tr><th>案例</th><th>决策</th><th>AgentRun / receipt 契约</th><th>Workflow 契约</th><th>状态</th></tr></thead>
               <tbody>
-                <tr data-channel-case="20" data-channel-status="failed"><td class="case-id">20</td><td>批准</td><td>inbound/relay 已观察；未搜索/解析精确 skill，未出现新 mount 审批卡</td><td><code>InvalidWorkflowYaml</code>；start 调用 1、run 增量 0</td><td><span class="status status-blocked">failed</span></td></tr>
-                <tr data-channel-case="21" data-channel-status="failed"><td class="case-id">21</td><td>拒绝</td><td>inbound/relay 已观察；没有可拒绝的新审批卡，decision dispatch 0</td><td><code>InvalidWorkflowYaml</code>；start 调用 1、run 增量 0</td><td><span class="status status-blocked">failed</span></td></tr>
+                <tr data-channel-case="20" data-channel-status="pending-deployment"><td class="case-id">20</td><td>批准</td><td>显式挂载；mount 卡/callback 各 1 次；同一 AgentRun 恢复；无 pending 可见文本</td><td>workflow 工具卡/callback 各 1 次；同一 run 恢复；3/3 脱敏 artifact</td><td><span class="status status-pending">pending-deployment</span></td></tr>
+                <tr data-channel-case="21" data-channel-status="pending-deployment"><td class="case-id">21</td><td>拒绝</td><td>显式挂载；mount 卡/callback 各 1 次；typed <code>Denied</code> / <code>approval_denied</code></td><td>mount=false；workflow 卡/start/run 增量均为 0</td><td><span class="status status-pending">pending-deployment</span></td></tr>
                 <tr data-channel-case="22" data-channel-status="passed"><td class="case-id">22</td><td>批准</td><td>skill 已挂载；无新 mount 审批；workflow 审批卡与 CardAction 各一次；普通 AgentRun 可见回复为 0</td><td>start=1、新 run 晚于 inbound、同一 run 恢复、3/3、state 30、脱敏 artifact</td><td><span class="status status-passed">validated</span></td></tr>
               </tbody>
             </table>
@@ -421,7 +421,7 @@
           </div>
         </div>
 
-        <div class="boundary"><h2>不能外推</h2><p><code>/api/chat</code> 成功不能替代 Lark Bot transport 证据；Lark 回复也不能证明 workflow committed 成功。案例 19 已由 fresh committed 4/4 artifact 独立关闭。Case 20/21 仍需修复 <code>InvalidWorkflowYaml</code> 后分别取得真实 mount approved artifact 与 rejected <code>Denied</code> receipt；Case 22 的 workflow 运行期批准成功不能外推到这两个 AgentRun mount 分支。</p></div>
+        <div class="boundary"><h2>不能外推</h2><p><code>/api/chat</code> 成功不能替代 Lark Bot transport 证据；Lark 回复也不能证明 workflow committed 成功。案例 19 已由 fresh committed 4/4 artifact 独立关闭。Case 20/21 必须等待 <code>de801ca70</code> Ready 后分别取得两层批准的 committed artifact 与首次 mount 拒绝的 typed <code>Denied</code>；Case 22 的 workflow 运行期批准成功不能外推到这两个 AgentRun mount 分支。</p></div>
       </section>
 
       <section class="view" id="view-blockers" role="tabpanel" aria-labelledby="tab-blockers" hidden>
