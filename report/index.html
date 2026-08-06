@@ -85,7 +85,7 @@
     .path-line strong { color: #ffffff; }
 
     .metrics-band { border-bottom: 1px solid var(--border); background: var(--surface); }
-    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .metric { min-width: 0; padding: 18px 20px; border-right: 1px solid var(--border); }
     .metric:first-child { padding-left: 0; }
     .metric:last-child { border-right: 0; }
@@ -147,6 +147,7 @@
     .status-partial { background: var(--blue-soft); color: var(--blue); }
     .status-blocked { background: var(--red-soft); color: var(--red); }
     .status-missing { background: var(--red-soft); color: var(--red); }
+    .status-pending { background: var(--amber-soft); color: var(--amber); }
     .status-info { background: var(--purple-soft); color: var(--purple); }
 
     .surface-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
@@ -173,7 +174,7 @@
       .metric { border-bottom: 1px solid var(--border); }
       .metric:nth-child(odd) { padding-left: 0; }
       .metric:nth-child(even) { border-right: 0; }
-      .metric:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; padding-left: 0; }
+      .metric:nth-last-child(-n + 2) { border-bottom: 0; }
       .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .surface-grid, .repair-grid { grid-template-columns: 1fr; }
       .gap-row { grid-template-columns: minmax(0, 1fr) 125px; }
@@ -204,7 +205,7 @@
       <div class="container masthead-inner">
         <p class="eyebrow">基线 2026-08-05 · 状态更新 2026-08-06</p>
         <h1>Aevatar 工作流验收分析</h1>
-        <p class="subtitle">19 个公开 workflow、19 个 Ornn skill，以及对源目录 41 个非 n8n 定义的功能对照。页面严格区分公共案例统计、财务源定义实跑、安全限制未运行与平台阻塞。</p>
+        <p class="subtitle">19 个公开 workflow、19 个 Ornn skill、2 个独立 Lark channel E2E case，以及对源目录 41 个非 n8n 定义的功能对照。页面严格区分 direct workflow 通过与尚待生产验证的 channel 审批链。</p>
         <div class="path-line"><strong>实际源目录：<code>~/workflows</code></strong><span><code>~/Code/workflows</code> 当前不存在</span><span>两个 n8n JSON 已排除</span></div>
       </div>
     </header>
@@ -216,6 +217,7 @@
         <div class="metric"><span class="metric-value">19 / 19</span><span class="metric-label">直接 runtime 严格通过</span></div>
         <div class="metric"><span class="metric-value">15 / 19</span><span class="metric-label">Ornn skill public 发布并回读</span></div>
         <div class="metric"><span class="metric-value">4 / 5</span><span class="metric-label">/api/chat 严格 workflow validated</span></div>
+        <div class="metric"><span class="metric-value">0 / 2</span><span class="metric-label">Lark channel E2E 严格通过</span></div>
       </div>
     </section>
 
@@ -338,12 +340,12 @@
                 <tr data-result="passed" data-effect="none"><td class="case-id">02</td><td><code>candidate_document_compliance_preview</code></td><td class="number">4</td><td class="number">35</td><td class="assertion">五类材料字段均为 true</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">03</td><td><code>email_access_approval_audit</code></td><td class="number">6</td><td class="number">42</td><td class="assertion"><code>instance_reachable=true</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">04</td><td><code>saas_license_utilization_review</code></td><td class="number">10</td><td class="number">67</td><td class="assertion">185 席位、140 活跃、USD 6670</td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="none"><td class="case-id">05</td><td><code>asset_inventory_attestation</code></td><td class="number">5</td><td class="number">37</td><td class="assertion">preview；<code>mutation_executed=false</code></td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="write"><td class="case-id">06</td><td><code>project_shared_mailbox_approval</code></td><td class="number">8</td><td class="number">55</td><td class="assertion">合成审批创建并回读为 <code>PENDING</code></td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="none"><td class="case-id">07</td><td><code>quarterly_access_review_reminder</code></td><td class="number">5</td><td class="number">37</td><td class="assertion">preview；<code>message_sent=false</code></td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="none"><td class="case-id">08</td><td><code>saas_license_optimization_digest</code></td><td class="number">14</td><td class="number">91</td><td class="assertion">六源汇总正确；<code>message_sent=false</code></td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="none"><td class="case-id">09</td><td><code>contractor_access_package_approval</code></td><td class="number">11</td><td class="number">77</td><td class="assertion">preview；<code>approval_created=false</code></td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="none"><td class="case-id">10</td><td><code>monthly_access_certification</code></td><td class="number">10</td><td class="number">67</td><td class="assertion">preview；审批与消息均未创建</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">05</td><td><code>asset_inventory_attestation</code></td><td class="number">6</td><td class="number">46</td><td class="assertion">submit；<code>mutation_executed=true</code>、<code>downstream_code=0</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">06</td><td><code>project_shared_mailbox_approval</code></td><td class="number">8</td><td class="number">58</td><td class="assertion">合成审批创建并回读为 <code>PENDING</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">07</td><td><code>quarterly_access_review_reminder</code></td><td class="number">6</td><td class="number">46</td><td class="assertion">submit；<code>message_sent=true</code>、<code>downstream_code=0</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">08</td><td><code>saas_license_optimization_digest</code></td><td class="number">17</td><td class="number">112</td><td class="assertion">submit；六源汇总卡片已发送、<code>downstream_code=0</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">09</td><td><code>contractor_access_package_approval</code></td><td class="number">23</td><td class="number">136</td><td class="assertion">submit；<code>identity_resolved</code>/<code>history_checked</code>=true，幂等跳过</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="passed" data-effect="write"><td class="case-id">10</td><td><code>monthly_access_certification</code></td><td class="number">17</td><td class="number">115</td><td class="assertion">submit；审批 <code>PENDING</code> 且 <code>message_sent=true</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">11</td><td><code>complex_codex_exec_validation</code></td><td class="number">30</td><td class="number">179</td><td class="assertion"><code>CODEX_EXEC_READY</code>；五项 gate；parallel=5</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">12</td><td><code>safe_code_execute_validation</code></td><td class="number">4</td><td class="number">31</td><td class="assertion"><code>structured_receipt=true</code>、<code>total_cents=16623</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">13</td><td><code>invoice_ocr_policy_review</code></td><td class="number">12</td><td class="number">82</td><td class="assertion">PDF、SGD、金额、供应商与去重命中</td><td><span class="status status-passed">通过</span></td></tr>
@@ -353,6 +355,7 @@
                 <tr data-result="passed" data-effect="none"><td class="case-id">17</td><td><code>lark_post_search_approval_probe</code></td><td class="number">4</td><td class="number">31</td><td class="assertion"><code>approval_resumed=true</code>；preview <code>approvalEnforcement=bind_time_confirmation</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">18</td><td><code>supplier_control_attestation_review</code></td><td class="number">15</td><td class="number">92</td><td class="assertion"><code>guard</code>/<code>conditional</code>/<code>while</code>；<code>leading_control=breach_notice</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">19</td><td><code>lark_bot_file_upload_validation</code></td><td class="number">4</td><td class="number">30</td><td class="assertion">direct 文件契约通过；<code>lark_bot_ingress_validated=false</code></td><td><span class="status status-passed">direct 通过</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">20</td><td><code>supplier_risk_tier_aggregation</code></td><td class="number">15</td><td class="number">89</td><td class="assertion"><code>map_reduce</code> 合并 5 行；<code>cache</code> 同 key 命中返回首次值</td><td><span class="status status-passed">通过</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -378,6 +381,20 @@
         </div>
 
         <div class="section">
+          <div class="section-heading"><h2>Lark channel E2E 案例</h2><p class="caption">#3210 · 19 workflows 之外的审批回调验收</p></div>
+          <div class="note"><p><strong>当前严格结果：0/2。</strong>目标提交 <code>452d72ec5</code> 尚未在本摘要中取得可追溯的 Ready 生产部署证据，因此批准和拒绝路径都保持待部署验证，不能由 direct Case 14 或 <code>/api/chat</code> 的通过结果代替。</p></div>
+          <div class="table-wrap">
+            <table aria-label="Lark channel E2E 证据">
+              <thead><tr><th>案例</th><th>决策</th><th>AgentRun / receipt 契约</th><th>Workflow 契约</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr data-channel-case="20" data-channel-status="pending-deployment"><td class="case-id">20</td><td>批准</td><td>Lark inbound/relay；审批卡；pending 不进模型；精确身份；回调一次；同一 AgentRun 恢复；<code>use_skill=Completed</code></td><td>start=1、run 增量=1、精确 committed artifact</td><td><span class="status status-pending">待部署验证</span></td></tr>
+                <tr data-channel-case="21" data-channel-status="pending-deployment"><td class="case-id">21</td><td>拒绝</td><td>Lark inbound/relay；审批卡；精确身份；回调一次；typed <code>Denied</code> / <code>approval_denied</code></td><td>mount=false、start=0、run 增量=0</td><td><span class="status status-pending">待部署验证</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
           <div class="section-heading"><h2>/api/chat 与 Lark Bot 的边界</h2><p class="caption">共享核心能力，不共享完整 transport</p></div>
           <div class="surface-grid">
             <article class="surface"><h3>/api/chat 已覆盖</h3><ul><li>NyxID 用户身份和 scope</li><li>Assistant / AgentRun 与工具目录</li><li>Ornn 搜索和 skill 加载</li><li>workflow 启动与 artifact 查询工具</li><li>SSE 直接返回调用方</li></ul></article>
@@ -385,7 +402,7 @@
           </div>
         </div>
 
-        <div class="boundary"><h2>不能外推</h2><p><code>/api/chat</code> 成功不能替代 Lark Bot transport 证据；Lark 回复也不能证明 workflow committed 成功。案例 14 的三次 Bot run 均因 resource narrowing committed failed；案例 19 的文件卡片、解析与回复 relay 已验证，但 Assistant catalog 没有可启动定义，三次 start 均为 <code>service_catalog_missing</code> 且 run 增量为 0。</p></div>
+        <div class="boundary"><h2>不能外推</h2><p><code>/api/chat</code> 成功不能替代 Lark Bot transport 证据；Lark 回复也不能证明 workflow committed 成功。案例 14 的三次 Bot run 均因 resource narrowing committed failed；案例 19 的文件卡片、解析与回复 relay 已验证，但 Assistant catalog 没有可启动定义，三次 start 均为 <code>service_catalog_missing</code> 且 run 增量为 0。Case 20/21 只有在真实 Lark 审批回调分别取得 approved committed artifact 与 rejected <code>Denied</code> receipt 后才能通过。</p></div>
       </section>
 
       <section class="view" id="view-blockers" role="tabpanel" aria-labelledby="tab-blockers" hidden>

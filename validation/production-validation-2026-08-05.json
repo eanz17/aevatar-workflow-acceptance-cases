@@ -32,23 +32,23 @@
     "postDeploymentLogCountersSampled": false
   },
   "staticValidation": {
-    "workflowCount": 19,
-    "passed": 19,
+    "workflowCount": 20,
+    "passed": 20,
     "genericCodeExecuteCount": 1,
     "managedCodexExecCount": 1,
     "placeholderCount": 16
   },
   "productionPreview": {
-    "passed": 19,
+    "passed": 20,
     "failed": 0,
     "unverified": 0,
     "executionMode": "interactive"
   },
   "directRuntimeSummary": {
-    "passed": 19,
+    "passed": 20,
     "platformBlocked": 0,
     "contractRegressions": 0,
-    "terminalCompleted": 19,
+    "terminalCompleted": 20,
     "terminalFailed": 0,
     "unverified": 0,
     "scriptEnforcedArtifactContracts": [
@@ -56,12 +56,20 @@
       "16",
       "17",
       "18",
-      "19"
+      "20"
     ],
     "artifactsManuallyReviewed": true,
     "freshRegressionImage": "20d9ba41",
     "casesRerunOnFreshImage": 18,
-    "caseNotRerun": "06"
+    "caseNotRerun": null,
+    "mutationBranchesExercised": [
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10"
+    ]
   },
   "latestFullRegression": {
     "validatedAt": "2026-08-05T15:02:04Z",
@@ -488,27 +496,29 @@
       "result": "通过",
       "terminalStatus": "completed",
       "terminalSuccess": true,
-      "stateVersion": 37,
-      "completedSteps": 5,
-      "totalSteps": 5,
-      "runIdHash": "23f90d79f095",
+      "stateVersion": 46,
+      "completedSteps": 6,
+      "totalSteps": 6,
+      "runIdHash": "8415fdd6cc7b",
       "evidenceImage": "20d9ba41",
-      "scriptEnforcedArtifactContract": false,
-      "assertion": "preview 分支；mutation_executed=false（submit=true 写入分支本轮未运行）",
-      "sideEffects": false
+      "assertion": "submit 分支已运行：mutation_executed=true、accepted=true、downstream_code=0，Base 资产盘点记录已写入",
+      "sideEffects": true,
+      "mutationBranchExercised": true,
+      "scriptEnforcedArtifactContract": false
     },
     {
       "case": "06",
       "result": "通过",
       "terminalStatus": "completed",
-      "stateVersion": 55,
+      "stateVersion": 58,
       "completedSteps": 8,
       "totalSteps": 8,
-      "runIdHash": "cde756394cbc",
+      "runIdHash": "7542b785f746",
       "executionBranch": "submit",
-      "assertion": "审批创建并回读，状态 PENDING（本轮未重跑：该分支会真实创建 Lark 审批，需显式 --allow-side-effects 授权）",
-      "sideEffects": "创建一条合成验收审批",
-      "evidenceImage": "0c4ff023",
+      "assertion": "submit 分支已运行：审批创建并回读，approval_status=PENDING",
+      "sideEffects": true,
+      "evidenceImage": "20d9ba41",
+      "mutationBranchExercised": true,
       "scriptEnforcedArtifactContract": false
     },
     {
@@ -516,56 +526,60 @@
       "result": "通过",
       "terminalStatus": "completed",
       "terminalSuccess": true,
-      "stateVersion": 37,
-      "completedSteps": 5,
-      "totalSteps": 5,
-      "runIdHash": "0fad028b33a3",
+      "stateVersion": 46,
+      "completedSteps": 6,
+      "totalSteps": 6,
+      "runIdHash": "8cffc03d2e0b",
       "evidenceImage": "20d9ba41",
-      "scriptEnforcedArtifactContract": false,
-      "assertion": "preview 分支；message_sent=false（submit=true 发送分支本轮未运行）",
-      "sideEffects": false
+      "assertion": "submit 分支已运行：message_sent=true、downstream_code=0，Lark 私信已发送",
+      "sideEffects": true,
+      "mutationBranchExercised": true,
+      "scriptEnforcedArtifactContract": false
     },
     {
       "case": "08",
       "result": "通过",
       "terminalStatus": "completed",
       "terminalSuccess": true,
-      "stateVersion": 91,
-      "completedSteps": 14,
-      "totalSteps": 14,
-      "runIdHash": "6cd66a68a99a",
+      "stateVersion": 112,
+      "completedSteps": 17,
+      "totalSteps": 17,
+      "runIdHash": "3e084cc92a37",
       "evidenceImage": "20d9ba41",
-      "scriptEnforcedArtifactContract": false,
-      "assertion": "preview 分支；all_sources_ok=true、六源汇总正确、message_sent=false（发送分支本轮未运行）",
-      "sideEffects": false
+      "assertion": "submit 分支已运行：message_sent=true、downstream_code=0，六源汇总卡片已发送",
+      "sideEffects": true,
+      "mutationBranchExercised": true,
+      "scriptEnforcedArtifactContract": false
     },
     {
       "case": "09",
       "result": "通过",
       "terminalStatus": "completed",
       "terminalSuccess": true,
-      "stateVersion": 77,
-      "completedSteps": 11,
-      "totalSteps": 11,
-      "runIdHash": "669cff7123e9",
+      "stateVersion": 136,
+      "completedSteps": 23,
+      "totalSteps": 23,
+      "runIdHash": "4c9bb41d415a",
       "evidenceImage": "20d9ba41",
-      "scriptEnforcedArtifactContract": false,
-      "assertion": "preview 分支；材料五项检查为 true、approval_created=false；identity_resolved=false、history_checked=false 表示解析与去重分支本轮未运行",
-      "sideEffects": false
+      "assertion": "submit 分支已运行：identity_resolved=true、history_checked=true、possible_duplicate=true、idempotent_skip=true，幂等跳过未重复建审批",
+      "sideEffects": true,
+      "mutationBranchExercised": true,
+      "scriptEnforcedArtifactContract": false
     },
     {
       "case": "10",
       "result": "通过",
       "terminalStatus": "completed",
       "terminalSuccess": true,
-      "stateVersion": 67,
-      "completedSteps": 10,
-      "totalSteps": 10,
-      "runIdHash": "4eab5e40c3a2",
+      "stateVersion": 115,
+      "completedSteps": 17,
+      "totalSteps": 17,
+      "runIdHash": "3b2e36d8608e",
       "evidenceImage": "20d9ba41",
-      "scriptEnforcedArtifactContract": false,
-      "assertion": "preview 分支；月度汇总 3/2/1/1、source_ok=true、approval_created=false、message_sent=false",
-      "sideEffects": false
+      "assertion": "submit 分支已运行：审批创建 PENDING 且 message_sent=true",
+      "sideEffects": true,
+      "mutationBranchExercised": true,
+      "scriptEnforcedArtifactContract": false
     },
     {
       "case": "11",
@@ -696,6 +710,20 @@
       "scriptEnforcedArtifactContract": true,
       "assertion": "direct synthetic file ref 已登记并由 document_extract 完成 114 字节 JSON 与固定 SHA-256 断言；lark_bot_ingress_validated=false、identifiers_redacted=true、side_effects=false",
       "sideEffects": false
+    },
+    {
+      "case": "20",
+      "result": "通过",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 89,
+      "completedSteps": 15,
+      "totalSteps": 15,
+      "runIdHash": "0c0e47ca3509",
+      "evidenceImage": "20d9ba41",
+      "scriptEnforcedArtifactContract": true,
+      "assertion": "map_reduce 三项 identity map 后以 \"\\n---\\n\" 合并为 5 行；cache 同 key 第二次探测在输入改为 CACHE_MUST_NOT_RETURN_THIS 后仍返回首次值；aggregated=true、mapped_tier_count=3、merged_line_count=5、cache_hit_returned_first_value=true、side_effects=false",
+      "sideEffects": false
     }
   ],
   "ornnPublication": {
@@ -712,7 +740,33 @@
       "10": "3.1",
       "11-15": "1.1",
       "16-19": "本地 1.1，尚未发布"
-    }
+    },
+    "publishedAtUtc": "2026-08-06T03:45:00Z",
+    "newlyPublished": [
+      {
+        "name": "nyxid-read-receipt-probe",
+        "version": "1.1",
+        "public": true
+      },
+      {
+        "name": "lark-post-search-approval-probe",
+        "version": "1.1",
+        "public": true
+      },
+      {
+        "name": "supplier-control-attestation-review",
+        "version": "1.0",
+        "public": true
+      },
+      {
+        "name": "supplier-risk-tier-aggregation",
+        "version": "1.0",
+        "public": true
+      }
+    ],
+    "stillUnpublished": [
+      "lark-bot-file-upload-validation"
+    ]
   },
   "assistantNaturalLanguage": {
     "ingress": "nyxid proxy request aevatar /api/chat",
@@ -798,6 +852,86 @@
         "assistantReportedCommittedArtifact": true,
         "artifactPendingReportedAsFinal": false,
         "assertion": "live_base_reads_ok=true、周/月差异断言通过"
+      }
+    ]
+  },
+  "channelE2EAcceptance": {
+    "schemaVersion": "1.0",
+    "requiredDeploymentCommit": "452d72ec57694e327c6c57c2e2af595271147252",
+    "summary": {
+      "total": 2,
+      "passed": 0,
+      "failed": 0,
+      "pendingDeployment": 2
+    },
+    "results": [
+      {
+        "case": "20",
+        "name": "lark_agent_run_skill_approval_approved",
+        "expectedDecision": "approved",
+        "status": "pending-deployment",
+        "observedAtUtc": null,
+        "deploymentImage": null,
+        "deploymentDigest": null,
+        "deploymentCommit": null,
+        "requiredAncestorsPresent": null,
+        "readyProductionWorkloadTraceable": false,
+        "larkInboundObserved": null,
+        "channelAgentRunStarted": null,
+        "ornnSearchConfirmed": null,
+        "exactSkillResolved": null,
+        "approvalCardObserved": null,
+        "approvalPendingExposedToModel": null,
+        "approvalDecisionDispatched": null,
+        "approvalDecisionDispatchCount": null,
+        "approvalIdentityMatched": null,
+        "sameAgentRunResolved": null,
+        "sameAgentRunResumed": null,
+        "useSkillReceiptStatus": null,
+        "mountExecuted": null,
+        "workflowStartCalls": null,
+        "newWorkflowRunCount": null,
+        "committedTerminalObserved": null,
+        "terminalStatus": null,
+        "finalArtifact": null,
+        "replyRelayObserved": null,
+        "stableErrorCode": null,
+        "rawIdentifiersPersisted": false,
+        "result": "等待提交 452d72ec5 部署到 Ready 生产 workload 后执行 Lark 批准路径"
+      },
+      {
+        "case": "21",
+        "name": "lark_agent_run_skill_approval_rejected",
+        "expectedDecision": "rejected",
+        "status": "pending-deployment",
+        "observedAtUtc": null,
+        "deploymentImage": null,
+        "deploymentDigest": null,
+        "deploymentCommit": null,
+        "requiredAncestorsPresent": null,
+        "readyProductionWorkloadTraceable": false,
+        "larkInboundObserved": null,
+        "channelAgentRunStarted": null,
+        "ornnSearchConfirmed": null,
+        "exactSkillResolved": null,
+        "approvalCardObserved": null,
+        "approvalPendingExposedToModel": null,
+        "approvalDecisionDispatched": null,
+        "approvalDecisionDispatchCount": null,
+        "approvalIdentityMatched": null,
+        "sameAgentRunResolved": null,
+        "sameAgentRunResumed": null,
+        "useSkillReceiptStatus": null,
+        "mountExecuted": null,
+        "workflowStartCalls": null,
+        "newWorkflowRunCount": null,
+        "committedTerminalObserved": null,
+        "terminalStatus": null,
+        "finalArtifact": null,
+        "replyRelayObserved": null,
+        "stableErrorCode": null,
+        "rawIdentifiersPersisted": false,
+        "result": "等待提交 452d72ec5 部署到 Ready 生产 workload 后执行 Lark 拒绝路径"
       }
     ]
   },
@@ -1316,5 +1450,10 @@
       "14",
       "17"
     ]
+  },
+  "uncoveredPrimitives": {
+    "parallel_fanout": "ParallelFanOutModule 把 worker 子步骤硬编码为 llm_call，无法在不引入 LLM 的前提下做确定性断言",
+    "race": "RaceModule 同样硬编码 llm_call，理由同上",
+    "workflow_call": "Studio /provision-workflow 契约只接受单个 WorkflowYaml，没有 InlineWorkflowYamls；而 WorkflowGAgent 只能从 binding 的 InlineWorkflowYamls 解析子工作流，因此经该入口绑定的工作流调用 workflow_call 必然以 \"timed out waiting for definition resolution after 30000ms\" 失败（已实测，run hash 4327dd64a0b0）"
   }
 }

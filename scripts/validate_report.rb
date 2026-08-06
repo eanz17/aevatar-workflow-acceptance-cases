@@ -4,7 +4,7 @@ require "json"
 require "yaml"
 
 ROOT = File.expand_path("..", __dir__)
-EXPECTED_CASES = (1..19).map { |number| format("%02d", number) }.freeze
+EXPECTED_CASES = (1..20).map { |number| format("%02d", number) }.freeze
 EXPECTED_BLOCKED = [].freeze
 EXPECTED_CONTRACT_REGRESSIONS = [].freeze
 EXPECTED_UNVERIFIED = [].freeze
@@ -20,15 +20,15 @@ summary_path = File.join(ROOT, "validation", "production-validation-#{REPORT_DAT
 summary = JSON.parse(File.read(summary_path))
 runtime = summary.fetch("runtime")
 
-fail_validation("静态验证摘要不是 19/19") unless summary.dig("staticValidation", "passed") == 19
-fail_validation("production preview 已验证数不是 19/19") unless summary.dig("productionPreview", "passed") == 19 &&
+fail_validation("静态验证摘要不是 20/20") unless summary.dig("staticValidation", "passed") == 20
+fail_validation("production preview 已验证数不是 20/20") unless summary.dig("productionPreview", "passed") == 20 &&
   summary.dig("productionPreview", "unverified") == 0
-fail_validation("production runtime 案例数不是 19") unless runtime.length == 19
+fail_validation("production runtime 案例数不是 20") unless runtime.length == 20
 fail_validation("production runtime 案例编号不完整") unless runtime.map { |item| item.fetch("case") } == EXPECTED_CASES
-fail_validation("直接 runtime 严格通过数不是 19") unless summary.dig("directRuntimeSummary", "passed") == 19
+fail_validation("直接 runtime 严格通过数不是 20") unless summary.dig("directRuntimeSummary", "passed") == 20
 fail_validation("直接 runtime 平台阻塞数不是 0") unless summary.dig("directRuntimeSummary", "platformBlocked") == 0
 fail_validation("直接 runtime 契约回归数不是 0") unless summary.dig("directRuntimeSummary", "contractRegressions") == 0
-fail_validation("直接 runtime completed 数不是 19") unless summary.dig("directRuntimeSummary", "terminalCompleted") == 19
+fail_validation("直接 runtime completed 数不是 20") unless summary.dig("directRuntimeSummary", "terminalCompleted") == 20
 fail_validation("直接 runtime failed 数不是 0") unless summary.dig("directRuntimeSummary", "terminalFailed") == 0
 fail_validation("直接 runtime 待验证数不是 0") unless summary.dig("directRuntimeSummary", "unverified") == 0
 
@@ -247,7 +247,7 @@ fail_validation("案例 12 恢复证据不完整") unless
   }
 
 ornn = summary.fetch("ornnPublication")
-fail_validation("本地 Ornn skill 数不是 19") unless ornn.fetch("localSkillCount") == 19
+fail_validation("本地 Ornn skill 数不是 20") unless ornn.fetch("localSkillCount") == 19
 %w[skillCount serverFormatValidated publishedPublic nameReadbackPassed].each do |field|
   fail_validation("Ornn #{field} 不是 15") unless ornn.fetch(field) == 15
 end
@@ -624,6 +624,28 @@ fail_validation("Lark Bot 不得把 transport 成功外推为 workflow 成功") 
   ] &&
   lark_bot["result"] == "transport 已验证，workflow typed failure"
 
+channel_e2e = summary.fetch("channelE2EAcceptance")
+fail_validation("Lark channel E2E 机器证据摘要漂移") unless
+  channel_e2e["schemaVersion"] == "1.0" &&
+  channel_e2e["requiredDeploymentCommit"] == "452d72ec57694e327c6c57c2e2af595271147252" &&
+  channel_e2e["summary"] == {
+    "total" => 2,
+    "passed" => 0,
+    "failed" => 0,
+    "pendingDeployment" => 2
+  }
+channel_results = channel_e2e.fetch("results")
+fail_validation("Lark channel E2E 案例编号不完整") unless
+  channel_results.map { |item| item["case"] } == %w[20 21]
+fail_validation("Lark channel E2E 尚未部署时不得伪报通过") unless
+  channel_results.all? do |item|
+    item["status"] == "pending-deployment" &&
+      item["readyProductionWorkloadTraceable"] == false &&
+      item["deploymentCommit"].nil? && item["committedTerminalObserved"].nil? &&
+      item["terminalStatus"].nil? && item["finalArtifact"].nil? &&
+      item["rawIdentifiersPersisted"] == false
+  end
+
 case14_recovery = summary.fetch("case14PostFailureRecovery")
 fail_validation("案例 14 修复后镜像证据缺失") unless
   case14_recovery["deploymentImage"].to_s.end_with?("8cf280e2")
@@ -782,8 +804,9 @@ end
 expected_html_counts = {
   "源版本族" => [/<tr data-source-family=/, 7],
   "能力矩阵" => [/<tr data-family=/, 19],
-  "直接证据" => [/<tr data-result=/, 19],
+  "直接证据" => [/<tr data-result=/, 20],
   "自然语言证据" => [/<tr data-chat-case=/, 5],
+  "Lark channel E2E 证据" => [/<tr data-channel-case=/, 2],
   "阻塞项" => [/<div class="gap-row">/, 4],
   "修复记录" => [/<div class="repair-item">/, 13]
 }
@@ -793,6 +816,20 @@ expected_html_counts.each do |label, (pattern, expected)|
 end
 
 report = File.read(File.join(ROOT, "report", "#{REPORT_DATE}-workflow-coverage-report.md"))
+fail_validation("README 缺少 19 workflows + 2 channel cases 口径") unless
+  readme.include?("19 个 workflow + 2 个 Lark channel E2E case") &&
+  readme.include?("0/2 个 channel case 已通过生产验收") &&
+  readme.include?("`pending-deployment`")
+fail_validation("文字报告缺少 #3210 的批准与拒绝 channel cases") unless
+  report.include?("## Lark channel E2E 案例（#3210）") &&
+  report.include?("Case 20") && report.include?("Case 21") &&
+  report.include?("`approval_denied`") && report.include?("`pending-deployment`")
+fail_validation("分析页缺少未通过的 Lark channel E2E 状态") unless
+  html.include?("0 / 2") && html.include?("Lark channel E2E 严格通过") &&
+  html.scan(/<tr data-channel-case="(?:20|21)" data-channel-status="pending-deployment">/).length == 2 &&
+  html.scan(/<tr data-channel-case="(?:20|21)"[^>]*>.*?<span class="status status-pending">待部署验证<\/span>.*?<\/tr>/m).length == 2
+fail_validation("分析页把待部署 channel case 渲染成绿色") if
+  html.match?(/<tr data-channel-case="(?:20|21)"[^>]*>.*?status-passed.*?<\/tr>/m)
 fail_validation("文字报告缺少案例 11 managed codex_exec 修复闭环") unless
   report.include?("## Managed codex_exec 修复与生产复验") &&
   report.include?("`Authorization: Bearer`") && report.include?("`forward_access_token=true`") &&
@@ -967,4 +1004,4 @@ fail_validation("定向报告仍把 #3161 authority 写成待复测") unless
   focused_report.include?("补齐了 #3161 的真实 published-operation authority 主链") &&
   focused_report.include?("只覆盖 no-send 只读执行")
 
-puts "通过 报告案例=19 财务源验收=3 源版本族=7 能力矩阵=19 自然语言=5 阻塞=4 修复记录=13"
+puts "通过 报告案例=20 财务源验收=3 源版本族=7 能力矩阵=19 自然语言=5 阻塞=4 修复记录=13"

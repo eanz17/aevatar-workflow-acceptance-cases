@@ -14,6 +14,7 @@
 ## 总结
 
 - 19/19 个公开 workflow 通过本地静态校验和 production explicit-request preview。
+- 另有 2 个 Lark channel E2E case 通过静态契约校验，但生产严格结果为 0/2；Case 20/21 都是 `pending-deployment`，不计入 19 个 workflow 或 19 个 Ornn skill。
 - 镜像 `20d9ba41` 上已重跑 01-05、07-19 共 18 个案例，全部 committed `completed`；连同案例 06 的既有证据，19 个案例的 direct runtime 最新终态均为 committed `completed`。案例 06 会真实创建 Lark 审批，本轮未重跑，其证据仍来自 `0c4ff023`。
 - 本地 19/19 个 Ornn skill 与 workflow 一一对应；原有 15 个通过服务端格式校验并公开回读，新增的 16、17、18、19 尚未发布。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
@@ -29,9 +30,20 @@
 
 - 验收脚本 `production_validate.rb` **只对 14、16、17、18、19 强制 typed artifact 契约**。其余案例的"通过"仅等于 committed terminal `completed` 且 read model `success=true`。
 - 因此工作流完全可能路由进自身的失败分支、仍被脚本判为"通过"。案例 18 初版就出现过这种情况：terminal `completed`、`success=true`，但 artifact 是 `attested=false`、`reason=while_replay_parity_mismatch`。本轮 17 份 artifact 已由人工逐条复核，未发现任何失败信号；但这是人工兜底，不是脚本门禁。
-- 案例 05、07、08、09、10 本轮只运行 preview 分支；写入、发送与建审批分支未运行。案例 09 的 artifact 明确记录 `identity_resolved=false`、`history_checked=false`。
-- 案例 06 会真实创建 Lark 审批，本轮未重跑，沿用 `0c4ff023` 证据。
+- 案例 05、07、08、09、10 的 submit 分支已单独运行并取得 committed 证据（见下节）；preview 分支的既有结论同时保留。
+- 05、06、07、08、09、10 六个副作用分支已在 `20d9ba41` 上显式授权后真实执行，不再是"未运行"。
 - `build/workflows` 是共享可变产物：并行验收时若他人用 `config.example.yaml` 重新 materialize，运行中的案例会绑定到占位符 service 并以 `NYXID_PROXY_HTTP_400` 失败。判定平台回归前必须先用 `config.local.yaml` 干净重跑一次。
+
+## Lark channel E2E 案例（#3210）
+
+既有 Case 14 证明 direct workflow 和 `/api/chat` 可以运行 `lark_contact_batch_resolution`，但无法证明 Lark channel AgentRun 收到 `use_skill` 的 `ApprovalRequired` 后会挂起、发卡、处理回调并继续同一调用。#3210 暴露的 `[tool receipt] Approval pending` 最终回复正落在这个空白里，因此新增两个独立 channel case，而不是复制第 20、21 个 workflow。
+
+| Case | 决策 | 必须观察到的通过证据 | 当前状态 |
+|---|---|---|---|
+| Case 20 | approved | 真实 Lark inbound/relay；Ornn 搜索并解析到精确 skill；Lark 审批卡出现；pending receipt 不进入模型回复；回调身份精确匹配且只分发一次；同一 AgentRun 恢复；`use_skill=Completed`；mount 执行；workflow start 恰好 1 次且 run 增量 1；最终 committed artifact 精确命中 `resolved_count=1`、`identifiers_redacted=true`、`side_effects=false` | `pending-deployment` |
+| Case 21 | rejected | 真实 Lark inbound/relay；审批回调只分发一次；同一审批链返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start 为 0；run catalog 增量为 0；不持久化原始身份 | `pending-deployment` |
+
+两项都要求 Ready 生产 workload 可从 image/digest/revision 追溯到 `452d72ec57694e327c6c57c2e2af595271147252`，并确认其历史包含 `b3784feef` 与 `dd12cd6a6`。部署证据、真实 Lark 点击和 committed terminal 尚未写入，因此机器摘要中的运行字段全部保持 `null`，`readyProductionWorkloadTraceable=false`。审批卡、Bot 文案、direct Case 14 或 `/api/chat` 成功都不能把它们升级为通过。
 
 ## while 迭代投递缺陷（由案例 18 发现）
 
@@ -46,6 +58,32 @@
 先前版本把案例 14、17 记为"审批契约回归"，理由是 preview 声明 `approvalRequired=true` 而运行期没有 typed pending/resume。复核 aevatar 源码后确认这是报告口径过期，不是平台回归：提交 `5dd48629`（2026-08-04）明确让 proof-bound workflow 调用跳过 per-run approval，`NyxIdProxyTool.GetCallSafety` 对 `WorkflowToolCall` 面直接返回 `RequiresApproval=false`，理由是 bind 时的 explicit-request confirmation 已完成风险 attestation。
 
 真正的问题是 preview 与 runtime 的表述不一致。提交 `5a0b545d8` 为 explicit-request preview 增加 `approvalEnforcement` 字段，生产已确认返回 `bind_time_confirmation`；`approvalRequired` 保持单一语义（NyxID operation policy）。验收脚本相应改为断言 preview 同时返回 `approvalRequired=true` 与 `approvalEnforcement=bind_time_confirmation`，运行侧只校验 committed 终态与 typed artifact。案例 14、17 在 `20d9ba41` 上均为 committed `completed` 且契约匹配。
+
+## 副作用分支实跑证据
+
+先前报告把这些分支记为"未运行"。本轮在镜像 `20d9ba41` 上显式授权后真实执行，全部 committed `completed`。
+
+| 案例 | 副作用 | run hash | state | 步骤 | 业务断言 |
+|---|---|---|---:|---:|---|
+| 05 | 新增一条 Base 资产盘点记录 | `8415fdd6cc7b` | 46 | 6/6 | `mutation_executed=true`、`accepted=true`、`downstream_code=0` |
+| 06 | 创建一条 Lark 审批 | `7542b785f746` | 58 | 8/8 | 审批创建并回读，`approval_status=PENDING` |
+| 07 | 发送一条 Lark 私信 | `8cffc03d2e0b` | 46 | 6/6 | `message_sent=true`、`downstream_code=0` |
+| 08 | 发送一张 Lark 卡片 | `3e084cc92a37` | 112 | 17/17 | 六源汇总正确且 `message_sent=true`、`downstream_code=0` |
+| 09 | 创建一条 Lark 审批 | `4c9bb41d415a` | 136 | 23/23 | `identity_resolved=true`、`history_checked=true`、`possible_duplicate=true`、`idempotent_skip=true` |
+| 10 | 创建审批并发送完成私信 | `3b2e36d8608e` | 115 | 17/17 | 审批 `PENDING` 且 `message_sent=true` |
+
+案例 09 的结果特别值得记录：submit 分支解析了身份、检查了审批历史，发现同一稳定键已存在，于是幂等跳过而没有重复创建审批。这正是先前 preview 证据里 `identity_resolved=false`、`history_checked=false` 未能覆盖的部分。所有对外消息都带 `[Aevatar 手工验收]` 前缀，接收方为配置中的单一验收 user_id。
+
+## 尚未覆盖的原语与原因
+
+| 原语 | 状态 | 原因 |
+|---|---|---|
+| `map_reduce` | 已覆盖（案例 20） | — |
+| `cache` | 已覆盖（案例 20） | — |
+| `guard`、`conditional`、`while` | 已覆盖（案例 18） | — |
+| `parallel_fanout` | 未覆盖 | `ParallelFanOutModule` 把 worker 子步骤硬编码为 `llm_call`，不引入 LLM 就无法做确定性断言 |
+| `race` | 未覆盖 | `RaceModule` 同样硬编码 `llm_call`，理由同上 |
+| `workflow_call` | 未覆盖（已实测阻塞） | `WorkflowGAgent` 只能从 binding 的 `InlineWorkflowYamls` 解析子工作流，而 Studio `/provision-workflow` 契约只接受单个 `WorkflowYaml`。经该入口绑定的工作流调用 `workflow_call` 必然以 `workflow_call timed out waiting for definition resolution after 30000ms` 失败（run hash `4327dd64a0b0`）。要覆盖它需要给 provisioning 契约补 `InlineWorkflowYamls`，或让验收 harness 改走支持 inline 的 `workflows:save-and-bind` 入口 |
 
 ## 源版本族映射
 
