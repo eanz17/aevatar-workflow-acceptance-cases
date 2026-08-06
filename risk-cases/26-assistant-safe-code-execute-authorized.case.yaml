@@ -1,0 +1,31 @@
+schema_version: "1.0"
+case: "26"
+name: assistant_safe_code_execute_authorized
+title: API chat 安全 code_execute 经精确 skill 和 committed artifact 验证
+status: failed
+surface: api_chat
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  skill: safe-code-execute-validation
+  workflow: safe_code_execute_validation
+  direct_workflow_case: "12"
+safety:
+  synthetic_input_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  chat_completed: true
+  ornn_search_confirmed: true
+  exact_skill_resolved: true
+  workflow_start_calls: 1
+  committed_terminal_observed: true
+  terminal_status: completed
+  forbidden_failure_codes_absent:
+    - NYXID_PROXY_UNAUTHORIZED
+  final_artifact:
+    case: safe_code_execute_validation
+    success: true
+    structured_receipt: true
+    total_cents: 16623
+    side_effects: false
+  raw_identifiers_persisted: false

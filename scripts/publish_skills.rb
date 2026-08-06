@@ -14,7 +14,8 @@ class PublishError < StandardError; end
 options = {
   service: ENV.fetch("ORNN_SERVICE_SLUG", "ornn-api"),
   via_service: ENV["ORNN_USER_SERVICE_ID"],
-  verify_only: false
+  verify_only: false,
+  missing_only: false
 }
 
 OptionParser.new do |parser|
@@ -24,7 +25,12 @@ OptionParser.new do |parser|
   parser.on("--verify-only", "只校验服务端格式、线上版本和 public 状态，不上传") do
     options[:verify_only] = true
   end
+  parser.on("--missing-only", "校验全部包，只发布线上缺失的 skill") do
+    options[:missing_only] = true
+  end
 end.parse!
+
+abort "--verify-only 与 --missing-only 不能同时使用" if options.values_at(:verify_only, :missing_only).all?
 
 def request_json(options, path, method: "GET", data_path: nil, body: nil, content_type: nil,
                  allow_not_found: false)
@@ -99,7 +105,7 @@ prepared = packages.map do |package|
     "/api/v1/skills/#{URI.encode_www_form_component(name)}",
     allow_not_found: true
   )&.fetch("data")
-  if options.fetch(:verify_only)
+  if options.fetch(:verify_only) || (options.fetch(:missing_only) && existing)
     raise PublishError, "#{name} 线上不存在" unless existing
 
     remote_version_parts = parse_remote_version(name, existing.fetch("version"))
@@ -120,7 +126,13 @@ prepared = packages.map do |package|
   }
 end
 
-preflight_scope = options.fetch(:verify_only) ? "版本/public 回读" : "版本单调性预检"
+preflight_scope = if options.fetch(:verify_only)
+                    "版本/public 回读"
+                  elsif options.fetch(:missing_only)
+                    "缺失项发布预检"
+                  else
+                    "版本单调性预检"
+                  end
 puts "全部 #{prepared.length} 个 skill 已通过服务端格式与#{preflight_scope}"
 
 if options.fetch(:verify_only)
@@ -139,7 +151,17 @@ if options.fetch(:verify_only)
   exit
 end
 
-results = prepared.map do |item|
+to_publish, skipped = if options.fetch(:missing_only)
+                        prepared.partition { |item| item.fetch(:existing).nil? }
+                      else
+                        [prepared, []]
+                      end
+
+skipped.each do |item|
+  puts "已跳过线上精确匹配 #{item.fetch(:name)} version=#{item.fetch(:local_version)} public=true"
+end
+
+results = to_publish.map do |item|
   name = item.fetch(:name)
   package = item.fetch(:package)
   existing = item.fetch(:existing)
@@ -197,6 +219,15 @@ end
 puts JSON.pretty_generate(
   publishedAt: Time.now.utc.iso8601,
   service: options.fetch(:service),
-  count: results.length,
-  skills: results
+  validatedCount: prepared.length,
+  publishedCount: results.length,
+  skippedExactCount: skipped.length,
+  skills: results,
+  skippedExact: skipped.map do |item|
+    {
+      name: item.fetch(:name),
+      version: item.fetch(:local_version),
+      public: true
+    }
+  end
 )

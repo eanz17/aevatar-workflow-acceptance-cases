@@ -1,0 +1,41 @@
+schema_version: "1.0"
+case: "34"
+name: admission_path_slot_contract
+title: 路由由 admitted path_template 固定，运行时只填已声明槽位
+status: passed
+surface: workflow_admission_guard
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  probe_runner: scripts/run_admission_probes.rb
+  probe_id: probe_path_slot_contract
+  rationale: >-
+    平台契约（#2984 方案 C、PR #2996、#3071）把 path 拆成两个单义字段：selector 的
+    path_template 必须静态并进入 request_contract_digest，运行期只能为模板里已声明的
+    槽位提供值，值本身允许来自 workflow 表达式（canon workflow-primitives.md 的
+    示例即 {"path_params":{"object_id":"${input}"}}）。因此本案例验证"槽位受限"，
+    不再期望"模板化取值被拒绝"——后者是 #2944 修复前的旧行为。
+safety:
+  synthetic_input_only: true
+  external_writes: false
+  cleanup_required: false
+  raw_identifiers_persisted: false
+required_evidence:
+  templated_slot_value_admitted: true
+  downstream_failure_only_after_admitted_route: true
+  templated_selector_rejected: true
+  slot_escape_rejected: true
+  external_writes: false
+  raw_identifiers_persisted: false
+  fresh_member_rerun_confirmed: true
+contract_notes: >-
+  2026-08-06 在部署 edcba099a 上实测正例，并在后续生产复验中完成两条负例：声明 path_template
+  /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records 的 GET
+  read_only capability，其 path_params 由 ${steps.seed_token.output} 取值，
+  preview、provision、binding 与运行期准入依次放行，调用到达 NyxID provider 后
+  因合成 app_token 无效返回 NYXID_PROXY_HTTP_400，未产生任何外部写入。该结果与
+  平台契约一致：运行时数据只能选择模板槽位的取值，不能改写 service、method 或
+  路由形状。原先把该行为记为 fail-open 的判定基于对 #2944 的误读，已撤回。
+follow_up: >-
+  三条子探针均已进入机器证据：允许的模板槽位值正例、selector 内联 ${...}
+  的准入拒绝，以及槽位值越出单段时在 provider 调用前返回
+  NYXID_OPERATION_PATH_PARAMETER_INVALID。

@@ -1,0 +1,45 @@
+name: readonly_attested_post_probe
+description: 验证声明 read_only 风险的语义只读 POST 在能力准入下免运行时审批执行，并保留 provider receipt 证据。
+roles:
+  - id: verifier
+    name: 只读声明验证员
+steps:
+  - id: search_with_attested_risk
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/search
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+        risk: read_only
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_RUN_EVIDENCE__"},"query":{"page_size":"2"},"body":{"automatic_fields":false}}'
+    next: summarize_attested_search
+
+  - id: summarize_attested_search
+    type: transform
+    op: template
+    template: >-
+      {{~ executed = get(data, 'code', -1) == 0; items = get(get(data, 'data', {}), 'items', []) ~}}
+      {{ json({ case: 'readonly_attested_post_probe', success: executed, attested_readonly_executed: executed, response_item_count: items.size, side_effects: false }) }}
+    next: verify_attested_probe
+
+  - id: verify_attested_probe
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.success == true && data.attested_readonly_executed == true && data.side_effects == false ~}}
+      {{ json({ case: 'readonly_attested_post_probe', success: success, attested_readonly_executed: data.attested_readonly_executed, response_item_count: data.response_item_count, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

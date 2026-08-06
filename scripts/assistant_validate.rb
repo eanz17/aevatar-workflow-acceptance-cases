@@ -9,6 +9,8 @@ require "securerandom"
 require "time"
 require "uri"
 
+require_relative "runtime_contracts"
+
 ROOT = File.expand_path("..", __dir__)
 
 CASES = {
@@ -392,7 +394,7 @@ def observe_workflow_run(workflow_name, request_started_at, timeout, approve)
   end
 end
 
-def summarize_committed_workflow(detail)
+def summarize_committed_workflow(detail, case_id)
   summary = detail.fetch("summary")
   steps = Array(detail["steps"])
   final_output = detail["finalOutput"]
@@ -408,6 +410,11 @@ def summarize_committed_workflow(detail)
      summary["success"] == true &&
      parsed_output.nil?
     raise AssistantValidationError, "committed workflow 成功终态缺少可解析 JSON finalOutput"
+  end
+  mismatch = RuntimeContracts.mismatch(case_id, parsed_output)
+  if summary["status"].to_s.downcase == "completed" && summary["success"] == true && mismatch
+    raise AssistantValidationError,
+          "committed workflow artifact 契约不匹配：#{mismatch.fetch(:actual).inspect}"
   end
   failure_text = [
     summary["lastError"],
@@ -428,6 +435,8 @@ def summarize_committed_workflow(detail)
     finalOutputKeys: parsed_output&.keys&.sort || [],
     artifactCase: parsed_output&.fetch("case", nil),
     artifactApprovalStatus: parsed_output&.fetch("approval_status", nil),
+    artifactContractVerified: mismatch.nil?,
+    artifactContractKeys: RuntimeContracts.for(case_id).fetch(:expected).keys.sort,
     typedFailureCodes: typed_failure_codes(failure_text)
   }
 rescue JSON::ParserError
@@ -669,7 +678,7 @@ def run_case(case_id, config, timeout, inline_fallback, approve)
         timeout,
         approve && config[:workflow_approval] == true
       )
-      committed_workflow = summarize_committed_workflow(detail)
+      committed_workflow = summarize_committed_workflow(detail, case_id)
     rescue AssistantValidationError => e
       workflow_observation_error = redacted_text(e.message)
     end

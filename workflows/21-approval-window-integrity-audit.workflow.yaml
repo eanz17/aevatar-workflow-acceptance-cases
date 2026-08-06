@@ -1,0 +1,88 @@
+name: approval_window_integrity_audit
+description: 审计审批查询时间窗口的有效性，如实报告历史窗口过期陷阱，并验证活跃窗口覆盖当前时间。
+roles:
+  - id: auditor
+    name: 审批窗口审计员
+steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ epoch_now = get(data, 'epoch_now_ms', 0) ~}}
+      {{~ if epoch_now <= 0; number('缺少 epoch_now_ms 输入'); end ~}}
+      {{ json({ epoch_now_ms: epoch_now }) }}
+    next: list_legacy_window
+
+  - id: list_legacy_window
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances
+        query_parameters:
+          - approval_code
+          - page_size
+          - start_time
+          - end_time
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"100","start_time":"1754238719855","end_time":"1785774719855"}}'
+    next: list_active_window
+
+  - id: list_active_window
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/approval/v4/instances
+        query_parameters:
+          - approval_code
+          - page_size
+          - start_time
+          - end_time
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"query":{"approval_code":"__LARK_APPROVAL_CODE__","page_size":"100","start_time":"1754238719855","end_time":"1817310719855"}}'
+    next: collect_windows
+
+  - id: collect_windows
+    type: assign
+    parameters:
+      target: window_evidence
+      value: >-
+        {"context":${steps.normalize_context.output},"legacy":${steps.list_legacy_window.output},"active":${steps.list_active_window.output}}
+    next: summarize_windows
+
+  - id: summarize_windows
+    type: transform
+    op: template
+    template: >-
+      {{~ ctx = data.context; legacy = data.legacy; active = data.active ~}}
+      {{~ epoch_now = get(ctx, 'epoch_now_ms', 0) ~}}
+      {{~ legacy_reachable = get(legacy, 'code', -1) == 0; active_reachable = get(active, 'code', -1) == 0 ~}}
+      {{~ legacy_codes = get(get(legacy, 'data', {}), 'instance_code_list', []) ~}}
+      {{~ active_codes = get(get(active, 'data', {}), 'instance_code_list', []) ~}}
+      {{ json({ reads_ok: legacy_reachable && active_reachable, legacy_window_expired: epoch_now > 1785774719855, active_window_covers_now: epoch_now >= 1754238719855 && epoch_now < 1817310719855, legacy_instance_count: legacy_codes.size, active_instance_count: active_codes.size, epoch_now_ms: epoch_now }) }}
+    next: verify_window_integrity
+
+  - id: verify_window_integrity
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.reads_ok == true && data.active_window_covers_now == true ~}}
+      {{ json({ case: 'approval_window_integrity_audit', success: success, reads_ok: data.reads_ok, legacy_window_expired: data.legacy_window_expired, active_window_covers_now: data.active_window_covers_now, legacy_instance_count: data.legacy_instance_count, active_instance_count: data.active_instance_count, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

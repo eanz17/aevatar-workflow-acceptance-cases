@@ -8,8 +8,35 @@ require "optparse"
 require "time"
 require "uri"
 
+require_relative "runtime_contracts"
+
 ROOT = File.expand_path("..", __dir__)
-WORKFLOW_DIR = File.join(ROOT, "build", "workflows")
+DEFAULT_WORKFLOW_DIR = File.join(ROOT, "build", "workflows")
+
+# preview 契约里表示"这些取值都合法"的多值断言。必须与精确数组断言
+# （如 allowedExecutionModes: ["interactive"]）区分，否则精确数组会被误判成成员包含。
+class AcceptedValues
+  attr_reader :values
+
+  def initialize(values)
+    @values = values.freeze
+  end
+
+  def satisfied_by?(observed)
+    @values.include?(observed)
+  end
+
+  def inspect
+    "任一：#{@values.inspect}"
+  end
+end
+
+# 92cc7bc81 恢复 per-run tool approval 后，preview 的 approvalEnforcement 从
+# bind_time_confirmation 变为 bind_time_confirmation_and_run_time_tool_approval；
+# 两个部署形态都合法，实际观测值随 callSites 记录进证据。
+APPROVAL_ENFORCEMENT_ACCEPTED = AcceptedValues.new(
+  %w[bind_time_confirmation bind_time_confirmation_and_run_time_tool_approval]
+).freeze
 
 CASES = {
   "01" => {
@@ -39,7 +66,8 @@ CASES = {
     file: "06-project-shared-mailbox-approval.workflow.yaml",
     prompt: "run",
     mutation_prompt: "run",
-    side_effect: "创建一条 Lark 审批"
+    side_effect: "创建一条 Lark 审批",
+    requires_side_effect_authorization: true
   },
   "07" => {
     file: "07-quarterly-access-review-reminder.workflow.yaml",
@@ -88,7 +116,7 @@ CASES = {
       method: "post",
       effectiveRisk: "write",
       approvalRequired: true,
-      approvalEnforcement: "bind_time_confirmation",
+      approvalEnforcement: APPROVAL_ENFORCEMENT_ACCEPTED,
       allowedExecutionModes: ["interactive"]
     }
   },
@@ -109,7 +137,7 @@ CASES = {
       method: "post",
       effectiveRisk: "write",
       approvalRequired: true,
-      approvalEnforcement: "bind_time_confirmation",
+      approvalEnforcement: APPROVAL_ENFORCEMENT_ACCEPTED,
       allowedExecutionModes: ["interactive"]
     }
   },
@@ -125,6 +153,48 @@ CASES = {
     file: "19-lark-bot-file-upload-validation.workflow.yaml",
     prompt: "验证当前消息中的合成上传文件，不执行任何外部写入。",
     attachment: "lark-bot-upload-manifest.json"
+  },
+  "21" => {
+    file: "21-approval-window-integrity-audit.workflow.yaml",
+    prompt: -> { JSON.generate({ "epoch_now_ms" => (Time.now.to_f * 1000).to_i }) }
+  },
+  "22" => {
+    file: "22-acceptance-fixture-drift-attestation.workflow.yaml",
+    prompt: "运行验收 fixture 漂移体检，不执行任何写入。"
+  },
+  "23" => {
+    file: "23-readonly-attested-post-probe.workflow.yaml",
+    prompt: "运行只读声明 POST 探针，不修改任何记录。",
+    preview_contract: {
+      method: "post",
+      effectiveRisk: "read_only",
+      approvalRequired: false
+    }
+  },
+  "24" => {
+    file: "24-runtime-tool-approval-write-probe.workflow.yaml",
+    prompt: -> { JSON.generate({ "probe_note" => Time.now.utc.strftime("%Y%m%d%H%M%S") }) },
+    approval_required: true,
+    side_effect: "在资产盘点表新增一条可清理的探针记录",
+    requires_side_effect_authorization: true,
+    preview_contract: {
+      method: "post",
+      effectiveRisk: "write",
+      approvalRequired: true
+    }
+  },
+  "25" => {
+    file: "25-sequential-tool-approval-write-probe.workflow.yaml",
+    prompt: -> { JSON.generate({ "probe_note" => Time.now.utc.strftime("%Y%m%d%H%M%S") }) },
+    approval_required: true,
+    side_effect: "在资产盘点表连续新增两条可清理的探针记录",
+    requires_side_effect_authorization: true,
+    preview_call_site_count: 2,
+    preview_contract: {
+      method: "post",
+      effectiveRisk: "write",
+      approvalRequired: true
+    }
   }
 }.freeze
 
@@ -258,7 +328,7 @@ class ProductionValidator
   private
 
   def validate_case(case_id, config, lark_service_id)
-    workflow_path = File.join(WORKFLOW_DIR, config.fetch(:file))
+    workflow_path = File.join(@options.fetch(:workflow_dir), config.fetch(:file))
     raise ValidationError, "缺少已物化工作流：#{config.fetch(:file)}" unless File.file?(workflow_path)
 
     yaml = File.read(workflow_path).gsub(
@@ -273,11 +343,20 @@ class ProductionValidator
     display_name = "公开验收案例 #{case_id}-#{Digest::SHA256.hexdigest(yaml)[0, 10]}"
     preview = preview_workflow(yaml, display_name)
     if config[:preview_contract]
-      item = preview.fetch("items").first
+      items = preview.fetch("items")
       expected = config.fetch(:preview_contract)
-      actual = expected.keys.to_h { |key| [key, item&.fetch(key.to_s, nil)] }
-      unless preview.fetch("items").length == 1 && actual == expected
-        raise ValidationError, "定向 preview 契约不匹配：预期 #{expected.inspect}，实际 #{actual.inspect}"
+      expected_count = config.fetch(:preview_call_site_count, 1)
+      item_matched = lambda do |item|
+        expected.all? do |key, value|
+          observed = item.fetch(key.to_s, nil)
+          value.is_a?(AcceptedValues) ? value.satisfied_by?(observed) : observed == value
+        end
+      end
+      unless items.length == expected_count && items.all?(&item_matched)
+        actuals = items.map { |item| expected.keys.to_h { |key| [key, item.fetch(key.to_s, nil)] } }
+        raise ValidationError,
+              "定向 preview 契约不匹配：预期 #{expected_count} 个 call site 满足 #{expected.inspect}，" \
+              "实际 #{items.length} 个：#{actuals.inspect}"
       end
     end
     base_result = {
@@ -291,6 +370,7 @@ class ProductionValidator
           pathTemplate: item["pathTemplate"],
           effectiveRisk: item["effectiveRisk"],
           approvalRequired: item["approvalRequired"],
+          approvalEnforcement: item["approvalEnforcement"],
           allowedExecutionModes: item["allowedExecutionModes"]
         }
       end
@@ -298,8 +378,9 @@ class ProductionValidator
 
     return base_result.merge(result: "仅预检") unless @options.fetch(:run)
 
-    if config[:side_effect] && !@options.fetch(:side_effect_cases).include?(case_id)
-      return base_result.merge(result: "仅预检", runSkipped: "未授权副作用：#{config[:side_effect]}") if case_id == "06"
+    if config[:requires_side_effect_authorization] &&
+        !@options.fetch(:side_effect_cases).include?(case_id)
+      return base_result.merge(result: "仅预检", runSkipped: "未授权副作用：#{config[:side_effect]}")
     end
 
     member_id, revision_id, binding_reused = prepare_binding(yaml, preview, display_name)
@@ -446,6 +527,7 @@ class ProductionValidator
     approval_allowed = @options.fetch(:approve) && (side_effect || read_only_approval)
     prompt = @options[:prompt] ||
       (side_effect ? config.fetch(:mutation_prompt, config.fetch(:prompt)) : config.fetch(:prompt))
+    prompt = prompt.call if prompt.respond_to?(:call)
     body = {
       prompt: prompt,
       revisionId: revision_id
@@ -482,7 +564,13 @@ class ProductionValidator
     contract_failure = nil
     if terminal_success
       begin
-        runtime_contract_evidence = validate_runtime_contract(case_id, detail, final_output, evidence)
+        runtime_contract_evidence = validate_runtime_contract(
+          case_id,
+          detail,
+          final_output,
+          evidence,
+          side_effect: side_effect
+        )
       rescue ValidationError => e
         contract_failure = e.message
       end
@@ -500,7 +588,9 @@ class ProductionValidator
       finalOutput: sanitize_output(final_output),
       failure: sanitize_output(contract_failure || terminal_failure(detail)),
       sideEffectAuthorized: side_effect,
-      readOnlyApprovalAuthorized: read_only_approval
+      readOnlyApprovalAuthorized: read_only_approval,
+      approvalPendingObserved: evidence[:typed_approval_identity_present] == true,
+      approvalResumeCount: approved_keys.length
     }.merge(runtime_contract_evidence)
   end
 
@@ -649,108 +739,27 @@ class ProductionValidator
       .slice(0, 800)
   end
 
-  def validate_runtime_contract(case_id, detail, final_output, evidence = {})
-    contract = case case_id
-               when "14"
-                 {
-                   step_id: "resolve_contact",
-                   expected_artifact: {
-                     "case" => "lark_contact_batch_resolution",
-                     "success" => true,
-                     "contact_api_reachable" => true,
-                     "resolved_count" => 1,
-                     "identifiers_redacted" => true,
-                     "side_effects" => false
-                   },
-                   approval_required: false
-                 }
-               when "16"
-                 {
-                   step_id: "read_base_records",
-                   expected_artifact: {
-                     "success" => true,
-                     "provider_response_verified" => true,
-                     "side_effects" => false
-                   },
-                   approval_required: false
-                 }
-               when "17"
-                 {
-                   step_id: "search_base_records",
-                   expected_artifact: {
-                     "success" => true,
-                     "approval_resumed" => true,
-                     "side_effects" => false
-                   },
-                   approval_required: false
-                 }
-               when "20"
-                 {
-                   step_id: "aggregate_risk_tiers",
-                   expected_artifact: {
-                     "aggregated" => true,
-                     "mapped_tier_count" => 3,
-                     "merged_line_count" => 5,
-                     "cache_hit_returned_first_value" => true,
-                     "side_effects" => false
-                   },
-                   approval_required: false
-                 }
-               when "18"
-                 {
-                   step_id: "replay_control_order",
-                   expected_artifact: {
-                     "attested" => true,
-                     "control_count" => 3,
-                     "leading_control" => "breach_notice",
-                     "replay_iterations" => 3,
-                     "side_effects" => false
-                   },
-                   approval_required: false
-                 }
-               when "19"
-                 {
-                   step_id: "extract_uploaded_file",
-                   expected_artifact: {
-                     "success" => true,
-                     "file_ref_registered" => true,
-                     "document_extract_succeeded" => true,
-                     "content_contract_matches" => true,
-                     "lark_bot_ingress_validated" => false,
-                     "identifiers_redacted" => true,
-                     "side_effects" => false
-                   },
-                   approval_required: false
-                 }
-               else
-                 return {}
-               end
-
-    first_step = Array(detail["steps"]).find { |step| step["stepId"] == contract.fetch(:step_id) }
+  def validate_runtime_contract(case_id, detail, final_output, evidence = {}, side_effect: false)
+    contract = RuntimeContracts.for(case_id, side_effect: side_effect)
+    first_step = Array(detail["steps"]).find { |step| step["stepId"] == contract.fetch(:probe_step) }
     unless first_step && first_step["success"] == true && !first_step["outputPreview"].to_s.strip.empty?
       raise ValidationError, "案例 #{case_id} committed read model 缺少非空首步输出"
     end
 
-    typed_approval_present = false
-    if contract.fetch(:approval_required)
-      approval = first_step["toolApproval"]
-      read_model_identity_present = approval.is_a?(Hash) &&
-        %w[executionId toolCallId approvalRequestId].all? { |key| !approval[key].to_s.strip.empty? }
-      typed_approval_present = read_model_identity_present || evidence[:typed_approval_identity_present] == true
-      raise ValidationError, "案例 #{case_id} 运行缺少 typed approval identity" unless typed_approval_present
+    artifact = final_output.is_a?(String) ? JSON.parse(final_output) : final_output
+    mismatch = RuntimeContracts.mismatch(case_id, artifact, side_effect: side_effect)
+    if mismatch
+      raise ValidationError,
+            "案例 #{case_id} 最终 artifact 契约不匹配：#{mismatch.fetch(:actual).inspect}"
     end
 
-    artifact = final_output.is_a?(String) ? JSON.parse(final_output) : final_output
-    expected = contract.fetch(:expected_artifact)
-    actual = expected.keys.to_h { |key| [key, artifact.is_a?(Hash) ? artifact[key] : nil] }
-    raise ValidationError, "案例 #{case_id} 最终 artifact 契约不匹配：#{actual.inspect}" unless actual == expected
-
-    evidence = {
+    contract_evidence = {
       firstToolStepOutputPresent: true,
+      contractProbeStepOutputPresent: true,
       finalArtifactVerified: true
     }
-    evidence[:typedApprovalIdentityPresent] = true if typed_approval_present
-    evidence
+    contract_evidence[:typedApprovalIdentityPresent] = true if evidence[:typed_approval_identity_present] == true
+    contract_evidence
   rescue JSON::ParserError => e
     raise ValidationError, "案例 #{case_id} 最终 artifact 不是有效 JSON：#{e.message}"
   end
@@ -798,10 +807,15 @@ class ProductionValidator
   end
 end
 
+# 供 scripts/run_admission_probes.rb 等复用 NyxIdAevatarClient 时以 require_relative
+# 方式加载本文件；只有直接执行时才进入 CLI。
+return unless __FILE__ == $PROGRAM_NAME
+
 options = {
   scope_id: ENV["AEVATAR_SCOPE_ID"],
   team_id: ENV["AEVATAR_TEAM_ID"],
   lark_service_id: ENV["LARK_USER_SERVICE_ID"],
+  workflow_dir: ENV.fetch("AEVATAR_WORKFLOW_DIR", DEFAULT_WORKFLOW_DIR),
   cases: CASES.keys,
   run: false,
   approve: false,
@@ -816,7 +830,10 @@ OptionParser.new do |parser|
   parser.on("--scope-id ID", "Aevatar scope ID，也可使用 AEVATAR_SCOPE_ID") { |value| options[:scope_id] = value }
   parser.on("--team-id ID", "用于创建临时验收成员的 Studio team ID，也可使用 AEVATAR_TEAM_ID") { |value| options[:team_id] = value }
   parser.on("--lark-user-service-id ID", "固定 Lark Bot UserService，也可使用 LARK_USER_SERVICE_ID") { |value| options[:lark_service_id] = value }
-  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-19") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
+  parser.on("--workflow-dir DIR", "已物化 workflow 目录，也可使用 AEVATAR_WORKFLOW_DIR") do |value|
+    options[:workflow_dir] = File.expand_path(value)
+  end
+  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-25") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
   parser.on("--run", "在 preview 后执行工作流；默认只 preview") { options[:run] = true }
   parser.on("--allow-side-effects LIST", "允许执行副作用的案例编号，逗号分隔") do |value|
     options[:side_effect_cases] = value.split(",").map { |item| item.strip.rjust(2, "0") }
@@ -831,6 +848,7 @@ end.parse!
 
 abort "缺少 --scope-id 或 AEVATAR_SCOPE_ID" if options[:scope_id].to_s.strip.empty?
 abort "缺少 --team-id 或 AEVATAR_TEAM_ID" if options[:team_id].to_s.strip.empty?
+abort "workflow 目录不存在：#{options[:workflow_dir]}" unless Dir.exist?(options[:workflow_dir])
 unknown_cases = options[:cases] - CASES.keys
 abort "未知案例：#{unknown_cases.join(", ")}" unless unknown_cases.empty?
 unknown_side_effect_cases = options[:side_effect_cases] - CASES.keys

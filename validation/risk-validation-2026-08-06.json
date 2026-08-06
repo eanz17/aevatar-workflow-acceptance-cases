@@ -1,0 +1,583 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAtUtc": "2026-08-06T09:51:05Z",
+  "targetSource": {
+    "repository": "aevatarAI/aevatar",
+    "ref": "origin/feature/integrate",
+    "commit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff"
+  },
+  "productionDeployment": {
+    "observedAtUtc": "2026-08-06T09:19:09Z",
+    "image": "docker.io/aelfdevops/aevatar-console-backend:6df43b83",
+    "commit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff",
+    "requiredSourceCommitPresent": true,
+    "readyReplicas": "1/1",
+    "podRestarts": 0
+  },
+  "newWorkflowProbeValidation": {
+    "previewedAtUtc": "2026-08-06T09:51:05Z",
+    "runtimeObservedAtUtc": "2026-08-06T09:48:28Z",
+    "summary": {
+      "total": 5,
+      "previewPassed": 5,
+      "directRuntimePassed": 5,
+      "sideEffectRunsApproved": 2,
+      "sideEffectRecordsCreated": 9
+    },
+    "results": [
+      {
+        "case": "21",
+        "name": "approval_window_integrity_audit",
+        "previewCallSiteCount": 2,
+        "previewRisk": "read_only",
+        "runHash": "2467f5c77251",
+        "terminalStatus": "completed",
+        "stateVersion": 49,
+        "completedSteps": 7,
+        "totalSteps": 7,
+        "finalArtifact": {
+          "case": "approval_window_integrity_audit",
+          "success": true,
+          "reads_ok": true,
+          "legacy_window_expired": true,
+          "active_window_covers_now": true,
+          "side_effects": false
+        },
+        "sideEffectsPerformed": false
+      },
+      {
+        "case": "22",
+        "name": "acceptance_fixture_drift_attestation",
+        "previewCallSiteCount": 4,
+        "previewRisk": "read_only",
+        "runHash": "8590fc4aa24a",
+        "terminalStatus": "completed",
+        "stateVersion": 55,
+        "completedSteps": 8,
+        "totalSteps": 8,
+        "finalArtifact": {
+          "case": "acceptance_fixture_drift_attestation",
+          "success": true,
+          "reads_completed": true,
+          "fixtures_intact": true,
+          "license_row_count": 3,
+          "mailbox_ready_for_approval": true,
+          "contractor_identity_active": true,
+          "review_row_count": 3,
+          "side_effects": false
+        },
+        "sideEffectsPerformed": false
+      },
+      {
+        "case": "23",
+        "name": "readonly_attested_post_probe",
+        "previewCallSiteCount": 1,
+        "previewRisk": "read_only",
+        "approvalRequired": false,
+        "runHash": "d952565aa649",
+        "terminalStatus": "completed",
+        "stateVersion": 31,
+        "completedSteps": 4,
+        "totalSteps": 4,
+        "finalArtifact": {
+          "case": "readonly_attested_post_probe",
+          "success": true,
+          "attested_readonly_executed": true,
+          "side_effects": false
+        },
+        "sideEffectsPerformed": false
+      },
+      {
+        "case": "24",
+        "name": "runtime_tool_approval_write_probe",
+        "previewCallSiteCount": 1,
+        "previewRisk": "write",
+        "approvalRequired": true,
+        "approvalEnforcement": "bind_time_confirmation_and_run_time_tool_approval",
+        "runHash": "cc46543d37d9",
+        "terminalStatus": "completed",
+        "stateVersion": 40,
+        "completedSteps": 5,
+        "totalSteps": 5,
+        "approvalPendingObserved": true,
+        "approvalResumeCount": 1,
+        "typedApprovalIdentityPresent": true,
+        "finalArtifact": {
+          "case": "runtime_tool_approval_write_probe",
+          "success": true,
+          "mutation_executed": true,
+          "record_created": true,
+          "side_effects": true
+        },
+        "sideEffectsPerformed": true
+      },
+      {
+        "case": "25",
+        "name": "sequential_tool_approval_write_probe",
+        "previewCallSiteCount": 2,
+        "previewRisk": "write",
+        "approvalRequired": true,
+        "approvalEnforcement": "bind_time_confirmation_and_run_time_tool_approval",
+        "runHash": "d6919ed97130",
+        "terminalStatus": "completed",
+        "stateVersion": 61,
+        "completedSteps": 8,
+        "totalSteps": 8,
+        "approvalPendingObserved": true,
+        "approvalResumeCount": 2,
+        "typedApprovalIdentityPresent": true,
+        "finalArtifact": {
+          "case": "sequential_tool_approval_write_probe",
+          "success": true,
+          "first_mutation_executed": true,
+          "second_mutation_executed": true,
+          "sequential_mutations": 2,
+          "side_effects": true
+        },
+        "sideEffectsPerformed": true
+      }
+    ],
+    "rawIdentifiersPersisted": false,
+    "invalidMaterializationControl": {
+      "deploymentCommit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff",
+      "cases": ["21", "22", "23"],
+      "stableErrorCode": "NYXID_PROXY_HTTP_400",
+      "cause": "shared build/workflows overwritten by config.example.yaml materialization",
+      "supersededByCleanMaterializationRun": true
+    }
+  },
+  "summary": {
+    "total": 21,
+    "passed": 8,
+    "blocked": 4,
+    "failed": 4,
+    "pendingExecution": 0,
+    "notConfigured": 5
+  },
+  "results": [
+    {
+      "case": "23",
+      "name": "lark_workflow_runtime_tool_approval_rejected",
+      "status": "failed",
+      "observedAtUtc": "2026-08-06T07:35:55Z",
+      "stableErrorCode": "APPROVAL_REJECTED_WITHOUT_TYPED_CODE",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "runHash": "e5ced83c068b",
+        "workflowStartCalls": 1,
+        "newWorkflowRunCount": 1,
+        "awaitingToolApprovalObserved": true,
+        "workflowApprovalCardObserved": true,
+        "workflowApprovalIdentityPresent": true,
+        "workflowApprovalDecisionDispatchCount": 1,
+        "terminalStatus": "failed",
+        "stateVersion": 17,
+        "completedSteps": 1,
+        "totalSteps": 1,
+        "failingStep": "resolve_contact",
+        "typedApprovalDeniedCodePresent": false,
+        "downstreamToolExecuted": false,
+        "botReplyExposedRawRunId": true,
+        "approvalCardButtonsActiveAfterDecision": true
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "拒绝已终止 committed run，但只返回 approval rejected 文案，缺少稳定 typed approval_denied；Bot 还回显了完整 Run ID，卡片按钮未失效"
+    },
+    {
+      "case": "24",
+      "name": "lark_attachment_catalog_start",
+      "status": "blocked",
+      "observedAtUtc": "2026-08-06T07:50:33Z",
+      "stableErrorCode": "ORNN_PUBLIC_SKILL_MISSING",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "serverFormatValidated": true,
+        "exactSkillPublic": false,
+        "repeatLarkUploadPerformed": false,
+        "workflowStartCalls": 0,
+        "newWorkflowRunCount": 0
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "只读 public 回读确认目标 skill 不存在；未重复发送 Lark 文件，也未自动发布 skill"
+    },
+    {
+      "case": "25",
+      "name": "lark_sender_service_scope_authorized",
+      "status": "failed",
+      "observedAtUtc": "2026-08-06T07:39:00Z",
+      "stableErrorCode": "CHANNEL_AGENT_RUN_NOT_STARTED",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "larkMessageVisible": true,
+        "waitWindowSeconds": 60,
+        "approvalCardObserved": false,
+        "newChannelAgentRunCount": 0,
+        "newWorkflowRunCount": 0,
+        "correlatedInboundLogObserved": false,
+        "repeatMessageSent": false,
+        "exactUserServiceGrantVerified": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "消息已在唯一 Bot 私聊可见，但观察窗口内没有新的 channel AgentRun、审批卡、workflow run 或可关联入站日志；未重发以避免重复执行"
+    },
+    {
+      "case": "26",
+      "name": "assistant_safe_code_execute_authorized",
+      "status": "failed",
+      "observedAtUtc": "2026-08-06T07:41:08Z",
+      "stableErrorCode": "NYXID_PROXY_UNAUTHORIZED",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "runHash": "95db7d06bce1",
+        "chatCompleted": true,
+        "ornnSearchConfirmed": true,
+        "exactSkillResolved": true,
+        "mountApprovalCompleted": true,
+        "workflowStartCalls": 1,
+        "committedTerminalObserved": true,
+        "terminalStatus": "failed",
+        "stateVersion": 12,
+        "completedSteps": 1,
+        "totalSteps": 1,
+        "failingStep": "calculate_settlement",
+        "finalArtifactContractMet": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "Assistant 搜索、精确 skill、mount approval 与 workflow start 均发生，但 code_execute 在 committed run 中以 NYXID_PROXY_UNAUTHORIZED 失败"
+    },
+    {
+      "case": "27",
+      "name": "ornn_public_catalog_complete",
+      "status": "blocked",
+      "observedAtUtc": "2026-08-06T07:50:33Z",
+      "stableErrorCode": "ORNN_PUBLIC_SKILL_MISSING",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "localSkillCount": 25,
+        "serverFormatValidated": 25,
+        "exactNameReadback": 19,
+        "publicSkillCount": 19,
+        "versionMatches": 19,
+        "missingSkills": [
+          "acceptance-fixture-drift-attestation",
+          "approval-window-integrity-audit",
+          "lark-bot-file-upload-validation",
+          "readonly-attested-post-probe",
+          "runtime-tool-approval-write-probe",
+          "sequential-tool-approval-write-probe"
+        ],
+        "privateSkills": [],
+        "versionMismatches": [],
+        "uploadsPerformed": false,
+        "permissionsChanged": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "25/25 服务端格式通过；19/25 精确名称公开回读，缺 Case 19 与本轮五个新 skill；未上传、未改权限"
+    },
+    {
+      "case": "28",
+      "name": "source_p1_v5_submit_false_current",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T08:26:14Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "exact_source_previewed": true,
+        "sanitized_attachment_verified": true,
+        "binding_ready": true,
+        "preview_call_site_count": 5,
+        "preview_read_only_call_site_count": 4,
+        "preview_write_call_site_count": 1,
+        "preview_approval_call_site_count": 1,
+        "invoke_count": 1,
+        "terminal_status": "completed",
+        "last_success": true,
+        "completed_steps": 14,
+        "total_steps": 14,
+        "attachment_extracted": true,
+        "read_only_lookup_completed": true,
+        "submit_steps_executed": false,
+        "write_call_site_executed": false,
+        "approval_created": false,
+        "lark_writes": false,
+        "final_output_present": true,
+        "typed_error_classes": [],
+        "raw_identifiers_persisted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "精确源定义使用 sanitized PNG 与 submit=false 只运行一次；14/14 completed，写入与审批分支未执行"
+    },
+    {
+      "case": "29",
+      "name": "source_p2_schema_preserving_no_send",
+      "status": "not-configured",
+      "observedAtUtc": "2026-08-06T07:20:00Z",
+      "stableErrorCode": "SYNTHETIC_FINANCE_TABLES_NOT_CONFIGURED",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "sourceDefinitionPresent": true,
+        "schemaPreservingSpecificationPresent": true,
+        "disposableTablesConfigured": false,
+        "sharedBaseSubstituteAccepted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "现有 shared-base run 只证明 connector，不满足四表财务 schema 语义"
+    },
+    {
+      "case": "30",
+      "name": "source_no_send_durable_schedule_cleanup",
+      "status": "not-configured",
+      "observedAtUtc": "2026-08-06T07:20:00Z",
+      "stableErrorCode": "SOURCE_SCHEDULE_TARGET_NOT_CONFIGURED",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "sourceDefinitionPresent": true,
+        "safeNoSendBranchPresent": true,
+        "exactUserServiceAuthorityVerified": false,
+        "scheduleCreated": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "公开 Case 15 schedule 不能替代源 no-send definition 的 authority 与 cleanup 闭环"
+    },
+    {
+      "case": "31",
+      "name": "direct_runtime_artifact_contract_complete",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T07:50:33Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "direct_workflow_count": 25,
+        "strict_runtime_contract_count": 25,
+        "missing_contract_cases": [],
+        "assistant_uses_same_contracts": true,
+        "terminal_completed_alone_is_sufficient": false,
+        "raw_identifiers_persisted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "production_validate 与 assistant_validate 共用 25/25 业务 artifact contract"
+    },
+    {
+      "case": "32",
+      "name": "report_evidence_consistency",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T07:50:33Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "workflow_files": 25,
+        "skill_directories": 25,
+        "runtime_contracts": 25,
+        "readme_workflow_count": 25,
+        "report_workflow_count": 25,
+        "machine_summary_workflow_count": 25,
+        "stale_19_of_19_claims": 0,
+        "raw_identifiers_persisted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "仓库数量、公开说明、HTML/Markdown 报告和机器摘要统一为 25"
+    },
+    {
+      "case": "33",
+      "name": "admission_missing_capability_provision_rejected",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "preview_call_site_count_zero": true,
+        "provision_rejected": true,
+        "stable_error_operation_selection_required": true,
+        "external_writes": false,
+        "raw_identifiers_persisted": false,
+        "fresh_member_rerun_confirmed": true
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "缺失 capability 的 nyxid_proxy 定义在 provision 阶段以 NYXID_OPERATION_SELECTION_REQUIRED fail-closed"
+    },
+    {
+      "case": "34",
+      "name": "admission_path_slot_contract",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "templated_slot_value_admitted": true,
+        "downstream_failure_only_after_admitted_route": true,
+        "templated_selector_rejected": true,
+        "slot_escape_rejected": true,
+        "external_writes": false,
+        "raw_identifiers_persisted": false,
+        "fresh_member_rerun_confirmed": true
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "三条子探针全部实测：契约允许的槽位取值经准入放行、仅在 provider 侧因合成 app_token 得到 NYXID_PROXY_HTTP_400；内联表达式的 path_template 在 preview 被 NYXID_OPERATION_SELECTION_REQUIRED 拒绝；含分隔符与 dot segment 的槽位值在调用 provider 前被 NYXID_OPERATION_PATH_PARAMETER_INVALID 拦下。路由由 admitted path_template 固定的契约成立，无外部写入"
+    },
+    {
+      "case": "35",
+      "name": "admission_n8n_export_rejected",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "preview_rejected": true,
+        "stable_error_unsupported_root_field": true,
+        "external_writes": false,
+        "raw_identifiers_persisted": false,
+        "fresh_member_rerun_confirmed": true
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "合成 n8n 导出在 explicit-request preview 以 unsupported root field nodes 类型化拒绝"
+    },
+    {
+      "case": "36",
+      "name": "admission_durable_write_fail_closed",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "durable_preview_rejected": true,
+        "stable_error_durable_authorization_unavailable": true,
+        "interactive_counterpart_admitted": true,
+        "external_writes": false,
+        "raw_identifiers_persisted": false,
+        "fresh_member_rerun_confirmed": true
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "durable 写 preview 以 DURABLE_AUTHORIZATION_UNAVAILABLE fail-closed；interactive 对照由 Case 24 preview 证明可准入"
+    },
+    {
+      "case": "37",
+      "name": "workflow_call_inline_definition_resolution",
+      "status": "failed",
+      "observedAtUtc": "2026-08-06T03:35:16Z",
+      "stableErrorCode": "WORKFLOW_CALL_DEFINITION_RESOLUTION_TIMEOUT",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "runHash": "4327dd64a0b0",
+        "definitionResolutionTimeoutMs": 30000,
+        "inlineWorkflowYamlsAvailableThroughProvisionWorkflow": false,
+        "childDefinitionResolved": false,
+        "childWorkflowStarted": false,
+        "terminalStatus": "failed",
+        "sideEffects": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "真实运行在 30 秒 definition resolution 超时后 committed failed；当前 Studio provision-workflow 入口没有提供 inline 子定义，不能由普通 direct workflow 假装覆盖"
+    },
+    {
+      "case": "38",
+      "name": "parallel_fanout_deterministic_runtime",
+      "status": "blocked",
+      "observedAtUtc": "2026-08-06T09:22:40Z",
+      "stableErrorCode": "DETERMINISTIC_PROBE_UNAVAILABLE",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "sourceModulePresent": true,
+        "workerStepTypeHardCodedToLlmCall": true,
+        "deterministicWorkerStepSupported": false,
+        "productionProbeExecuted": false,
+        "sideEffects": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "当前 ParallelFanOutModule 将 worker 子步骤固定为 llm_call；在没有可注入确定性 worker step 的情况下，生产结果会混入模型非确定性"
+    },
+    {
+      "case": "39",
+      "name": "race_deterministic_runtime",
+      "status": "blocked",
+      "observedAtUtc": "2026-08-06T09:22:40Z",
+      "stableErrorCode": "DETERMINISTIC_PROBE_UNAVAILABLE",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "sourceModulePresent": true,
+        "workerStepTypeHardCodedToLlmCall": true,
+        "deterministicWorkerStepSupported": false,
+        "productionProbeExecuted": false,
+        "sideEffects": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "当前 RaceModule 将所有竞争分支固定为 llm_call；无法稳定构造先失败后成功及迟到完成的生产时序断言"
+    },
+    {
+      "case": "40",
+      "name": "source_p2_send_disposable_target",
+      "status": "not-configured",
+      "observedAtUtc": "2026-08-06T09:22:40Z",
+      "stableErrorCode": "DISPOSABLE_SEND_TARGET_NOT_CONFIGURED",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "sourceDefinitionPresent": true,
+        "sourceSha256Verified": true,
+        "stepCount": 15,
+        "sendBranchPresent": true,
+        "disposableRecipientConfigured": false,
+        "explicitSideEffectAuthorizationRecorded": false,
+        "productionRunExecuted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "源 P2 send 定义存在且 hash 已钉住，但没有一次性接收目标与本次显式发送授权；因此只建风险 case，不执行真实发送"
+    },
+    {
+      "case": "41",
+      "name": "source_p1_v6_synthetic_submit",
+      "status": "not-configured",
+      "observedAtUtc": "2026-08-06T09:22:40Z",
+      "stableErrorCode": "SYNTHETIC_SUBMIT_TARGET_NOT_CONFIGURED",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "sourceDefinitionPresent": true,
+        "sourceSha256Verified": true,
+        "stepCount": 33,
+        "submitBranchPresent": true,
+        "syntheticSubmitTargetConfigured": false,
+        "cleanupPlanConfigured": false,
+        "productionRunExecuted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "源 P1 v6 的 submit/create/verify/present 分支存在，但没有安全合成审批目标和清理方案；未以真实组织审批代替测试 fixture"
+    },
+    {
+      "case": "42",
+      "name": "source_p1_v2_legacy_isolation",
+      "status": "not-configured",
+      "observedAtUtc": "2026-08-06T09:22:40Z",
+      "stableErrorCode": "LEGACY_INTEGRATION_ISOLATION_NOT_CONFIGURED",
+      "requiredEvidenceMet": false,
+      "actualEvidence": {
+        "sourceDefinitionPresent": true,
+        "sourceSha256Verified": true,
+        "stepCount": 5,
+        "legacyCodeExecuteIntegrationPresent": true,
+        "legacyIntegrationSemanticsIsolated": false,
+        "hardCodedTargetsRemoved": false,
+        "productionRunExecuted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "源 P1 v2 仍包含旧 code_execute 集成语义；在硬编码目标隔离和合成化之前执行不会形成可公开、可复现的验收证据"
+    },
+    {
+      "case": "43",
+      "name": "materialized_workflow_output_isolation",
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T09:51:05Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "actualEvidence": {
+        "materializer_accepts_output_dir": true,
+        "production_validator_accepts_workflow_dir": true,
+        "example_and_local_outputs_isolated": true,
+        "source_and_output_file_sets_match": true,
+        "stale_outputs_removed": true,
+        "preview_from_isolated_local_output_passed": true,
+        "side_effects": false,
+        "raw_identifiers_persisted": false
+      },
+      "rawIdentifiersPersisted": false,
+      "result": "example/local 配置分别物化到独立目录；过期输出被清理，文件集合与 source 一致，production validator 从 isolated local 目录完成 21-23 preview"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+schema_version: "1.0"
+case: "40"
+name: source_p2_send_disposable_target
+title: 源 P2 send 分支只向一次性合成接收目标发送
+status: not-configured
+surface: workflow_direct_source_definition
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  source_definition: P2-budget-monitor/budget_monitor_weekly.workflow.yaml
+  source_sha256: 39c8a062d8eb543a5cc46f2770639ce45caac0a33c1bb43911a4d5a64d7ddef8
+  source_root: ~/workflows/2026-07-30-for-aevatar-team
+safety:
+  synthetic_input_only: true
+  disposable_recipient_required: true
+  explicit_side_effect_authorization_required: true
+  raw_identifiers_persisted: false
+required_evidence:
+  exact_source_previewed: true
+  disposable_recipient_configured: true
+  explicit_side_effect_authorization_recorded: true
+  send_call_count: 1
+  terminal_status: completed
+  delivery_receipt_verified: true
+  raw_identifiers_persisted: false

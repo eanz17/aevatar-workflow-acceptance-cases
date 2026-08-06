@@ -1,0 +1,23 @@
+schema_version: "1.0"
+case: "33"
+name: admission_missing_capability_provision_rejected
+title: 缺失 capability 声明的 nyxid_proxy 工作流在 provision 阶段被准入拒绝
+status: passed
+surface: workflow_admission_guard
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  probe_runner: scripts/run_admission_probes.rb
+  probe_id: probe_missing_capability
+  rationale: 源目录 P1 v6-drain 形态（裸 nyxid_proxy 调用、无 capability block）的平台防线证明
+safety:
+  synthetic_input_only: true
+  external_writes: false
+  cleanup_required: false
+  raw_identifiers_persisted: false
+required_evidence:
+  preview_call_site_count_zero: true
+  provision_rejected: true
+  stable_error_operation_selection_required: true
+  external_writes: false
+  raw_identifiers_persisted: false
+  fresh_member_rerun_confirmed: true

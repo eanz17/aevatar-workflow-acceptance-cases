@@ -1,0 +1,38 @@
+schema_version: "1.0"
+case: "28"
+name: source_p1_v5_submit_false_current
+title: 源 P1 v5 使用合成附件在当前部署执行 submit false
+status: passed
+surface: workflow_direct_source_definition
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  source_definition: P1-invoice-approval/invoice_file_chain.v5.workflow.json
+  source_root: ~/workflows/2026-07-30-for-aevatar-team
+safety:
+  synthetic_input_only: true
+  submit: false
+  approval_created: false
+  lark_writes: false
+  raw_identifiers_persisted: false
+required_evidence:
+  exact_source_previewed: true
+  sanitized_attachment_verified: true
+  binding_ready: true
+  preview_call_site_count: 5
+  preview_read_only_call_site_count: 4
+  preview_write_call_site_count: 1
+  preview_approval_call_site_count: 1
+  invoke_count: 1
+  terminal_status: completed
+  last_success: true
+  completed_steps: 14
+  total_steps: 14
+  attachment_extracted: true
+  read_only_lookup_completed: true
+  submit_steps_executed: false
+  write_call_site_executed: false
+  approval_created: false
+  lark_writes: false
+  final_output_present: true
+  typed_error_classes: []
+  raw_identifiers_persisted: false

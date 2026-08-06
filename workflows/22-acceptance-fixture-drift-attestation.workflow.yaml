@@ -1,0 +1,103 @@
+name: acceptance_fixture_drift_attestation
+description: 只读体检验收 canary fixture 是否漂移，覆盖许可证行数、共享邮箱申请状态、外包身份目录和月度审查行数。
+roles:
+  - id: attestor
+    name: fixture 体检员
+steps:
+  - id: read_license_inventory
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_SAAS_LICENSE_INVENTORY__"},"query":{"page_size":"10"}}'
+    next: read_mailbox_request
+
+  - id: read_mailbox_request
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}
+        query_parameters: []
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ACCESS_REQUESTS__","record_id":"__RECORD_SHARED_MAILBOX_REQUEST__"}}'
+    next: read_identity_directory
+
+  - id: read_identity_directory
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_IDENTITY_DIRECTORY__"},"query":{"page_size":"20"}}'
+    next: read_monthly_reviews
+
+  - id: read_monthly_reviews
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: GET
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: [page_size]
+        header_parameters: []
+        body_mode: none
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: '{"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_MONTHLY_ACCESS_REVIEWS__"},"query":{"page_size":"10"}}'
+    next: collect_fixture_reads
+
+  - id: collect_fixture_reads
+    type: assign
+    parameters:
+      target: fixture_evidence
+      value: >-
+        {"licenses":${steps.read_license_inventory.output},"mailbox":${steps.read_mailbox_request.output},"identity":${steps.read_identity_directory.output},"reviews":${steps.read_monthly_reviews.output}}
+    next: summarize_fixture_state
+
+  - id: summarize_fixture_state
+    type: transform
+    op: template
+    template: >-
+      {{~ licenses = data.licenses; mailbox = data.mailbox; identity = data.identity; reviews = data.reviews ~}}
+      {{~ licenses_reachable = get(licenses, 'code', -1) == 0; mailbox_reachable = get(mailbox, 'code', -1) == 0; identity_reachable = get(identity, 'code', -1) == 0; reviews_reachable = get(reviews, 'code', -1) == 0 ~}}
+      {{~ license_rows = get(get(licenses, 'data', {}), 'items', []); review_rows = get(get(reviews, 'data', {}), 'items', []) ~}}
+      {{~ mailbox_fields = get(get(get(mailbox, 'data', {}), 'record', {}), 'fields', {}) ~}}
+      {{~ identity_rows = get(get(identity, 'data', {}), 'items', []); identity_present = false; for item in identity_rows; fields = item.fields; if get(fields, 'Identity Key', '') == 'contractor-access-requester' && get(fields, 'Status', '') == 'Active'; identity_present = true; end; end ~}}
+      {{ json({ reads_completed: licenses_reachable && mailbox_reachable && identity_reachable && reviews_reachable, license_row_count: license_rows.size, license_rows_expected: license_rows.size == 3, mailbox_ready_for_approval: get(mailbox_fields, 'Status', '') == 'Ready for approval', contractor_identity_active: identity_present, review_row_count: review_rows.size, review_rows_expected: review_rows.size == 3 }) }}
+    next: verify_attestation
+
+  - id: verify_attestation
+    type: transform
+    op: template
+    template: >-
+      {{~ fixtures_intact = data.license_rows_expected == true && data.mailbox_ready_for_approval == true && data.contractor_identity_active == true && data.review_rows_expected == true ~}}
+      {{ json({ case: 'acceptance_fixture_drift_attestation', success: data.reads_completed == true, reads_completed: data.reads_completed, fixtures_intact: fixtures_intact, license_row_count: data.license_row_count, license_rows_expected: data.license_rows_expected, mailbox_ready_for_approval: data.mailbox_ready_for_approval, contractor_identity_active: data.contractor_identity_active, review_row_count: data.review_row_count, review_rows_expected: data.review_rows_expected, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

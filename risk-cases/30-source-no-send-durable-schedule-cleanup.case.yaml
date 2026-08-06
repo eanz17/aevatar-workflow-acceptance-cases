@@ -1,0 +1,31 @@
+schema_version: "1.0"
+case: "30"
+name: source_no_send_durable_schedule_cleanup
+title: 源 no-send workflow 的 durable schedule 创建触发与删除闭环
+status: not-configured
+surface: workflow_schedule_source_definition
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  source_definition: P2-budget-monitor/budget_monitor_weekly.nosend.yaml
+  source_root: ~/workflows/2026-07-30-for-aevatar-team
+safety:
+  synthetic_input_only: true
+  messages_sent: false
+  cleanup_required: true
+  raw_identifiers_persisted: false
+required_evidence:
+  exact_source_previewed: true
+  explicit_requests_read_only: true
+  confirmation_required: true
+  typed_admission_receipt: true
+  binding_committed_succeeded: true
+  provisioning_committed_succeeded: true
+  schedule_readback_enabled: true
+  cron_fire_count_minimum: 1
+  all_observed_runs_completed: true
+  final_artifact_verified: true
+  delete_receipt_accepted: true
+  schedule_absent_after_delete: true
+  run_count_unchanged_after_next_fire_window: true
+  messages_sent: false
+  raw_identifiers_persisted: false

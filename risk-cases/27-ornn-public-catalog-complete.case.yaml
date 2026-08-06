@@ -1,0 +1,24 @@
+schema_version: "1.0"
+case: "27"
+name: ornn_public_catalog_complete
+title: 全部验收 skill 通过服务端格式校验并按名称公开回读
+status: blocked
+surface: ornn_public_catalog
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  expected_skill_count: 25
+safety:
+  read_only_verification: true
+  uploads_performed: false
+  permissions_changed: false
+  raw_identifiers_persisted: false
+required_evidence:
+  local_skill_count: 25
+  server_format_validated: 25
+  exact_name_readback: 25
+  public_skill_count: 25
+  version_matches: 25
+  missing_skills: []
+  private_skills: []
+  version_mismatches: []
+  raw_identifiers_persisted: false

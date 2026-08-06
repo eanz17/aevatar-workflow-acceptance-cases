@@ -15,8 +15,18 @@ unless replacements.is_a?(Hash) && replacements.all? { |key, value| key.match?(/
   abort "配置中的 replacements 必须把 __PLACEHOLDER__ 键映射到非空值"
 end
 
+sources = Dir[File.join(root, "workflows", "*.workflow.yaml")].sort
+expected_outputs = sources.map { |source| File.basename(source) }
+
 FileUtils.mkdir_p(output_dir)
-Dir[File.join(root, "workflows", "*.workflow.yaml")].sort.each do |source|
+Dir[File.join(output_dir, "*.workflow.yaml")].sort.each do |target|
+  next if expected_outputs.include?(File.basename(target))
+
+  File.delete(target)
+  puts "已清理过期输出 #{File.basename(target)}"
+end
+
+sources.each do |source|
   content = File.read(source)
   content.scan(/__[A-Z0-9_]+__/).uniq.each do |placeholder|
     abort "缺少占位符替换值：#{placeholder}" unless replacements.key?(placeholder)

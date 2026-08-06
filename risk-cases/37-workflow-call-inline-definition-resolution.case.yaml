@@ -1,0 +1,22 @@
+schema_version: "1.0"
+case: "37"
+name: workflow_call_inline_definition_resolution
+title: workflow_call 必须从运行绑定解析 inline 子工作流定义
+status: failed
+surface: workflow_runtime_capability
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  module: Aevatar.Workflow.Core.Modules.WorkflowCallModule
+  source_definition_family: workflow_call
+safety:
+  synthetic_input_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  inline_workflow_yamls_bound: true
+  child_definition_resolved: true
+  child_workflow_started: true
+  terminal_status: completed
+  final_artifact_verified: true
+  side_effects: false
+  raw_identifiers_persisted: false

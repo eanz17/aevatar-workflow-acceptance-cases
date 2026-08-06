@@ -24,7 +24,12 @@ SKILLS = {
   "lark-post-search-approval-probe" => ["17-lark-post-search-approval-probe.workflow.yaml", "Lark POST 搜索批准恢复探针", "验证 POST 搜索的 typed tool approval pending、resume 或 issue 3184 回归", "运行语义只读的 Base POST 搜索批准恢复探针，不修改任何记录。", "preview 为 effectiveRisk=write 且 approvalRequired=true；终态 success=true、approval_resumed=true、side_effects=false"],
   "supplier-control-attestation-review" => ["18-supplier-control-attestation-review.workflow.yaml", "供应商控制项自证审查", "验证 guard、conditional 与 while 三个确定性工作流原语的真实运行行为", "运行无副作用的供应商控制项自证审查。", "attested=true、control_count=3、leading_control=breach_notice、replay_iterations=3、side_effects=false"],
   "supplier-risk-tier-aggregation" => ["20-supplier-risk-tier-aggregation.workflow.yaml", "供应商风险分档汇总", "验证 map_reduce 与 cache 两个确定性工作流原语的真实运行行为", "运行无副作用的供应商风险分档汇总。", "aggregated=true、mapped_tier_count=3、merged_line_count=5、cache_hit_returned_first_value=true、side_effects=false"],
-  "lark-bot-file-upload-validation" => ["19-lark-bot-file-upload-validation.workflow.yaml", "Lark Bot 文件上传验证", "验证通过 Lark Bot 上传的文件、附件引用或 document_extract 主链", "验证当前消息中的合成上传文件，不执行任何外部写入。", "success=true；通过 Lark Bot 运行时还必须 lark_bot_ingress_validated=true"]
+  "lark-bot-file-upload-validation" => ["19-lark-bot-file-upload-validation.workflow.yaml", "Lark Bot 文件上传验证", "验证通过 Lark Bot 上传的文件、附件引用或 document_extract 主链", "验证当前消息中的合成上传文件，不执行任何外部写入。", "success=true；通过 Lark Bot 运行时还必须 lark_bot_ingress_validated=true"],
+  "approval-window-integrity-audit" => ["21-approval-window-integrity-audit.workflow.yaml", "审批窗口完整性审计", "审计审批查询时间窗口是否过期、历史窗口陷阱或窗口重基线", "{\"epoch_now_ms\":<当前 UTC 毫秒时间戳，例如 1786000000000>}", "success=true、reads_ok=true、active_window_covers_now=true；legacy_window_expired 如实上报"],
+  "acceptance-fixture-drift-attestation" => ["22-acceptance-fixture-drift-attestation.workflow.yaml", "验收 fixture 漂移体检", "只读体检验收 canary 数据是否漂移、fixture 是否完好", "运行验收 fixture 漂移体检，不执行任何写入。", "reads_completed=true、fixtures_intact=true、side_effects=false"],
+  "readonly-attested-post-probe" => ["23-readonly-attested-post-probe.workflow.yaml", "只读声明 POST 探针", "验证声明 read_only 风险的语义只读 POST 免运行时审批执行", "运行只读声明 POST 探针，不修改任何记录。", "success=true、attested_readonly_executed=true、side_effects=false"],
+  "runtime-tool-approval-write-probe" => ["24-runtime-tool-approval-write-probe.workflow.yaml", "运行时工具审批写入探针", "验证未声明风险 POST 的运行时 tool approval 挂起、恢复与真实写入回执", "{\"probe_note\":\"<当前 UTC 时间戳，8-14 位纯数字，例如 20260806>\"}", "mutation_executed=true、record_created=true；这是有副作用操作"],
+  "sequential-tool-approval-write-probe" => ["25-sequential-tool-approval-write-probe.workflow.yaml", "顺序工具审批写入探针", "验证一次运行内连续两次写入的 tool approval 挂起与恢复组合", "{\"probe_note\":\"<当前 UTC 时间戳，8-14 位纯数字，例如 20260806>\"}", "first_mutation_executed=true、second_mutation_executed=true、sequential_mutations=2；这是有副作用操作"]
 }.freeze
 
 VERSIONS = {
@@ -47,7 +52,12 @@ VERSIONS = {
   "lark-post-search-approval-probe" => "1.1",
   "supplier-control-attestation-review" => "1.0",
   "supplier-risk-tier-aggregation" => "1.0",
-  "lark-bot-file-upload-validation" => "1.0"
+  "lark-bot-file-upload-validation" => "1.0",
+  "approval-window-integrity-audit" => "1.0",
+  "acceptance-fixture-drift-attestation" => "1.0",
+  "readonly-attested-post-probe" => "1.0",
+  "runtime-tool-approval-write-probe" => "1.0",
+  "sequential-tool-approval-write-probe" => "1.0"
 }.freeze
 
 SKILLS.each do |slug, (workflow_file, title, trigger, prompt, expected)|
@@ -72,6 +82,10 @@ SKILLS.each do |slug, (workflow_file, title, trigger, prompt, expected)|
                        "quarterly-access-review-reminder", "saas-license-optimization-digest",
                        "contractor-access-package-approval", "monthly-access-certification"
                     "写入、审批或发消息分支必须由用户明确提出，并等待 typed tool approval；一般的检查请求只能走预览。"
+                  when "runtime-tool-approval-write-probe", "sequential-tool-approval-write-probe"
+                    "本 workflow 没有预览分支：每次启动都会真实写入 Base 验收表（分别 1 条、2 条带探针前缀的可清理记录），" \
+                      "并在每次写入前挂起等待 typed tool approval。必须由用户明确要求运行写入探针才可启动，" \
+                      "并逐次等待用户批准；未获批准时保持 pending，不得代为批准或改走其他分支。"
                   when "lark-post-search-approval-probe"
                     "必须从 typed pending event 或 read model 取得完整 approval identity；用户明确批准后只能发送 nested toolApproval resume，未批准或拒绝时不得执行 POST。"
                   when "safe-code-execute-validation", "lark-contact-batch-resolution"

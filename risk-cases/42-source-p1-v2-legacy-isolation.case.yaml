@@ -1,0 +1,24 @@
+schema_version: "1.0"
+case: "42"
+name: source_p1_v2_legacy_isolation
+title: 源 P1 v2 旧定义必须隔离硬编码集成语义后再执行
+status: not-configured
+surface: workflow_direct_source_definition
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  source_definition: P1-invoice-approval/invoice_full_chain.v2-fileinput.workflow.yaml
+  source_sha256: e4b73d9fe80220fac445ac8084fdac2fbf2e412670a1480f80fdd9f16d3be4b7
+  source_root: ~/workflows/2026-07-30-for-aevatar-team
+safety:
+  synthetic_input_only: true
+  legacy_integration_isolation_required: true
+  external_writes: false
+  raw_identifiers_persisted: false
+required_evidence:
+  exact_source_previewed: true
+  legacy_integration_semantics_isolated: true
+  hard_coded_targets_absent: true
+  synthetic_attachment_verified: true
+  terminal_status: completed
+  external_writes: false
+  raw_identifiers_persisted: false

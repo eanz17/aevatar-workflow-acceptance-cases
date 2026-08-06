@@ -1,0 +1,93 @@
+name: sequential_tool_approval_write_probe
+description: 在同一次运行内连续执行两条可清理的资产盘点探针写入，验证连续两次运行时 tool approval 挂起与恢复的组合。
+roles:
+  - id: operator
+    name: 顺序审批探针操作员
+steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ probe_note = get(data, 'probe_note', '') ~}}
+      {{~ if probe_note.size < 8 || probe_note.size > 14; number('probe_note 必须是 8-14 位数字时间戳标记'); end ~}}
+      {{~ stamp = number(probe_note) ~}}
+      {{~ if stamp < 10000000; number('probe_note 必须是正整数时间戳标记'); end ~}}
+      {{ json({ probe_note: probe_note }) }}
+    next: create_first_probe_record
+
+  - id: create_first_probe_record
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: []
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"body":{"fields":{"Attestation Key":"sequential-approval-probe-a-${steps.normalize_context.json.probe_note}","Control":"顺序工具审批探针","Owner":"验收自动化","Status":"Probe","Sequence":20260806,"Reviewed At":"2026-08-06"}}}
+    next: capture_first_receipt
+
+  - id: capture_first_receipt
+    type: transform
+    op: template
+    template: >-
+      {{~ executed = get(data, 'code', -1) == 0 ~}}
+      {{~ record_id = get(get(get(data, 'data', {}), 'record', {}), 'record_id', '') ~}}
+      {{ json({ first_mutation_executed: executed && record_id != '' }) }}
+    next: create_second_probe_record
+
+  - id: create_second_probe_record
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: []
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"body":{"fields":{"Attestation Key":"sequential-approval-probe-b-${steps.normalize_context.json.probe_note}","Control":"顺序工具审批探针","Owner":"验收自动化","Status":"Probe","Sequence":20260806,"Reviewed At":"2026-08-06"}}}
+    next: capture_second_receipt
+
+  - id: capture_second_receipt
+    type: transform
+    op: template
+    template: >-
+      {{~ executed = get(data, 'code', -1) == 0 ~}}
+      {{~ record_id = get(get(get(data, 'data', {}), 'record', {}), 'record_id', '') ~}}
+      {{ json({ second_mutation_executed: executed && record_id != '' }) }}
+    next: collect_sequence
+
+  - id: collect_sequence
+    type: assign
+    parameters:
+      target: sequence_evidence
+      value: >-
+        {"first":${steps.capture_first_receipt.output},"second":${steps.capture_second_receipt.output}}
+    next: verify_sequential_probe
+
+  - id: verify_sequential_probe
+    type: transform
+    op: template
+    template: >-
+      {{~ first_ok = data.first.first_mutation_executed == true; second_ok = data.second.second_mutation_executed == true ~}}
+      {{~ sequential_mutations = (first_ok ? 1 : 0) + (second_ok ? 1 : 0) ~}}
+      {{ json({ case: 'sequential_tool_approval_write_probe', success: first_ok && second_ok, first_mutation_executed: first_ok, second_mutation_executed: second_ok, sequential_mutations: sequential_mutations, side_effects: true }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

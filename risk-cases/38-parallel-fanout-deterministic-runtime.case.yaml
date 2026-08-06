@@ -1,0 +1,22 @@
+schema_version: "1.0"
+case: "38"
+name: parallel_fanout_deterministic_runtime
+title: parallel_fanout 需要不依赖模型随机性的生产运行探针
+status: blocked
+surface: workflow_runtime_capability
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  module: Aevatar.Workflow.Core.Modules.ParallelFanOutModule
+  source_definition_family: parallel_fanout
+safety:
+  synthetic_input_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  deterministic_worker_step_supported: true
+  worker_count: 3
+  all_worker_receipts_observed: true
+  merged_output_order_verified: true
+  terminal_status: completed
+  side_effects: false
+  raw_identifiers_persisted: false

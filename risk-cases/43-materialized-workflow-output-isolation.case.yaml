@@ -1,0 +1,23 @@
+schema_version: "1.0"
+case: "43"
+name: materialized_workflow_output_isolation
+title: 生产验证使用独立 materialized workflow 目录避免并发配置污染
+status: passed
+surface: local_acceptance_guard
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  materializer: scripts/materialize_workflows.rb
+  production_validator: scripts/production_validate.rb
+safety:
+  local_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  materializer_accepts_output_dir: true
+  production_validator_accepts_workflow_dir: true
+  example_and_local_outputs_isolated: true
+  source_and_output_file_sets_match: true
+  stale_outputs_removed: true
+  preview_from_isolated_local_output_passed: true
+  side_effects: false
+  raw_identifiers_persisted: false

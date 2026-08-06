@@ -3,13 +3,19 @@
 require "json"
 require "yaml"
 
+require_relative "runtime_contracts"
+
 ROOT = File.expand_path("..", __dir__)
 EXPECTED_CASES = (1..20).map { |number| format("%02d", number) }.freeze
+EXPECTED_WORKFLOW_CASES = (1..25).map { |number| format("%02d", number) }.freeze
+EXPECTED_NEW_WORKFLOW_CASES = (21..25).map { |number| format("%02d", number) }.freeze
+EXPECTED_RISK_CASES = (23..43).map(&:to_s).freeze
 EXPECTED_BLOCKED = [].freeze
 EXPECTED_CONTRACT_REGRESSIONS = [].freeze
 EXPECTED_UNVERIFIED = [].freeze
 EXPECTED_ISSUE_3161_AUTHOR_HISTORY = [2411, 2412, 2447, 2944, 2958, 2999, 3000, 3001, 3061, 3086, 3087].freeze
 REPORT_DATE = "2026-08-05"
+CURRENT_DATE = "2026-08-06"
 
 def fail_validation(message)
   warn "报告验证失败：#{message}"
@@ -56,6 +62,127 @@ runtime.each do |item|
     fail_validation("案例 #{case_id} 缺少 stateVersion") unless item["stateVersion"].is_a?(Integer)
   end
 end
+
+new_summary_path = File.join(ROOT, "validation", "production-validation-#{CURRENT_DATE}-cases-21-25.json")
+risk_summary_path = File.join(ROOT, "validation", "risk-validation-#{CURRENT_DATE}.json")
+new_summary = JSON.parse(File.read(new_summary_path))
+risk_summary = JSON.parse(File.read(risk_summary_path))
+
+fail_validation("21-25 机器证据 schemaVersion 漂移") unless new_summary["schemaVersion"] == "1.0"
+fail_validation("风险机器证据 schemaVersion 漂移") unless risk_summary["schemaVersion"] == "1.0"
+fail_validation("21-25 与风险证据目标提交不一致") unless
+  new_summary.dig("targetSource", "commit") == risk_summary.dig("targetSource", "commit") &&
+  new_summary.dig("productionDeployment", "commit") == risk_summary.dig("productionDeployment", "commit") &&
+  new_summary.dig("productionDeployment", "readyReplicas") == "1/1" &&
+  risk_summary.dig("productionDeployment", "readyReplicas") == "1/1"
+
+probe_validation = risk_summary.fetch("newWorkflowProbeValidation")
+probe_results = probe_validation.fetch("results")
+fail_validation("新增 workflow probe 编号不完整") unless
+  probe_results.map { |item| item.fetch("case") } == EXPECTED_NEW_WORKFLOW_CASES
+fail_validation("新增 workflow probe 汇总不是当前 5/5") unless probe_validation.fetch("summary") == {
+  "total" => 5,
+  "previewPassed" => 5,
+  "directRuntimePassed" => 5,
+  "sideEffectRunsApproved" => 2,
+  "sideEffectRecordsCreated" => 9
+}
+# 21-23 的 HTTP 400 已定位为 build/workflows materialize 竞争，不是平台回归；
+# 干净重跑后三者均 committed completed，门禁按只读正常契约钉住。
+probe_results.first(3).each do |item|
+  case_id = item.fetch("case")
+  fail_validation("新增 workflow #{case_id} 不是 committed completed") unless
+    item["terminalStatus"] == "completed" && item["completedSteps"] == item["totalSteps"]
+  mismatch = RuntimeContracts.mismatch(case_id, item.fetch("finalArtifact"))
+  fail_validation("新增 workflow #{case_id} artifact 契约漂移：#{mismatch.inspect}") if mismatch
+end
+probe_results.last(2).each do |item|
+  case_id = item.fetch("case")
+  fail_validation("新增 workflow #{case_id} 不是 committed completed") unless
+    item["terminalStatus"] == "completed" && item["completedSteps"] == item["totalSteps"]
+  mismatch = RuntimeContracts.mismatch(case_id, item.fetch("finalArtifact"))
+  fail_validation("新增 workflow #{case_id} artifact 契约漂移：#{mismatch.inspect}") if mismatch
+end
+fail_validation("新增只读 workflow 产生了副作用") unless
+  probe_results.first(3).all? { |item| item["sideEffectsPerformed"] == false }
+fail_validation("新增写入 workflow 未记录 1 次与 2 次 typed approval resume") unless
+  probe_results.last(2).map { |item| item["approvalResumeCount"] } == [1, 2] &&
+  probe_results.last(2).all? { |item| item["typedApprovalIdentityPresent"] == true }
+
+new_read_only_results = new_summary.dig("readOnlyRuns", "validatorOutput", "results")
+new_side_effect_results = new_summary.dig("sideEffectRuns", "results")
+new_production_results = Array(new_read_only_results) + Array(new_side_effect_results)
+fail_validation("21-25 独立生产摘要案例编号不完整") unless
+  new_production_results.map { |item| item.fetch("case") } == EXPECTED_NEW_WORKFLOW_CASES
+new_production_results.each do |item|
+  case_id = item.fetch("case")
+  artifact = item["finalOutput"] || item["finalArtifact"]
+  fail_validation("21-25 独立生产摘要案例 #{case_id} 未完成") unless
+    item["terminalStatus"] == "completed" && item["completedSteps"] == item["totalSteps"]
+  mismatch = RuntimeContracts.mismatch(case_id, artifact)
+  fail_validation("21-25 独立生产摘要案例 #{case_id} artifact 漂移：#{mismatch.inspect}") if mismatch
+end
+
+invalid_materialization_control = {
+  "deploymentCommit" => risk_summary.dig("targetSource", "commit"),
+  "cases" => %w[21 22 23],
+  "stableErrorCode" => "NYXID_PROXY_HTTP_400",
+  "cause" => "shared build/workflows overwritten by config.example.yaml materialization",
+  "supersededByCleanMaterializationRun" => true
+}
+fail_validation("无效 materialization 负面对照漂移") unless
+  new_summary["invalidMaterializationControl"] == invalid_materialization_control &&
+  probe_validation["invalidMaterializationControl"] == invalid_materialization_control
+
+risk_results = risk_summary.fetch("results")
+fail_validation("风险案例编号不完整") unless risk_results.map { |item| item.fetch("case") } == EXPECTED_RISK_CASES
+risk_status_counts = risk_results.each_with_object(Hash.new(0)) do |item, counts|
+  counts[item.fetch("status")] += 1
+end
+fail_validation("风险案例汇总漂移") unless risk_summary.fetch("summary") == {
+  "total" => 21,
+  "passed" => 8,
+  "blocked" => 4,
+  "failed" => 4,
+  "pendingExecution" => 0,
+  "notConfigured" => 5
+} && risk_status_counts == {
+  "passed" => 8,
+  "blocked" => 4,
+  "failed" => 4,
+  "not-configured" => 5
+}
+
+source_p1_current = risk_results.find { |item| item.fetch("case") == "28" }
+source_p1_evidence = source_p1_current.fetch("actualEvidence")
+fail_validation("风险案例 28 缺少当前精确源 P1 submit=false 证据") unless
+  source_p1_current["status"] == "passed" &&
+  source_p1_current["requiredEvidenceMet"] == true &&
+  source_p1_evidence["exact_source_previewed"] == true &&
+  source_p1_evidence["sanitized_attachment_verified"] == true &&
+  source_p1_evidence["binding_ready"] == true &&
+  source_p1_evidence["preview_call_site_count"] == 5 &&
+  source_p1_evidence["preview_read_only_call_site_count"] == 4 &&
+  source_p1_evidence["preview_write_call_site_count"] == 1 &&
+  source_p1_evidence["invoke_count"] == 1 &&
+  source_p1_evidence["terminal_status"] == "completed" &&
+  source_p1_evidence["last_success"] == true &&
+  source_p1_evidence["completed_steps"] == 14 &&
+  source_p1_evidence["total_steps"] == 14 &&
+  source_p1_evidence["final_output_present"] == true &&
+  source_p1_evidence["write_call_site_executed"] == false &&
+  source_p1_evidence["approval_created"] == false &&
+  source_p1_evidence["lark_writes"] == false &&
+  source_p1_evidence["typed_error_classes"] == []
+
+workflow_case_ids = Dir[File.join(ROOT, "workflows", "*.workflow.yaml")]
+  .map { |path| File.basename(path)[0, 2] }
+  .sort
+skill_count = Dir[File.join(ROOT, "skills", "*")].count { |path| File.directory?(path) }
+fail_validation("workflow、skill 或 strict runtime contract 不是 25/25") unless
+  workflow_case_ids == EXPECTED_WORKFLOW_CASES &&
+  skill_count == 25 &&
+  RuntimeContracts::CONTRACTS.keys == EXPECTED_WORKFLOW_CASES
 
 case14 = summary.fetch("case14Validation")
 fail_validation("案例 14 preview 不是受批准保护的单次 POST") unless
@@ -755,7 +882,7 @@ fail_validation("案例 14 fresh /init 后 channel receipt 缺陷未保留") unl
   ]
 
 readme = File.read(File.join(ROOT, "README.md"))
-EXPECTED_CASES.each do |case_id|
+EXPECTED_WORKFLOW_CASES.each do |case_id|
   workflow_path = Dir[File.join(ROOT, "workflows", "#{case_id}-*.workflow.yaml")].first
   fail_validation("缺少案例 #{case_id} 的 workflow") unless workflow_path
 
@@ -770,7 +897,7 @@ end
 
 html = File.read(File.join(ROOT, "report", "index.html"))
 html_case_ids = html.scan(/<tr data-result="(?:passed|blocked|regression|unverified)"[^>]*><td class="case-id">(\d{2})<\/td>/).flatten
-fail_validation("分析页案例编号不完整") unless html_case_ids == EXPECTED_CASES
+fail_validation("分析页历史基线案例编号不完整") unless html_case_ids == EXPECTED_CASES
 
 runtime.each do |item|
   result = case item.fetch("result")
@@ -788,6 +915,29 @@ runtime.each do |item|
   fail_validation("分析页案例 #{item.fetch('case')} 步骤或 stateVersion 漂移") unless row.match?(evidence_pattern)
 end
 
+html_probe_rows = html.scan(/<tr data-risk-workflow-case="(\d{2})" data-risk-workflow-status="([^"]+)">/)
+fail_validation("分析页 21-25 可靠性 workflow 不完整") unless
+  html_probe_rows == probe_results.map do |item|
+    [item.fetch("case"), item.fetch("terminalStatus") == "completed" ? "passed" : "failed"]
+  end
+probe_results.each do |item|
+  case_id = item.fetch("case")
+  row = html.match(/<tr data-risk-workflow-case="#{case_id}"[^>]*>.*?<\/tr>/m)&.to_s
+  if item["terminalStatus"] == "completed"
+    fail_validation("分析页缺少新增 workflow #{case_id} 的严格通过状态") unless
+      row&.include?('<span class="status status-passed">通过</span>') &&
+      row.include?("#{item.fetch('completedSteps')}/#{item.fetch('totalSteps')} completed")
+  else
+    fail_validation("分析页缺少新增 workflow #{case_id} 的最新失败状态") unless
+      row&.include?('<span class="status status-blocked">失败</span>') &&
+      row.include?(item.fetch("failingStep")) && row.include?("failed")
+  end
+end
+
+html_risk_rows = html.scan(/<tr data-risk-case="(\d{2})" data-risk-status="([^"]+)">/)
+expected_html_risk_rows = risk_results.map { |item| [item.fetch("case"), item.fetch("status")] }
+fail_validation("分析页 Risk 23-43 状态与机器摘要不一致") unless html_risk_rows == expected_html_risk_rows
+
 assistant.fetch("results").each do |item|
   case_id = item.fetch("case")
   status = item.fetch("workflowValidationStatus")
@@ -804,7 +954,9 @@ end
 expected_html_counts = {
   "源版本族" => [/<tr data-source-family=/, 7],
   "能力矩阵" => [/<tr data-family=/, 19],
-  "直接证据" => [/<tr data-result=/, 20],
+  "历史直接证据" => [/<tr data-result=/, 20],
+  "新增可靠性 workflow" => [/<tr data-risk-workflow-case=/, 5],
+  "风险案例" => [/<tr data-risk-case=/, 21],
   "自然语言证据" => [/<tr data-chat-case=/, 5],
   "Lark channel E2E 证据" => [/<tr data-channel-case=/, 3],
   "阻塞项" => [/<div class="gap-row">/, 4],
@@ -816,21 +968,22 @@ expected_html_counts.each do |label, (pattern, expected)|
 end
 
 report = File.read(File.join(ROOT, "report", "#{REPORT_DATE}-workflow-coverage-report.md"))
-fail_validation("README 缺少 19 workflows + 3 channel cases 口径") unless
-  readme.include?("19 个 workflow + 3 个 Lark channel E2E case") &&
-  readme.include?("0/3 个 channel case 已通过生产验收") &&
-  readme.include?("`pending-deployment`")
+fail_validation("README 缺少 25 workflows + 3 channel + 21 risk cases 口径") unless
+  readme.include?("25 个 workflow + 3 个 Lark channel E2E case + 21 个风险验收 case") &&
+  readme.include?("仍是 0/3 严格通过") &&
+  readme.include?("`pending-execution`")
 fail_validation("文字报告缺少 #3210 的 mount 与 workflow 运行期审批 channel cases") unless
   report.include?("## Lark channel E2E 案例（#3210）") &&
   report.include?("Case 20") && report.include?("Case 21") && report.include?("Case 22") &&
   report.include?("`approval_denied`") && report.include?("`awaiting_tool_approval`") &&
-  report.include?("`pending-deployment`")
+  report.include?("`pending-execution`")
 fail_validation("分析页缺少未通过的 Lark channel E2E 状态") unless
   html.include?("0 / 3") && html.include?("Lark channel E2E 严格通过") &&
-  html.scan(/<tr data-channel-case="(?:20|21|22)" data-channel-status="pending-deployment">/).length == 3 &&
-  html.scan(/<tr data-channel-case="(?:20|21|22)"[^>]*>.*?<span class="status status-pending">待部署验证<\/span>.*?<\/tr>/m).length == 3
-fail_validation("分析页把待部署 channel case 渲染成绿色") if
-  html.match?(/<tr data-channel-case="(?:20|21|22)"[^>]*>.*?status-passed.*?<\/tr>/m)
+  html.scan(/<tr data-channel-case="(?:20|21|22)" data-channel-status="pending-execution">/).length == 3 &&
+  html.scan(/<tr data-channel-case="(?:20|21|22)"[^>]*>.*?<span class="status status-pending">待执行<\/span>.*?<\/tr>/m).length == 3
+channel_html_rows = html.scan(/<tr data-channel-case="(?:20|21|22)"[^>]*>.*?<\/tr>/m)
+fail_validation("分析页把待执行 channel case 渲染成绿色") if
+  channel_html_rows.any? { |row| row.include?("status-passed") }
 fail_validation("文字报告缺少案例 11 managed codex_exec 修复闭环") unless
   report.include?("## Managed codex_exec 修复与生产复验") &&
   report.include?("`Authorization: Bearer`") && report.include?("`forward_access_token=true`") &&
@@ -858,19 +1011,22 @@ fail_validation("分析页缺少案例 15 artifact identity 回归证据") unles
 fail_validation("分析页缺少实际路径口径") unless html.include?("~/Code/workflows") && html.include?("~/workflows")
 fail_validation("分析页缺少 4/5 自然语言结论") unless html.include?("4 / 5")
 fail_validation("README 缺少财务源 workflow post-fix 验收") unless
-  readme.include?("财务源工作流 post-fix 验收") && readme.include?("8/8 completed") &&
+  readme.include?("财务源工作流 post-fix 验收") && readme.include?("单步 `code_execute` probe") &&
+  readme.include?("8/8 completed") &&
   readme.include?("14/14 实际步骤") && readme.include?("2/2 completed")
 fail_validation("文字报告缺少财务源 workflow post-fix 验收") unless
-  report.include?("财务源工作流 post-fix 验收") && report.include?("8/8 committed completion") &&
-  report.include?("14 个实际步骤全部 completed") && report.include?("2/2 completed")
-fail_validation("分析页缺少三项财务源 workflow 成功证据") unless
-  html.scan(/<tr data-finance-result="passed">/).length == 3 &&
+  report.include?("财务源工作流 post-fix 验收") && report.include?("单步 `code_execute` probe") &&
+  report.include?("8/8 completed") && report.include?("14/14 实际步骤 completed") &&
+  report.include?("2/2 completed")
+fail_validation("分析页缺少四项财务源 workflow 成功证据") unless
+  html.scan(/<tr data-finance-result="passed">/).length == 4 &&
   html.include?("data-source-financial-acceptance=\"validated\"")
 fail_validation("报告把安全限制未运行的财务分支伪报为成功") unless
   [readme, report, html].all? { |document| document.include?("P2 send") && document.include?("P1 v6") }
 fail_validation("README 缺少 Durable schedule 生产闭环") unless
-  readme.include?("Durable schedule 修复提交 `748f98e7d`") &&
-  readme.include?("当前生产镜像 `b010ba61`") &&
+  readme.include?("相关修复提交 `748f98e7d`、`7a7781067` 和 `b010ba614`") &&
+  readme.include?("完整生产闭环证据来自历史镜像 `b010ba61`") &&
+  readme.include?("本轮未在当前镜像重跑该副作用链") &&
   readme.include?("HTTP 200 `confirmation_required`") &&
   readme.include?("HTTP 202 typed `pending_binding` receipt") &&
   readme.include?("`NyxIdOperationAuthorityContractUnavailable`") &&
@@ -881,13 +1037,14 @@ fail_validation("README 缺少 Durable schedule 生产闭环") unless
   readme.include?("编译修复提交 `b010ba614`") && readme.include?("真实 `linux/amd64` Docker build")
 fail_validation("文字报告缺少 Durable schedule 分阶段生产闭环") unless
   report.include?("## Durable schedule 修复进度") &&
-  report.include?("历史 HTTP 502") &&
+  report.include?("schedule endpoint 返回 HTTP 502") &&
   report.include?("`748f98e7d` 已提交、推送并部署") &&
   report.include?("真实验收入口") &&
   report.include?("HTTP 200 `confirmation_required`") && report.include?("HTTP 202 typed receipt") &&
   report.include?("binding/provisioning committed success") &&
   report.include?("`NyxIdOperationAuthorityContractUnavailable`") &&
-  report.include?("`7a7781067` 已进入 `origin/feature/integrate`，并包含在当前 `b010ba614` / `b010ba61` 部署中") &&
+  report.include?("`7a7781067` 已进入 `origin/feature/integrate`，并在历史 `b010ba614` / `b010ba61` 部署完成验证") &&
+  report.include?("当前生产已前滚到 `6df43b83`，本轮没有重跑该副作用链") &&
   report.include?("仅 binder-attested `READ_ONLY` GET/HEAD/OPTIONS") &&
   report.include?("schedule/operation ID 均非空") &&
   report.include?("`fireCount=6`") && report.include?("`failureCount=0`") &&
@@ -898,10 +1055,11 @@ fail_validation("文字报告缺少 Durable schedule 分阶段生产闭环") unl
   report.include?("Capabilities 642/642") && report.include?("真实 `linux/amd64` Docker build") &&
   report.include?("排除 3 个本机 Redis 版本契约用例后的 solution tests")
 fail_validation("分析页缺少 Durable schedule 生产闭环") unless
-  html.include?("Durable schedule 已恢复") &&
+  html.include?("Durable schedule 历史闭环") &&
   html.include?("生产端到端通过") &&
   html.include?("Durable schedule provisioning") &&
-  html.include?("当前 <code>b010ba614</code> / <code>b010ba61</code> 部署") &&
+  html.include?("历史 <code>b010ba614</code> / <code>b010ba61</code> 部署") &&
+  html.include?("本轮未重跑该副作用链") &&
   html.include?("HTTP 200 <code>confirmation_required</code>") &&
   html.include?("HTTP 202 typed <code>pending_binding</code> receipt") &&
   html.include?("<code>NyxIdOperationAuthorityContractUnavailable</code>") &&
@@ -920,17 +1078,24 @@ stale_schedule_claims.each do |claim|
   fail_validation("报告仍包含过期 Durable schedule 状态：#{claim}") if
     [readme, report, html].any? { |document| document.include?(claim) }
 end
-fail_validation("README 缺少最新全量回归口径") unless
-  readme.include?("生产镜像 `20d9ba41`") && readme.include?("共 18 个案例") &&
-  readme.include?("14、16、17、18、19 强制 typed artifact 契约") &&
+fail_validation("README 缺少当前 25-case 严格回归口径") unless
+  readme.include?("21/22/23 在用 `config.local.yaml` 重新物化后 fresh committed `completed`") &&
+  readme.include?("三轮成功副作用复验累计新增 9 条") &&
+  readme.include?("25/25 个严格业务 artifact contract") &&
   readme.include?("严格状态为 `start-blocked`")
-fail_validation("文字报告缺少最新全量回归口径") unless
-  report.include?("镜像 `20d9ba41`") && report.include?("19 个案例的 direct runtime 最新终态均为 committed `completed`") &&
-  report.include?("只对 14、16、17、18、19、20 强制 typed artifact 契约") &&
+fail_validation("文字报告缺少当前 25-case 严格回归口径") unless
+  report.include?("当前生产镜像 `6df43b83`") &&
+  report.include?("旧 01-20 保留既有 committed 基线") &&
+  report.include?("新增 21-25 当前最新结果为 5/5 completed") &&
+  report.include?("clean isolated `config.local.yaml` materialization") &&
+  report.include?("25/25 个 strict artifact contract") &&
   report.include?("`service_catalog_missing`") && report.include?("run catalog 增量为 0")
-fail_validation("分析页缺少最新全量回归口径") unless
-  html.include?("20 / 20") && html.include?("<code>20d9ba41</code>") &&
-  html.include?("只对 14、16、17、18、19、20 强制 typed artifact 契约")
+fail_validation("分析页缺少当前 25-case 严格回归口径") unless
+  html.scan('<span class="metric-value">25 / 25</span>').length == 3 &&
+  html.include?("5/5 committed completed") &&
+  html.include?("<code>6df43b83</code>") &&
+  html.include?("25/25 个 typed artifact contract") &&
+  html.include?("累计创建 9 条带固定探针前缀的可清理 Base 记录")
 fail_validation("分析页阻塞状态未使用红色") unless
   html.include?(".status-blocked { background: var(--red-soft); color: var(--red); }")
 fail_validation("分析页仍把已验证失败或回归显示为蓝色") if
@@ -1005,4 +1170,5 @@ fail_validation("定向报告仍把 #3161 authority 写成待复测") unless
   focused_report.include?("补齐了 #3161 的真实 published-operation authority 主链") &&
   focused_report.include?("只覆盖 no-send 只读执行")
 
-puts "通过 报告案例=20 财务源验收=3 源版本族=7 能力矩阵=19 自然语言=5 阻塞=4 修复记录=13"
+puts "通过 workflow=25 历史直接案例=20 新增探针=5 风险案例=21 财务源验收=4 " \
+     "源版本族=7 能力矩阵=19 自然语言=5 阻塞=4 修复记录=13"

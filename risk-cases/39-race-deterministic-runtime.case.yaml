@@ -1,0 +1,21 @@
+schema_version: "1.0"
+case: "39"
+name: race_deterministic_runtime
+title: race 需要不依赖模型随机性的首个成功分支生产探针
+status: blocked
+surface: workflow_runtime_capability
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  module: Aevatar.Workflow.Core.Modules.RaceModule
+  source_definition_family: race
+safety:
+  synthetic_input_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  deterministic_worker_step_supported: true
+  first_success_selected: true
+  later_completions_ignored: true
+  terminal_status: completed
+  side_effects: false
+  raw_identifiers_persisted: false

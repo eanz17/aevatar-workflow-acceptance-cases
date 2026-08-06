@@ -1,0 +1,27 @@
+schema_version: "1.0"
+case: "41"
+name: source_p1_v6_synthetic_submit
+title: 源 P1 v6 submit 分支只提交到安全合成审批目标
+status: not-configured
+surface: workflow_direct_source_definition
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  source_definition: P1-invoice-approval/invoice_file_chain.v6-drain.workflow.json
+  source_sha256: 526aed16b86d5a01ff0904c30a51aa0d8c57829ac8f7e2d61a43025c61413ed9
+  source_root: ~/workflows/2026-07-30-for-aevatar-team
+safety:
+  synthetic_input_only: true
+  synthetic_submit_target_required: true
+  explicit_side_effect_authorization_required: true
+  cleanup_required: true
+  raw_identifiers_persisted: false
+required_evidence:
+  exact_source_previewed: true
+  sanitized_attachment_verified: true
+  synthetic_submit_target_configured: true
+  explicit_side_effect_authorization_recorded: true
+  submit_branch_executed: true
+  approval_receipt_verified: true
+  terminal_status: completed
+  cleanup_completed: true
+  raw_identifiers_persisted: false

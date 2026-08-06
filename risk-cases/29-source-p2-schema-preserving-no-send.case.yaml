@@ -1,0 +1,35 @@
+schema_version: "1.0"
+case: "29"
+name: source_p2_schema_preserving_no_send
+title: 源 P2 四表合成 schema 保真 no-send 验收
+status: not-configured
+surface: workflow_direct_source_definition
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  source_definition: P2-budget-monitor/budget_monitor_live_fixture.nosend.workflow.yaml
+  source_root: ~/workflows/2026-07-30-for-aevatar-team
+safety:
+  synthetic_input_only: true
+  messages_sent: false
+  schedule_created: false
+  raw_identifiers_persisted: false
+required_evidence:
+  disposable_tables_configured: true
+  exact_source_previewed: true
+  unique_read_only_call_sites: 6
+  binding_ready: true
+  terminal_status: completed
+  source_row_counts:
+    core_actual: 3
+    core_budget: 2
+    aelf_actual: 1
+    aelf_budget: 2
+  totals:
+    core_budget: 150
+    core_actual: 130
+    aelf_budget: 100
+    aelf_actual: 50
+  pagination_truncated: false
+  messages_sent: false
+  schedule_created: false
+  raw_identifiers_persisted: false

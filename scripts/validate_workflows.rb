@@ -28,7 +28,12 @@ EXPECTED = {
   "17-lark-post-search-approval-probe.workflow.yaml" => [4, 1, 0, 1],
   "18-supplier-control-attestation-review.workflow.yaml" => [15, 0, 0, 0],
   "19-lark-bot-file-upload-validation.workflow.yaml" => [3, 0, 0, 0],
-  "20-supplier-risk-tier-aggregation.workflow.yaml" => [12, 0, 0, 0]
+  "20-supplier-risk-tier-aggregation.workflow.yaml" => [12, 0, 0, 0],
+  "21-approval-window-integrity-audit.workflow.yaml" => [7, 2, 2, 0],
+  "22-acceptance-fixture-drift-attestation.workflow.yaml" => [8, 4, 4, 0],
+  "23-readonly-attested-post-probe.workflow.yaml" => [4, 1, 0, 1],
+  "24-runtime-tool-approval-write-probe.workflow.yaml" => [5, 1, 0, 1],
+  "25-sequential-tool-approval-write-probe.workflow.yaml" => [8, 2, 0, 2]
 }.freeze
 
 CODEX_EXEC_WORKFLOW = "11-complex-codex-exec-validation.workflow.yaml"
@@ -261,6 +266,91 @@ files.each do |file|
                  receipt_template.include?("identifiers_redacted: true") &&
                  receipt_template.include?("side_effects: false")
     fail_validation("#{name}：文件内容、Lark ingress 或脱敏断言不完整") unless receipt_ok
+  end
+  if name == "21-approval-window-integrity-audit.workflow.yaml"
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    legacy_arguments = JSON.parse(steps_by_id.fetch("list_legacy_window").dig("parameters", "arguments"))
+    active_arguments = JSON.parse(steps_by_id.fetch("list_active_window").dig("parameters", "arguments"))
+    windows_ok = legacy_arguments.dig("query", "start_time") == "1754238719855" &&
+                 legacy_arguments.dig("query", "end_time") == "1785774719855" &&
+                 active_arguments.dig("query", "start_time") == "1754238719855" &&
+                 active_arguments.dig("query", "end_time") == "1817310719855" &&
+                 [legacy_arguments, active_arguments].all? { |args| args.dig("query", "page_size") == "100" }
+    fail_validation("#{name}：审批窗口常量漂移（legacy 窗口必须保持案例 03/09 原值，active 窗口 2027-08 前有效）") unless windows_ok
+
+    verify_template = steps_by_id.fetch("verify_window_integrity").fetch("template")
+    unless verify_template.include?("legacy_window_expired") &&
+           verify_template.include?("active_window_covers_now") &&
+           verify_template.include?("side_effects: false")
+      fail_validation("#{name}：缺少窗口过期与无副作用断言")
+    end
+  end
+  if name == "22-acceptance-fixture-drift-attestation.workflow.yaml"
+    read_targets = capabilities.map { |capability| capability.fetch("path_template") }
+    unless read_targets.all? { |path| path.start_with?("/open-apis/bitable/v1/apps/") } && methods.uniq == ["GET"]
+      fail_validation("#{name}：fixture 体检必须保持只读 Base GET")
+    end
+    verify_template = steps.find { |step| step["id"] == "verify_attestation" }&.fetch("template")
+    unless verify_template.to_s.include?("fixtures_intact") &&
+           verify_template.to_s.include?("reads_completed") &&
+           verify_template.to_s.include?("side_effects: false")
+      fail_validation("#{name}：缺少 fixture 完整性与无副作用断言")
+    end
+  end
+  if name == "23-readonly-attested-post-probe.workflow.yaml"
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    probe = steps_by_id.fetch("search_with_attested_risk")
+    capability = probe.dig("capability", "nyxid_request")
+    arguments = JSON.parse(probe.dig("parameters", "arguments"))
+    contract_ok = capability == {
+      "user_service_id" => "__LARK_USER_SERVICE_ID__",
+      "method" => "POST",
+      "path_template" => "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/search",
+      "query_parameters" => ["page_size"],
+      "header_parameters" => [],
+      "body_mode" => "json",
+      "body_required" => true,
+      "response_mode" => "text",
+      "risk" => "read_only"
+    } && arguments.dig("query", "page_size") == "2" &&
+         arguments["body"] == { "automatic_fields" => false }
+    fail_validation("#{name}：read_only 声明 POST 探针契约漂移") unless contract_ok
+
+    verify_template = steps_by_id.fetch("verify_attested_probe").fetch("template")
+    unless verify_template.include?("attested_readonly_executed == true") &&
+           verify_template.include?("side_effects == false")
+      fail_validation("#{name}：缺少 read_only 执行与无副作用断言")
+    end
+  end
+  if %w[24-runtime-tool-approval-write-probe.workflow.yaml 25-sequential-tool-approval-write-probe.workflow.yaml].include?(name)
+    marker = name.start_with?("24-") ? "runtime-approval-probe-" : "sequential-approval-probe-"
+    write_steps = steps.select { |step| step.dig("capability", "nyxid_request", "method") == "POST" }
+    write_steps.each do |step|
+      arguments = step.dig("parameters", "arguments").to_s
+      unless arguments.include?("__TABLE_ASSET_ATTESTATIONS__") &&
+             arguments.include?(marker) &&
+             arguments.include?('"Status":"Probe"')
+        fail_validation("#{name}：写入探针必须只写资产盘点表并携带可清理的探针标记")
+      end
+      if step.dig("capability", "nyxid_request", "risk")
+        fail_validation("#{name}：运行时审批探针不得声明 risk，必须保持未声明风险的 write 语义")
+      end
+    end
+    verify_step = steps.find { |step| step["id"].to_s.start_with?("verify_") }
+    unless verify_step&.fetch("template", nil).to_s.include?("side_effects: true")
+      fail_validation("#{name}：写入探针必须如实声明 side_effects: true")
+    end
+
+    # probe_note 会被引擎逐字替换进 tool_call 的 arguments JSON 字符串。
+    # bounded 模板只提供 append/data/date/get/number/json/keys/round，没有 string.* 函数，
+    # 因此用 number() 做守卫：它对任何非数值字符串抛错，而可解析字符集不含引号、反斜杠或花括号，
+    # 从而封死注入面；再叠加长度与正整数下界，排除括号负数与短指数写法。
+    guard_template = steps.find { |step| step["id"] == "normalize_context" }&.fetch("template", nil).to_s
+    unless guard_template.match?(/probe_note\.size < 8 \|\| probe_note\.size > 14/) &&
+           guard_template.include?("stamp = number(probe_note)") &&
+           guard_template.include?("stamp < 10000000")
+      fail_validation("#{name}：probe_note 必须做 number() 数值守卫与长度、下界校验，防止注入 tool arguments")
+    end
   end
   expected_codex_count = name == CODEX_EXEC_WORKFLOW ? 1 : 0
   fail_validation("#{name}：codex_exec 调用数应为 #{expected_codex_count}") unless codex_steps.length == expected_codex_count

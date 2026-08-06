@@ -1,0 +1,34 @@
+schema_version: "1.0"
+case: "25"
+name: lark_sender_service_scope_authorized
+title: Lark sender binding 包含 workflow 所需精确 UserService grant
+status: failed
+surface: lark_private_bot
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  skill: lark-contact-batch-resolution
+  workflow: lark_contact_batch_resolution
+  direct_workflow_case: "14"
+preconditions:
+  sender_binding_current: true
+  exact_user_service_grant_required: true
+safety:
+  synthetic_input_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  sender_binding_resolved: true
+  exact_user_service_grant_present: true
+  approval_resume_completed: true
+  terminal_status: completed
+  forbidden_failure_codes_absent:
+    - NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN
+    - NYXID_PROXY_UNAUTHORIZED
+  final_artifact:
+    case: lark_contact_batch_resolution
+    success: true
+    contact_api_reachable: true
+    resolved_count: 1
+    identifiers_redacted: true
+    side_effects: false
+  raw_identifiers_persisted: false

@@ -1,0 +1,21 @@
+schema_version: "1.0"
+case: "32"
+name: report_evidence_consistency
+title: README 报告机器摘要与仓库文件数保持一致
+status: passed
+surface: local_acceptance_guard
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+safety:
+  local_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  workflow_files: 25
+  skill_directories: 25
+  runtime_contracts: 25
+  readme_workflow_count: 25
+  report_workflow_count: 25
+  machine_summary_workflow_count: 25
+  stale_19_of_19_claims: 0
+  raw_identifiers_persisted: false

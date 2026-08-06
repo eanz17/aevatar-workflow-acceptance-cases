@@ -1,0 +1,57 @@
+name: runtime_tool_approval_write_probe
+description: 用一条可清理的资产盘点探针记录验证未声明风险 POST 的运行时 tool approval 语义与真实写入回执。
+roles:
+  - id: operator
+    name: 运行时审批探针操作员
+steps:
+  - id: normalize_context
+    type: transform
+    op: template
+    template: >-
+      {{~ probe_note = get(data, 'probe_note', '') ~}}
+      {{~ if probe_note.size < 8 || probe_note.size > 14; number('probe_note 必须是 8-14 位数字时间戳标记'); end ~}}
+      {{~ stamp = number(probe_note) ~}}
+      {{~ if stamp < 10000000; number('probe_note 必须是正整数时间戳标记'); end ~}}
+      {{ json({ probe_note: probe_note }) }}
+    next: create_probe_record
+
+  - id: create_probe_record
+    type: tool_call
+    capability:
+      nyxid_request:
+        user_service_id: __LARK_USER_SERVICE_ID__
+        method: POST
+        path_template: /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records
+        query_parameters: []
+        header_parameters: []
+        body_mode: json
+        body_required: true
+        response_mode: text
+    parameters:
+      tool: nyxid_proxy
+      arguments: >-
+        {"path_params":{"app_token":"__BASE_APP_TOKEN__","table_id":"__TABLE_ASSET_ATTESTATIONS__"},"body":{"fields":{"Attestation Key":"runtime-approval-probe-${steps.normalize_context.json.probe_note}","Control":"运行时工具审批探针","Owner":"验收自动化","Status":"Probe","Sequence":20260806,"Reviewed At":"2026-08-06"}}}
+    next: capture_mutation_receipt
+
+  - id: capture_mutation_receipt
+    type: transform
+    op: template
+    template: >-
+      {{~ executed = get(data, 'code', -1) == 0 ~}}
+      {{~ record_id = get(get(get(data, 'data', {}), 'record', {}), 'record_id', '') ~}}
+      {{ json({ mutation_executed: executed, record_created: record_id != '' }) }}
+    next: verify_write_probe
+
+  - id: verify_write_probe
+    type: transform
+    op: template
+    template: >-
+      {{~ success = data.mutation_executed == true && data.record_created == true ~}}
+      {{ json({ case: 'runtime_tool_approval_write_probe', success: success, mutation_executed: data.mutation_executed, record_created: data.record_created, side_effects: true }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

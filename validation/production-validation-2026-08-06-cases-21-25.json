@@ -1,0 +1,321 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAtUtc": "2026-08-06T09:51:05Z",
+  "purpose": "案例 21-25 最新生产验证证据；21-23 保存 clean isolated materialization 的只读运行，24-25 保存最近一次显式批准的副作用运行",
+  "targetSource": {
+    "repository": "aevatarAI/aevatar",
+    "ref": "origin/feature/integrate",
+    "commit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff"
+  },
+  "productionDeployment": {
+    "image": "docker.io/aelfdevops/aevatar-console-backend:6df43b83",
+    "commit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff",
+    "readyReplicas": "1/1",
+    "note": "部署证据同 risk-validation-2026-08-06.json 的 productionDeployment 观测"
+  },
+  "approvalEnforcementObserved": "bind_time_confirmation_and_run_time_tool_approval",
+  "readOnlyRuns": {
+    "note": "案例 21/22/23 用 config.local.yaml clean materialization 后在 6df43b83 committed completed；共享 build/workflows 被 example 配置覆盖时产生的 HTTP 400 只作为 invalid-materialization 对照",
+    "validatorOutput": {
+      "generatedAt": "2026-08-06T09:48:28Z",
+      "scopeHash": "237314c29964",
+      "larkServiceHash": "a623c5a302b9",
+      "runEnabled": true,
+      "approvedSideEffectCases": [],
+      "approvedReadOnlyCases": [],
+      "results": [
+        {
+          "case": "21",
+          "workflow": "21-approval-window-integrity-audit.workflow.yaml",
+          "preview": "通过",
+          "callSiteCount": 2,
+          "callSites": [
+            {
+              "method": "get",
+              "pathTemplate": "/open-apis/approval/v4/instances",
+              "effectiveRisk": "read_only",
+              "approvalRequired": false,
+              "approvalEnforcement": "none",
+              "allowedExecutionModes": [
+                "interactive"
+              ]
+            },
+            {
+              "method": "get",
+              "pathTemplate": "/open-apis/approval/v4/instances",
+              "effectiveRisk": "read_only",
+              "approvalRequired": false,
+              "approvalEnforcement": "none",
+              "allowedExecutionModes": [
+                "interactive"
+              ]
+            }
+          ],
+          "binding": "复用 fresh revision",
+          "run": "已提交并查询 committed read model",
+          "runIdHash": "2467f5c77251",
+          "terminalStatus": "completed",
+          "terminalSuccess": true,
+          "success": true,
+          "stateVersion": 49,
+          "completedSteps": 7,
+          "totalSteps": 7,
+          "finalOutput": {
+            "case": "approval_window_integrity_audit",
+            "success": true,
+            "reads_ok": true,
+            "legacy_window_expired": true,
+            "active_window_covers_now": true,
+            "legacy_instance_count": 36,
+            "active_instance_count": 48,
+            "side_effects": false
+          },
+          "failure": null,
+          "sideEffectAuthorized": false,
+          "readOnlyApprovalAuthorized": false,
+          "approvalPendingObserved": false,
+          "approvalResumeCount": 0,
+          "firstToolStepOutputPresent": true,
+          "contractProbeStepOutputPresent": true,
+          "finalArtifactVerified": true,
+          "failingStep": null,
+          "result": "通过"
+        },
+        {
+          "case": "22",
+          "workflow": "22-acceptance-fixture-drift-attestation.workflow.yaml",
+          "preview": "通过",
+          "callSiteCount": 4,
+          "callSites": [
+            {
+              "method": "get",
+              "pathTemplate": "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+              "effectiveRisk": "read_only",
+              "approvalRequired": false,
+              "approvalEnforcement": "none",
+              "allowedExecutionModes": [
+                "interactive"
+              ]
+            },
+            {
+              "method": "get",
+              "pathTemplate": "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+              "effectiveRisk": "read_only",
+              "approvalRequired": false,
+              "approvalEnforcement": "none",
+              "allowedExecutionModes": [
+                "interactive"
+              ]
+            },
+            {
+              "method": "get",
+              "pathTemplate": "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/{record_id}",
+              "effectiveRisk": "read_only",
+              "approvalRequired": false,
+              "approvalEnforcement": "none",
+              "allowedExecutionModes": [
+                "interactive"
+              ]
+            },
+            {
+              "method": "get",
+              "pathTemplate": "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+              "effectiveRisk": "read_only",
+              "approvalRequired": false,
+              "approvalEnforcement": "none",
+              "allowedExecutionModes": [
+                "interactive"
+              ]
+            }
+          ],
+          "binding": "复用 fresh revision",
+          "run": "已提交并查询 committed read model",
+          "runIdHash": "8590fc4aa24a",
+          "terminalStatus": "completed",
+          "terminalSuccess": true,
+          "success": true,
+          "stateVersion": 55,
+          "completedSteps": 8,
+          "totalSteps": 8,
+          "finalOutput": {
+            "case": "acceptance_fixture_drift_attestation",
+            "success": true,
+            "reads_completed": true,
+            "fixtures_intact": true,
+            "license_row_count": 3,
+            "license_rows_expected": true,
+            "mailbox_ready_for_approval": true,
+            "contractor_identity_active": true,
+            "review_row_count": 3,
+            "review_rows_expected": true,
+            "side_effects": false
+          },
+          "failure": null,
+          "sideEffectAuthorized": false,
+          "readOnlyApprovalAuthorized": false,
+          "approvalPendingObserved": false,
+          "approvalResumeCount": 0,
+          "firstToolStepOutputPresent": true,
+          "contractProbeStepOutputPresent": true,
+          "finalArtifactVerified": true,
+          "failingStep": null,
+          "result": "通过"
+        },
+        {
+          "case": "23",
+          "workflow": "23-readonly-attested-post-probe.workflow.yaml",
+          "preview": "通过",
+          "callSiteCount": 1,
+          "callSites": [
+            {
+              "method": "post",
+              "pathTemplate": "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/search",
+              "effectiveRisk": "read_only",
+              "approvalRequired": false,
+              "approvalEnforcement": "none",
+              "allowedExecutionModes": [
+                "interactive"
+              ]
+            }
+          ],
+          "binding": "复用 fresh revision",
+          "run": "已提交并查询 committed read model",
+          "runIdHash": "d952565aa649",
+          "terminalStatus": "completed",
+          "terminalSuccess": true,
+          "success": true,
+          "stateVersion": 31,
+          "completedSteps": 4,
+          "totalSteps": 4,
+          "finalOutput": {
+            "case": "readonly_attested_post_probe",
+            "success": true,
+            "attested_readonly_executed": true,
+            "response_item_count": 0,
+            "side_effects": false
+          },
+          "failure": null,
+          "sideEffectAuthorized": false,
+          "readOnlyApprovalAuthorized": false,
+          "approvalPendingObserved": false,
+          "approvalResumeCount": 0,
+          "firstToolStepOutputPresent": true,
+          "contractProbeStepOutputPresent": true,
+          "finalArtifactVerified": true,
+          "failingStep": null,
+          "result": "通过"
+        }
+      ]
+    }
+  },
+  "sideEffectRuns": {
+    "note": "案例 24/25 每次运行在资产盘点表新增 1 条和 2 条探针记录；以下为 09:16Z 在父提交 02545880 上的最近一次成功，6df43b83 只改 Assistant catalog prompt，未为无关改动重复写入",
+    "results": [
+      {
+        "case": "24",
+        "result": "通过",
+        "observedAtUtc": "2026-08-06T09:16:03Z",
+        "deploymentCommit": "02545880f193003cd9d9d3da647cb5acf2d2c875",
+        "runIdHash": "cc46543d37d9",
+        "terminalStatus": "completed",
+        "success": true,
+        "completedSteps": 5,
+        "totalSteps": 5,
+        "approvalPendingObserved": true,
+        "approvalResumeCount": 1,
+        "typedApprovalIdentityPresent": true,
+        "finalArtifact": {
+          "case": "runtime_tool_approval_write_probe",
+          "success": true,
+          "mutation_executed": true,
+          "record_created": true,
+          "side_effects": true
+        },
+        "previewCallSite": {
+          "method": "post",
+          "pathTemplate": "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+          "effectiveRisk": "write",
+          "approvalRequired": true,
+          "approvalEnforcement": "bind_time_confirmation_and_run_time_tool_approval",
+          "allowedExecutionModes": [
+            "interactive"
+          ]
+        },
+        "previewCallSiteCount": 1
+      },
+      {
+        "case": "25",
+        "result": "通过",
+        "observedAtUtc": "2026-08-06T09:16:03Z",
+        "deploymentCommit": "02545880f193003cd9d9d3da647cb5acf2d2c875",
+        "runIdHash": "d6919ed97130",
+        "terminalStatus": "completed",
+        "success": true,
+        "completedSteps": 8,
+        "totalSteps": 8,
+        "approvalPendingObserved": true,
+        "approvalResumeCount": 2,
+        "typedApprovalIdentityPresent": true,
+        "finalArtifact": {
+          "case": "sequential_tool_approval_write_probe",
+          "success": true,
+          "first_mutation_executed": true,
+          "second_mutation_executed": true,
+          "sequential_mutations": 2,
+          "side_effects": true
+        },
+        "previewCallSite": {
+          "method": "post",
+          "pathTemplate": "/open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records",
+          "effectiveRisk": "write",
+          "approvalRequired": true,
+          "approvalEnforcement": "bind_time_confirmation_and_run_time_tool_approval",
+          "allowedExecutionModes": [
+            "interactive"
+          ]
+        },
+        "previewCallSiteCount": 2
+      }
+    ]
+  },
+  "keyFindings": [
+    "案例 21-23 从 clean isolated config.local.yaml materialization 运行，分别 7/7、8/8、4/4 committed completed 并命中严格 artifact contract",
+    "案例 24 最近一次在父提交 02545880 上完成单次 typed approval resume 与 5/5 completed；6df43b83 只改 Assistant catalog prompt，未重复写入",
+    "案例 25 最近一次在父提交 02545880 上完成连续两次 typed approval resume 与 8/8 completed；6df43b83 只改 Assistant catalog prompt，未重复写入",
+    "案例 24/25 共执行三轮成功的副作用复验，每轮创建 1+2 条合成记录，累计 9 条；未执行清理"
+  ],
+  "updatedAtUtc": "2026-08-06T09:51:05Z",
+  "historicalCompletedBaseline": {
+    "deploymentCommit": "02545880f193003cd9d9d3da647cb5acf2d2c875",
+    "cases": ["21", "22", "23"],
+    "supersededByLatestRun": true
+  },
+  "invalidMaterializationControl": {
+    "deploymentCommit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff",
+    "cases": ["21", "22", "23"],
+    "stableErrorCode": "NYXID_PROXY_HTTP_400",
+    "cause": "shared build/workflows overwritten by config.example.yaml materialization",
+    "supersededByCleanMaterializationRun": true
+  },
+  "sideEffectRecordCount": 9,
+  "hardeningRerun": {
+    "note": "独立审查后加固（preview 契约多值封装、sanitizer 增加 Lark tbl/rec/vew 脱敏、probe_note 改用 number() 数值守卫、准入探针每轮新 nonce）并在生产重跑复验",
+    "observedAtUtc": "2026-08-06T08:16:00Z",
+    "results": [
+      {
+        "case": "24",
+        "result": "通过",
+        "terminalStatus": "completed",
+        "approvalPendingObserved": true,
+        "approvalResumeCount": 1
+      },
+      {
+        "case": "25",
+        "result": "通过",
+        "terminalStatus": "completed",
+        "approvalPendingObserved": true,
+        "approvalResumeCount": 2
+      }
+    ]
+  }
+}

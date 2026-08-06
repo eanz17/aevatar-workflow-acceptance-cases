@@ -1,0 +1,23 @@
+schema_version: "1.0"
+case: "36"
+name: admission_durable_write_fail_closed
+title: 未声明风险写入调用的 durable 执行模式准入保持 fail-closed
+status: passed
+surface: workflow_admission_guard
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  probe_runner: scripts/run_admission_probes.rb
+  probe_id: probe_durable_write
+  rationale: 源目录财务/考勤类 durable 写调度不可上线的平台防线证明；interactive 对照准入由直连案例 24 preview 证据支撑
+safety:
+  synthetic_input_only: true
+  external_writes: false
+  cleanup_required: false
+  raw_identifiers_persisted: false
+required_evidence:
+  durable_preview_rejected: true
+  stable_error_durable_authorization_unavailable: true
+  interactive_counterpart_admitted: true
+  external_writes: false
+  raw_identifiers_persisted: false
+  fresh_member_rerun_confirmed: true

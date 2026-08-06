@@ -1,0 +1,22 @@
+schema_version: "1.0"
+case: "35"
+name: admission_n8n_export_rejected
+title: n8n 导出 JSON 在 explicit-request preview 阶段被类型化拒绝
+status: passed
+surface: workflow_admission_guard
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  probe_runner: scripts/run_admission_probes.rb
+  probe_id: probe_n8n_export
+  rationale: 源目录两个 n8n 导出 JSON 不可被引擎摄入的平台侧证明（合成最小 n8n 结构，不含任何真实凭据）
+safety:
+  synthetic_input_only: true
+  external_writes: false
+  cleanup_required: false
+  raw_identifiers_persisted: false
+required_evidence:
+  preview_rejected: true
+  stable_error_unsupported_root_field: true
+  external_writes: false
+  raw_identifiers_persisted: false
+  fresh_member_rerun_confirmed: true

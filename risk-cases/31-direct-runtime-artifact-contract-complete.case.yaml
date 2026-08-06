@@ -1,0 +1,20 @@
+schema_version: "1.0"
+case: "31"
+name: direct_runtime_artifact_contract_complete
+title: 全部 direct workflow 必须通过业务 artifact 契约后才能判绿
+status: passed
+surface: local_acceptance_guard
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  direct_workflow_count: 25
+safety:
+  local_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  direct_workflow_count: 25
+  strict_runtime_contract_count: 25
+  missing_contract_cases: []
+  assistant_uses_same_contracts: true
+  terminal_completed_alone_is_sufficient: false
+  raw_identifiers_persisted: false

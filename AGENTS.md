@@ -85,13 +85,37 @@ Ornn 服务端 validator 当前允许 `SKILL.md`、`scripts/`、`references/` �
 11. 真实验证状态变化后，同步更新 `validation/production-validation-YYYY-MM-DD.json`、`report/YYYY-MM-DD-workflow-coverage-report.md`、`report/index.html` 和 README。报告必须区分“覆盖”“语义替换”“部分覆盖”“未覆盖”。
 12. 对比源工作流时按版本族归并，不能把旧副本、Ornn 内嵌资产和独立业务定义当成同等的新增能力，也不能用文件覆盖率代替功能覆盖率。当前源目录是 `~/workflows`；`~/Code/workflows` 不存在。两个带 n8n `nodes/connections` 契约的 JSON 必须从覆盖统计中排除。
 
+## 准入负例探针
+
+`scripts/run_admission_probes.rb` 执行 risk-cases 33-36 的平台防线探针：缺失 capability、path 槽位契约（正例 + 模板化 selector / 槽位越界两条负例）、n8n 导出、durable 写准入。它复用 `production_validate.rb` 的 NyxID 客户端（该文件顶部有 `return unless __FILE__ == $PROGRAM_NAME` 守卫，被 require 时不进入 CLI）。
+
+- 只走预期拒绝路径，不得产生外部写入；durable 探针只做 preview，不创建 schedule。
+- 只有准入语义的拒绝才记 `fail_closed_confirmed`；传输层失败、绑定投影延迟等必须保持 `unexpected` 或重试，不能写成"平台已拦截"。
+- 每轮使用新的 `probe_nonce` 建 member，避免复用上一轮已绑定成员把结论变成不可复现。
+- 所有平台错误必须经 `sanitize_probe_error` 落盘；它同时脱敏 UUID、Lark `tbl/rec/vew` ID 和长标识，并在截断前还原稳定错误码。
+- 期望 fail-closed 但实测放行时，必须保留红色 case 与 `observed_gap` 说明，不得改写期望迁就现状。
+
+## Lark channel E2E 案例
+
+`channel-cases/` 用于覆盖 direct workflow 与 `/api/chat` 不能证明的 Lark webhook、AgentRun、交互卡片和 callback continuation。此类案例不新增 workflow 或 Ornn skill，不得计入 workflow/skill 数量。
+
+- channel case 必须声明目标提交、精确 skill/workflow、用户决策、callback 身份字段和机器可判定的 receipt/run/artifact 断言。
+- `ApprovalRequired` 只能表示挂起；`[tool receipt] Approval pending` 不得进入模型最终回复，也不得记为通过。
+- 批准路径必须证明同一 AgentRun 恢复、mount 完成、workflow 启动次数、run catalog 增量和 committed typed artifact。
+- 拒绝路径必须证明 typed `Denied`、稳定错误码、不执行 mount、workflow 启动次数为 0 且 run catalog 增量为 0。
+- 未取得可追溯 Ready 生产部署和真实 channel 证据时，状态必须为 `pending-deployment`；运行字段保持 `null`，报告不得渲染为绿色。
+- 不得保存 run ID、actor ID、消息 ID、UUID、callback credential 或原始审批身份；只保存布尔断言、计数、稳定错误码和脱敏 artifact。
+
 ## 提交前检查
 
 至少执行：
 
 ```bash
 ruby scripts/validate_workflows.rb
+ruby scripts/validate_channel_cases.rb
+ruby scripts/validate_risk_cases.rb
 ruby -c scripts/production_validate.rb
+ruby -c scripts/run_admission_probes.rb
 ruby scripts/materialize_workflows.rb config.example.yaml
 ruby -ryaml -e 'Dir["build/workflows/*.yaml"].sort.each { |f| YAML.safe_load(File.read(f), aliases: false) }'
 ruby scripts/validate_skills.rb

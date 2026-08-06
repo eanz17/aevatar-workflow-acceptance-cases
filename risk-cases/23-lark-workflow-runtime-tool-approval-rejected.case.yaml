@@ -1,0 +1,43 @@
+schema_version: "1.0"
+case: "23"
+name: lark_workflow_runtime_tool_approval_rejected
+title: Lark workflow 运行期工具拒绝后终止同一 run
+status: failed
+surface: lark_private_bot
+target:
+  source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
+  behavior_commit: b7cacf1838a519e83fbfd70953be988b9696ee2b
+  skill: lark-contact-batch-resolution
+  workflow: lark_contact_batch_resolution
+  direct_workflow_case: "14"
+preconditions:
+  skill_already_mounted: true
+  deployment_ready: true
+trigger:
+  decision: rejected
+  prompt: 请使用已挂载的 lark-contact-batch-resolution 解析 1 个合成联系人标识，并只返回脱敏结果。
+identity:
+  exact_match_required:
+    - actor_id
+    - run_id
+    - step_id
+    - execution_id
+    - tool_call_id
+    - approval_request_id
+safety:
+  synthetic_input_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  workflow_start_calls: 1
+  new_workflow_run_count: 1
+  awaiting_tool_approval_observed: true
+  workflow_approval_card_observed: true
+  workflow_approval_decision_dispatch_count: 1
+  workflow_approval_identity_matched: true
+  same_workflow_run_resumed: false
+  terminal_status: failed
+  stable_error_code: approval_denied
+  downstream_tool_executed: false
+  final_artifact:
+  raw_identifiers_persisted: false
