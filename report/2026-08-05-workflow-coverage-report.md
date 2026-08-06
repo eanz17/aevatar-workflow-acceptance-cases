@@ -28,7 +28,7 @@
 
 必须先看清"通过"在本报告里代表什么，否则会高估覆盖面。
 
-- 验收脚本 `production_validate.rb` **只对 14、16、17、18、19 强制 typed artifact 契约**。其余案例的"通过"仅等于 committed terminal `completed` 且 read model `success=true`。
+- 验收脚本 `production_validate.rb` **只对 14、16、17、18、19、20 强制 typed artifact 契约**。其余案例的"通过"仅等于 committed terminal `completed` 且 read model `success=true`。
 - 因此工作流完全可能路由进自身的失败分支、仍被脚本判为"通过"。案例 18 初版就出现过这种情况：terminal `completed`、`success=true`，但 artifact 是 `attested=false`、`reason=while_replay_parity_mismatch`。本轮 17 份 artifact 已由人工逐条复核，未发现任何失败信号；但这是人工兜底，不是脚本门禁。
 - 案例 05、07、08、09、10 的 submit 分支已单独运行并取得 committed 证据（见下节）；preview 分支的既有结论同时保留。
 - 05、06、07、08、09、10 六个副作用分支已在 `20d9ba41` 上显式授权后真实执行，不再是"未运行"。
@@ -186,7 +186,7 @@
 
 ## 当前阻塞与待复测项
 
-1. 验收脚本断言覆盖面：`production_validate.rb` 只对 14、16、17、18、19 强制 typed artifact 契约，01-13、15 的“通过”仅等于 committed `completed`。工作流走进自身失败分支仍会被判通过，目前靠人工复核 artifact 兜底。Case 17 的拒绝分支在 bind-time 契约下不再经由 per-run resume 到达，durable preview 仍未验证。
+1. 验收脚本断言覆盖面：`production_validate.rb` 只对 14、16、17、18、19、20 强制 typed artifact 契约，01-13、15 的“通过”仅等于 committed `completed`。工作流走进自身失败分支仍会被判通过，目前靠人工复核 artifact 兜底。Case 17 的拒绝分支在 bind-time 契约下不再经由 per-run resume 到达，durable preview 仍未验证。
 2. Lark Bot sender service grant：Aevatar `1.0.10` 为 Released，Bot Enabled、Availability=All，NyxID committed Bot 为 `active`、`webhook_registered=true`。镜像 `8cf280e2` 上的案例 14 直接 run 和 `/api/chat` Ornn mount/run 均 committed `completed`；前两次 Lark Bot 重试也都启动 workflow，并在 typed approval resume 后从 `awaiting_tool_approval` 进入 committed `failed`。失败步骤均为 `resolve_contact`，稳定错误码均为 `NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN`；run 哈希为 `1436a2852f8d`（state 18）和 `e491a2690b03`（state 17）。生产 `aevatar` Developer App 把 `api-lark-bot` 追加到 `default_service_catalog_slugs` 后，fresh `/init` 于 `11:34Z` 创建 allow-all consent 与新 sender binding；镜像 `e30fdd94` 上的第三次 run `93ece1c36951` 仍在 `resolve_contact` 以同一错误 committed `failed`（state 14）。源码契约确认 Aevatar authorize 仍只显式请求 core resources，NyxID 会在 authorization-code 阶段按这些 resources 缩窄 binding；默认项只提供 consent hints。因此该 blocker 已验证，不能再要求用户重复 `/init`。`ornn.skill` mount failure、`scope_workflows_get/list` outcome unverified 和后续 fallback 的 `InvalidWorkflowYaml` 继续作为独立 receipt 缺陷保留。
 3. 案例 19 Lark workflow catalog：文件上传、附件解析和 Lark 回复 relay 已验证；direct run 也 committed 4/4。但当前 scope 未公开案例 19 skill，Assistant catalog 无可启动定义，三次 start 均为 `service_catalog_missing` 且 run 增量为 0。发布或挂载属于独立副作用，本轮未执行。
 4. 财务源定义的安全边界：P2 send、P1 v6、源 durable/weekly schedule 和 P1 v2 旧定义仍未运行。公开验收案例 15 的 schedule 已通过，但不能替代这些源副作用或 authority 分支。

@@ -925,11 +925,11 @@ fail_validation("README 缺少最新全量回归口径") unless
   readme.include?("严格状态为 `start-blocked`")
 fail_validation("文字报告缺少最新全量回归口径") unless
   report.include?("镜像 `20d9ba41`") && report.include?("19 个案例的 direct runtime 最新终态均为 committed `completed`") &&
-  report.include?("只对 14、16、17、18、19 强制 typed artifact 契约") &&
+  report.include?("只对 14、16、17、18、19、20 强制 typed artifact 契约") &&
   report.include?("`service_catalog_missing`") && report.include?("run catalog 增量为 0")
 fail_validation("分析页缺少最新全量回归口径") unless
-  html.include?("19 / 19") && html.include?("<code>20d9ba41</code>") &&
-  html.include?("只对 14、16、17、18、19 强制 typed artifact 契约")
+  html.include?("20 / 20") && html.include?("<code>20d9ba41</code>") &&
+  html.include?("只对 14、16、17、18、19、20 强制 typed artifact 契约")
 fail_validation("分析页阻塞状态未使用红色") unless
   html.include?(".status-blocked { background: var(--red-soft); color: var(--red); }")
 fail_validation("分析页仍把已验证失败或回归显示为蓝色") if
