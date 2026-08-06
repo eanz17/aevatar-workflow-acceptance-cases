@@ -51,6 +51,8 @@ OBSERVATION_FIELDS = %w[
   committedTerminalObserved terminalStatus finalArtifact replyRelayObserved stableErrorCode
   ordinaryAgentRunVisibleReplyCount awaitingToolApprovalVisibleTextCount
   workflowApprovalCardCount workflowTerminalResultCount
+  workflowRunHash committedStateVersion completedSteps totalSteps
+  requestParametersRedacted outputPreviewIdentifiersRedacted timelineIdentifiersRedacted
 ].freeze
 ALLOWED_STATUSES = %w[pending-deployment passed failed].freeze
 FORBIDDEN_EVIDENCE_KEYS = %w[
@@ -193,6 +195,13 @@ fail_validation("案例 22 workflow 运行期批准链证据契约不完整") un
   "terminal_status" => "completed",
   "reply_relay_observed" => true,
   "workflow_terminal_result_count" => 1,
+  "workflow_run_hash_redacted" => true,
+  "committed_state_version_observed" => true,
+  "completed_steps" => 3,
+  "total_steps" => 3,
+  "request_parameters_redacted" => true,
+  "output_preview_identifiers_redacted" => true,
+  "timeline_identifiers_redacted" => true,
   "final_artifact" => expected_artifact,
   "raw_identifiers_persisted" => false
 }
@@ -336,6 +345,11 @@ results.each do |item|
         item["workflowApprovalIdentityMatched"] == true && item["sameWorkflowRunResumed"] == true &&
         item["committedTerminalObserved"] == true && item["terminalStatus"] == "completed" &&
         item["workflowTerminalResultCount"] == 1 &&
+        item["workflowRunHash"].to_s.match?(/\A[0-9a-f]{12}\z/) &&
+        item["committedStateVersion"] == 30 && item["completedSteps"] == 3 &&
+        item["totalSteps"] == 3 && item["requestParametersRedacted"] == true &&
+        item["outputPreviewIdentifiersRedacted"] == true &&
+        item["timelineIdentifiersRedacted"] == true &&
         item["finalArtifact"] == expected_artifact && item["stableErrorCode"].nil?
     end
   when "failed"

@@ -13,7 +13,7 @@
 - 25/25 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验；`production_validate.rb` 与 `assistant_validate.rb` 共用 25/25 个严格业务 artifact contract，committed `completed` 本身不再足以判绿。
 - 25/25 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。旧 01-20 保留既有 committed 基线；21/22/23 在用 `config.local.yaml` 重新物化后 fresh committed `completed`，分别为 7/7、8/8、4/4 且 artifact 精确命中。此前三项同时出现的 `NYXID_PROXY_HTTP_400` 已确认来自共享 `build/workflows/` 被示例配置覆盖，不是 Aevatar 回归；24/25 保留最近一次 5/5、8/8 completed 的 typed approval 证据。
 - 新增 21/22/23 无副作用；24/25 在本轮显式授权和 typed approval 下分别完成 1 次、2 次 resume。三轮成功副作用复验累计新增 9 条固定合成前缀的 Base 探针记录，尚未清理；未传 `--allow-side-effects` 时即使指定 `--run` 仍只停在 preview。
-- 3/3 个既有 Lark channel E2E case 通过静态契约校验，但仍是 0/3 严格通过；当前部署的额外风险实测见 Risk Case 23/25：拒绝链缺 typed code，另一次 Lark turn 未启动 AgentRun，不能从 direct workflow 的绿色结果外推。
+- 3/3 个既有 Lark channel E2E case 通过静态契约校验，当前严格通过 1/3。Case 22 已在真实 Lark inbound 后创建新 workflow run，完成 workflow 工具审批卡回调、同一 run 恢复与 committed artifact 验证；Case 20/21 仍不能从该结果外推。
 - 案例 19 direct synthetic fixture run 为 committed `completed`、`stateVersion=30`、4/4 步，核心文件登记、抽取与内容契约通过，按设计 `lark_bot_ingress_validated=false`。真实 Lark canary 已证明文件卡片、附件解析和回复 relay，但 `aevatar_start_workflow` 因 current-scope catalog 缺少可启动定义而稳定返回 `service_catalog_missing`，运行目录增量为 0，因此严格状态为 `start-blocked`，不是 Lark workflow E2E 通过。
 - 本地 25/25 个 Ornn skill 与 workflow 字节一致，25/25 通过服务端格式校验并按精确名称、版本公开回读。本轮 missing-only 发布只创建并公开了原先缺失的 Case 19 与 21-25 六个 skill，19 个既有精确匹配项未上传、未改权限。
 - `/api/chat` 已用自然语言验证 01、12、13、14、15：4/5 取得 committed `completed` 与业务断言，1/5 取得 committed `failed` 与稳定 typed blocker。
@@ -98,9 +98,9 @@
 |---:|---|---|---|---|
 | 20 | `lark_agent_run_skill_approval_approved` | 批准 | 真实 Lark inbound/relay；审批卡可见；`Approval pending` 不进入模型回复；回调精确匹配 run/request/call/hash/sender/scope/conversation 且只分发一次；同一 AgentRun 恢复；`use_skill=Completed`；workflow 只启动一次；取得精确 committed artifact | `pending-execution` |
 | 21 | `lark_agent_run_skill_approval_rejected` | 拒绝 | 真实 Lark inbound/relay；审批卡可见；回调只分发一次；同一挂起调用返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start=0；run catalog 增量=0 | `pending-execution` |
-| 22 | `lark_workflow_runtime_tool_approval_approved` | 批准 | skill 已挂载且不出现新 mount 审批；workflow start=1；新 run 必须晚于本次 Lark inbound 启动；run 到达 `awaiting_tool_approval`；workflow 审批卡回调精确携带 actor/run/step/execution/tool-call/approval-request identity；同一 workflow run 恢复；最终 artifact 精确命中 | `pending-deployment` |
+| 22 | `lark_workflow_runtime_tool_approval_approved` | 批准 | skill 已挂载且不出现新 mount 审批；workflow start=1；新 run 晚于本次 Lark inbound 启动；审批卡投递与回调各一次；同一 workflow run 恢复；3/3 steps、stateVersion 30、脱敏 artifact 精确命中 | `passed` |
 
-Case 20/21 的目标修复提交 `9f67c528174ac477bb144d6bd1525444e7c971cf` 已包含在 Ready 生产镜像 `6df43b83` 中，当前仅缺真实 Lark 操作和严格证据，因此状态是 `pending-execution`。Case 22 已提升目标提交到 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398`，在 Ready 生产 workload 可追溯到该提交前保持 `pending-deployment`。Bot 自然语言、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功都不能把 Case 20/21/22 判为通过。
+Case 20/21 的目标修复提交 `9f67c528174ac477bb144d6bd1525444e7c971cf` 已包含在 Ready 生产镜像中，当前仍缺各自批准/拒绝路径的完整严格证据。Case 22 的目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入生产；真实运行 hash `9c3d41015b52` committed `completed`，workflow 审批卡与 CardAction 各一次，普通 AgentRun 可见回复为 0，最终 relay 为 1，观测详情未持久化原始联系人标识。Bot 文案、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功仍不能替代这些证据。
 
 最新全量回归使用部署镜像 `0c4ff023`。其中 11 曾在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；修复镜像 `f7f543c5` 部署后，11 的定向复验已 committed `completed`。12 的连续两次成功证据继续保留。14 和 17 的业务 artifact 均成功，但没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
 
@@ -298,7 +298,7 @@ Case 19 的 `--run` 使用 direct synthetic fixture，只能验证文件登记�
 - #3161 已关闭；Case 16 覆盖共同 receipt/runtime 平面，源 P2 no-send 又在当前部署上覆盖 published-operation authority 主链并 committed 完成。该结论只适用于 no-send 只读执行，不外推到消息发送或 durable schedule。
 - #3184 仍开放；Case 17 的历史 run 证明过批准 resume，但最新 `0c4ff023` run 未观察到 typed pending/resume，当前记为契约回归。拒绝路径在此状态下不可达，durable preview 仍需独立证据。
 - Case 19 已有静态、preview、direct committed 与 Lark 文件 transport 证据；direct fixture 和 Bot 附件解析都不证明 Lark workflow committed 成功。当前 `service_catalog_missing` / run 增量 0 必须保持为 `start-blocked`，直到 typed artifact 明确给出 `lark_bot_ingress_validated=true`。
-- Case 20/21 分别覆盖 #3210 的 skill mount 批准和拒绝路径；Case 22 覆盖 skill 已挂载后的 workflow 运行期工具批准路径。提交 `9f67c5281` 已随当前镜像部署，三项现为 `pending-execution`；仍需真实 Lark 审批卡、对应层级的精确 callback identity 和 typed receipt/committed artifact 证据，不能用 Bot 文案或 direct Case 14 结果代替。
+- Case 20/21 分别覆盖 #3210 的 skill mount 批准和拒绝路径，仍待各自完整严格证据；Case 22 覆盖 skill 已挂载后的 workflow 运行期工具批准路径，已由真实 Lark 审批卡、同一 run continuation 和 committed artifact 严格通过。不能用 Case 22 外推 Case 20/21，也不能用 Bot 文案或 direct Case 14 结果代替。
 - 不得提交 token、真实组织标识、业务载荷、审批表单或未脱敏运行证据。
 
 新增和维护案例的完整规则见 [AGENTS.md](AGENTS.md)。

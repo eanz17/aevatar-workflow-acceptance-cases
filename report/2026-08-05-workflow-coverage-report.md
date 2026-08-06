@@ -14,7 +14,7 @@
 ## 总结
 
 - 25/25 个公开 workflow 通过本地静态校验和 production explicit-request preview；`production_validate.rb` 与 `assistant_validate.rb` 共用 25/25 个 strict artifact contract。
-- 另有 3 个既有 Lark channel E2E case 和 21 个 risk case。Channel 严格结果仍为 0/3；risk 汇总为 8 passed、4 blocked、4 failed、0 pending-execution、5 not-configured。
+- 另有 3 个既有 Lark channel E2E case 和 21 个 risk case。Channel 严格结果为 1/3；risk 汇总为 8 passed、4 blocked、4 failed、0 pending-execution、5 not-configured。
 - 旧 01-20 保留既有 committed 基线；新增 21-25 当前最新结果为 5/5 completed：21/22/23 从 clean isolated `config.local.yaml` materialization 分别完成 7/7、8/8、4/4 并命中严格 artifact，24/25 最近一次仍分别完成一次和两次 typed approval resume。共享 `build/workflows` 被示例配置覆盖时的 HTTP 400 只保留为无效物化负面对照。24/25 三轮成功复验累计新增 9 条可清理 Base 探针记录，尚未清理。
 - 本地 25/25 个 Ornn skill 与 workflow 一一对应，25/25 通过服务端格式校验；19/25 可按精确名称 public 回读，缺 Case 19 与新增 21-25 六个 skill。本轮未上传、未改权限。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
@@ -42,9 +42,9 @@
 |---|---|---|---|
 | Case 20 | approved | 真实 Lark inbound/relay；Ornn 搜索并解析到精确 skill；Lark 审批卡出现；pending receipt 不进入模型回复；回调身份精确匹配且只分发一次；同一 AgentRun 恢复；`use_skill=Completed`；mount 执行；workflow start 恰好 1 次且 run 增量 1；最终 committed artifact 精确命中 `resolved_count=1`、`identifiers_redacted=true`、`side_effects=false` | `pending-execution` |
 | Case 21 | rejected | 真实 Lark inbound/relay；审批回调只分发一次；同一审批链返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start 为 0；run catalog 增量为 0；不持久化原始身份 | `pending-execution` |
-| Case 22 | approved | skill 已挂载且不出现新 mount 审批；workflow start 恰好 1 次且 run 增量 1；run committed 到 `awaiting_tool_approval`；workflow 审批卡出现；callback 精确包含 `actor_id/run_id/step_id/execution_id/tool_call_id/approval_request_id` 且只分发一次；同一 workflow run 恢复；pending receipt 不进入最终回复；最终 committed artifact 精确命中 | `pending-execution` |
+| Case 22 | approved | skill 已挂载且不出现新 mount 审批；workflow start 恰好 1 次且新 run 晚于 Lark inbound；run committed 到 `awaiting_tool_approval`；workflow 审批卡与 callback 各一次；同一 workflow run 恢复；普通 AgentRun 可见回复为 0；3/3 steps、stateVersion 30、脱敏 committed artifact 精确命中 | `passed` |
 
-Ready 生产镜像 `6df43b83` 已包含 `9f67c528174ac477bb144d6bd1525444e7c971cf` 及其前置提交，部署门槛已经满足。真实 Lark 点击和严格 committed terminal 尚未执行，因此三项改为 `pending-execution`，不是通过。审批卡、Bot 文案、direct Case 14 或 `/api/chat` 成功都不能把它们升级为通过。
+Case 22 目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入 Ready 生产 workload。真实 Lark inbound 于 `12:33:10Z` 到达，新 workflow run 随后启动，审批卡投递与 CardAction 各一次，同一 run 恢复并 committed `completed`；公开 run hash 为 `9c3d41015b52`。Case 20/21 仍需各自完整路径，不能由 Case 22、Bot 文案、direct Case 14 或 `/api/chat` 成功外推。
 
 ## 可靠性与准入风险验收（2026-08-06）
 

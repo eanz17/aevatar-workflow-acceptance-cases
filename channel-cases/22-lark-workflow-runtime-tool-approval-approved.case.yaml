@@ -3,7 +3,7 @@ case: "22"
 name: lark_workflow_runtime_tool_approval_approved
 title: Lark 已挂载 skill 的 workflow 运行期工具批准后继续执行
 issue: "#3210"
-status: pending-deployment
+status: passed
 surface: lark_private_bot
 target:
   skill: lark-contact-batch-resolution
@@ -64,6 +64,13 @@ required_evidence:
   terminal_status: completed
   reply_relay_observed: true
   workflow_terminal_result_count: 1
+  workflow_run_hash_redacted: true
+  committed_state_version_observed: true
+  completed_steps: 3
+  total_steps: 3
+  request_parameters_redacted: true
+  output_preview_identifiers_redacted: true
+  timeline_identifiers_redacted: true
   final_artifact:
     case: lark_contact_batch_resolution
     success: true
