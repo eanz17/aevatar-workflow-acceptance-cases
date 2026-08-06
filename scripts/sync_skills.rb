@@ -21,7 +21,8 @@ SKILLS = {
   "lark-contact-batch-resolution" => ["14-lark-contact-batch-resolution.workflow.yaml", "Lark 联系人批量解析", "通过 contact batch_get_id 解析入职邮箱身份", "解析验收入职邮箱，只返回结果数量。", "success=true、resolved_count=1、标识不回显"],
   "weekly-budget-variance-digest" => ["15-weekly-budget-variance-digest.workflow.yaml", "周度预算差异摘要", "生成预算周报、月度投影或配置 recurring schedule", "生成预算周度与月度差异摘要，不发送消息。", "六路 Base 可达且周/月差异断言通过"],
   "nyxid-read-receipt-probe" => ["16-nyxid-read-receipt-probe.workflow.yaml", "NyxID 只读回执探针", "验证 managed workflow 的 NyxID provider receipt、首步输出或 issue 3161 回归", "运行单次只读 NyxID receipt 探针，不执行任何写入。", "success=true、provider_response_verified=true、side_effects=false"],
-  "lark-post-search-approval-probe" => ["17-lark-post-search-approval-probe.workflow.yaml", "Lark POST 搜索批准恢复探针", "验证 POST 搜索的 typed tool approval pending、resume 或 issue 3184 回归", "运行语义只读的 Base POST 搜索批准恢复探针，不修改任何记录。", "preview 为 effectiveRisk=write 且 approvalRequired=true；终态 success=true、approval_resumed=true、side_effects=false"]
+  "lark-post-search-approval-probe" => ["17-lark-post-search-approval-probe.workflow.yaml", "Lark POST 搜索批准恢复探针", "验证 POST 搜索的 typed tool approval pending、resume 或 issue 3184 回归", "运行语义只读的 Base POST 搜索批准恢复探针，不修改任何记录。", "preview 为 effectiveRisk=write 且 approvalRequired=true；终态 success=true、approval_resumed=true、side_effects=false"],
+  "supplier-control-attestation-review" => ["18-supplier-control-attestation-review.workflow.yaml", "供应商控制项自证审查", "验证 guard、conditional 与 while 三个确定性工作流原语的真实运行行为", "运行无副作用的供应商控制项自证审查。", "attested=true、control_count=3、leading_control=breach_notice、replay_iterations=3、side_effects=false"]
 }.freeze
 
 VERSIONS = {
@@ -41,7 +42,8 @@ VERSIONS = {
   "lark-contact-batch-resolution" => "1.1",
   "weekly-budget-variance-digest" => "1.1",
   "nyxid-read-receipt-probe" => "1.1",
-  "lark-post-search-approval-probe" => "1.1"
+  "lark-post-search-approval-probe" => "1.1",
+  "supplier-control-attestation-review" => "1.0"
 }.freeze
 
 SKILLS.each do |slug, (workflow_file, title, trigger, prompt, expected)|

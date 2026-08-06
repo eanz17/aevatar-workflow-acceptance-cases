@@ -1,0 +1,115 @@
+name: supplier_control_attestation_review
+description: 无副作用的供应商控制项自证审查，覆盖 guard、conditional 与 while 三个此前未验证的确定性工作流原语。
+roles:
+  - id: compliance_officer
+    name: 合规审查员
+steps:
+  - id: seed_attestation_envelope
+    type: assign
+    parameters:
+      target: attestation_envelope
+      value: '{"vendor":"合成供应商 A","tier":"RESTRICTED","attested_period":"2026-Q3"}'
+    next: guard_envelope_json
+
+  - id: guard_envelope_json
+    type: guard
+    parameters:
+      check: json_valid
+      on_fail: fail
+    next: classify_tier
+
+  - id: classify_tier
+    type: conditional
+    parameters:
+      condition: RESTRICTED
+      branch.true: seed_required_controls
+      branch.false: reject_unclassified_tier
+    branches:
+      "true": seed_required_controls
+      "false": reject_unclassified_tier
+
+  - id: seed_required_controls
+    type: assign
+    parameters:
+      target: required_controls
+      value: |-
+        dpa
+        subprocessor
+        breach_notice
+    next: replay_control_order
+
+  - id: replay_control_order
+    type: while
+    parameters:
+      step: transform
+      sub_param_op: reverse_lines
+      condition: "true"
+      max_iterations: "3"
+    next: count_controls
+
+  - id: count_controls
+    type: transform
+    parameters:
+      op: count
+    next: verify_control_count
+
+  - id: verify_control_count
+    type: switch
+    parameters:
+      on: "${steps.count_controls.output}"
+      branch.3: take_leading_control
+      branch._default: invalid_control_count
+    branches:
+      "3": take_leading_control
+      _default: invalid_control_count
+
+  - id: take_leading_control
+    type: transform
+    parameters:
+      op: take
+      n: "1"
+    next: verify_replay_parity
+
+  - id: verify_replay_parity
+    type: switch
+    parameters:
+      on: "${steps.take_leading_control.output}"
+      branch.breach_notice: attested
+      branch._default: invalid_replay_parity
+    branches:
+      breach_notice: attested
+      _default: invalid_replay_parity
+
+  - id: attested
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"supplier_control_attestation_review","attested":true,"tier":"RESTRICTED","control_count":3,"leading_control":"breach_notice","replay_iterations":3,"side_effects":false}'
+    next: done
+
+  - id: reject_unclassified_tier
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"supplier_control_attestation_review","attested":false,"reason":"tier_not_restricted","side_effects":false}'
+    next: done
+
+  - id: invalid_control_count
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"supplier_control_attestation_review","attested":false,"reason":"control_count_mismatch","side_effects":false}'
+    next: done
+
+  - id: invalid_replay_parity
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"supplier_control_attestation_review","attested":false,"reason":"while_replay_parity_mismatch","side_effects":false}'
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

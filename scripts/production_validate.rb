@@ -110,6 +110,10 @@ CASES = {
       approvalRequired: true,
       allowedExecutionModes: ["interactive"]
     }
+  },
+  "18" => {
+    file: "18-supplier-control-attestation-review.workflow.yaml",
+    prompt: "运行无副作用的供应商控制项自证审查。"
   }
 }.freeze
 
