@@ -116,6 +116,11 @@ CASES = {
   "18" => {
     file: "18-supplier-control-attestation-review.workflow.yaml",
     prompt: "运行无副作用的供应商控制项自证审查。"
+  },
+  "19" => {
+    file: "19-lark-bot-file-upload-validation.workflow.yaml",
+    prompt: "验证当前消息中的合成上传文件，不执行任何外部写入。",
+    attachment: "lark-bot-upload-manifest.json"
   }
 }.freeze
 
@@ -521,11 +526,16 @@ class ProductionValidator
   def attachment_part(name)
     path = File.join(ROOT, "fixtures", name)
     bytes = File.binread(path)
+    media_type = case File.extname(name).downcase
+                 when ".pdf" then "application/pdf"
+                 when ".json" then "application/json"
+                 else "text/plain"
+                 end
     {
       type: "file",
       inlineFile: {
         dataBase64: Base64.strict_encode64(bytes),
-        mediaType: File.extname(name).downcase == ".pdf" ? "application/pdf" : "text/plain",
+        mediaType: media_type,
         name: name,
         sizeBytes: bytes.bytesize,
         ownerScopeId: @options.fetch(:scope_id)
@@ -682,6 +692,20 @@ class ProductionValidator
                    },
                    approval_required: false
                  }
+               when "19"
+                 {
+                   step_id: "extract_uploaded_file",
+                   expected_artifact: {
+                     "success" => true,
+                     "file_ref_registered" => true,
+                     "document_extract_succeeded" => true,
+                     "content_contract_matches" => true,
+                     "lark_bot_ingress_validated" => false,
+                     "identifiers_redacted" => true,
+                     "side_effects" => false
+                   },
+                   approval_required: false
+                 }
                else
                  return {}
                end
@@ -776,7 +800,7 @@ OptionParser.new do |parser|
   parser.on("--scope-id ID", "Aevatar scope ID，也可使用 AEVATAR_SCOPE_ID") { |value| options[:scope_id] = value }
   parser.on("--team-id ID", "用于创建临时验收成员的 Studio team ID，也可使用 AEVATAR_TEAM_ID") { |value| options[:team_id] = value }
   parser.on("--lark-user-service-id ID", "固定 Lark Bot UserService，也可使用 LARK_USER_SERVICE_ID") { |value| options[:lark_service_id] = value }
-  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-17") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
+  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-19") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
   parser.on("--run", "在 preview 后执行工作流；默认只 preview") { options[:run] = true }
   parser.on("--allow-side-effects LIST", "允许执行副作用的案例编号，逗号分隔") do |value|
     options[:side_effect_cases] = value.split(",").map { |item| item.strip.rjust(2, "0") }

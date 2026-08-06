@@ -4,7 +4,7 @@ require "json"
 require "yaml"
 
 ROOT = File.expand_path("..", __dir__)
-EXPECTED_CASES = (1..18).map { |number| format("%02d", number) }.freeze
+EXPECTED_CASES = (1..19).map { |number| format("%02d", number) }.freeze
 EXPECTED_BLOCKED = [].freeze
 EXPECTED_CONTRACT_REGRESSIONS = [].freeze
 EXPECTED_UNVERIFIED = [].freeze
@@ -20,15 +20,15 @@ summary_path = File.join(ROOT, "validation", "production-validation-#{REPORT_DAT
 summary = JSON.parse(File.read(summary_path))
 runtime = summary.fetch("runtime")
 
-fail_validation("静态验证摘要不是 18/18") unless summary.dig("staticValidation", "passed") == 18
-fail_validation("production preview 已验证数不是 18/18") unless summary.dig("productionPreview", "passed") == 18 &&
+fail_validation("静态验证摘要不是 19/19") unless summary.dig("staticValidation", "passed") == 19
+fail_validation("production preview 已验证数不是 19/19") unless summary.dig("productionPreview", "passed") == 19 &&
   summary.dig("productionPreview", "unverified") == 0
-fail_validation("production runtime 案例数不是 18") unless runtime.length == 18
+fail_validation("production runtime 案例数不是 19") unless runtime.length == 19
 fail_validation("production runtime 案例编号不完整") unless runtime.map { |item| item.fetch("case") } == EXPECTED_CASES
-fail_validation("直接 runtime 严格通过数不是 18") unless summary.dig("directRuntimeSummary", "passed") == 18
+fail_validation("直接 runtime 严格通过数不是 19") unless summary.dig("directRuntimeSummary", "passed") == 19
 fail_validation("直接 runtime 平台阻塞数不是 0") unless summary.dig("directRuntimeSummary", "platformBlocked") == 0
 fail_validation("直接 runtime 契约回归数不是 0") unless summary.dig("directRuntimeSummary", "contractRegressions") == 0
-fail_validation("直接 runtime completed 数不是 18") unless summary.dig("directRuntimeSummary", "terminalCompleted") == 18
+fail_validation("直接 runtime completed 数不是 19") unless summary.dig("directRuntimeSummary", "terminalCompleted") == 19
 fail_validation("直接 runtime failed 数不是 0") unless summary.dig("directRuntimeSummary", "terminalFailed") == 0
 fail_validation("直接 runtime 待验证数不是 0") unless summary.dig("directRuntimeSummary", "unverified") == 0
 
@@ -139,6 +139,51 @@ fail_validation("案例 17 历史批准路径证据缺失") unless
 fail_validation("案例 17 缺少负向与 durable 边界") unless
   case17["remainingBranches"] == %w[approval_rejected durable_preview approved_path_revalidation]
 
+case19 = summary.fetch("case19Validation")
+fail_validation("案例 19 preview 证据不完整") unless
+  case19.dig("preview", "passed") == true &&
+  case19.dig("preview", "callSiteCount") == 0 &&
+  case19.dig("preview", "executionMode") == "interactive"
+case19_fixture = case19.fetch("fixture")
+fail_validation("案例 19 fixture 契约漂移") unless
+  case19_fixture == {
+    "name" => "lark-bot-upload-manifest.json",
+    "mediaType" => "application/json",
+    "sizeBytes" => 114,
+    "sha256" => "5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb",
+    "synthetic" => true
+  }
+case19_direct = case19.fetch("directRun")
+fail_validation("案例 19 direct committed 证据不完整") unless
+  case19_direct["runIdHash"].to_s.match?(/\A[0-9a-f]{12}\z/) &&
+  case19_direct["terminalStatus"] == "completed" && case19_direct["terminalSuccess"] == true &&
+  case19_direct["stateVersion"] == 30 &&
+  case19_direct["completedSteps"] == 4 && case19_direct["totalSteps"] == 4
+fail_validation("案例 19 direct artifact 断言失败") unless case19_direct.fetch("finalArtifact") == {
+  "case" => "lark_bot_file_upload_validation",
+  "success" => true,
+  "execution_mode" => "preview",
+  "file_ref_registered" => true,
+  "document_extract_succeeded" => true,
+  "content_contract_matches" => true,
+  "lark_bot_ingress_validated" => false,
+  "identifiers_redacted" => true,
+  "side_effects" => false
+}
+case19_lark = case19.fetch("larkBotCanary")
+fail_validation("案例 19 Lark canary 不得伪报 workflow 成功") unless
+  case19_lark["fileUploadCardObserved"] == true &&
+  case19_lark["inboundFileContentParsed"] == true &&
+  case19_lark["replyRelayObserved"] == true &&
+  case19_lark["workflowStartAttempts"] == 3 &&
+  case19_lark["workflowValidationStatus"] == "start-blocked" &&
+  case19_lark["stableErrorCode"] == "service_catalog_missing" &&
+  case19_lark["newWorkflowRunCount"] == 0 &&
+  case19_lark["committedTerminalObserved"] == false &&
+  case19_lark["larkBotIngressValidated"] == false &&
+  case19_lark["rawIdentifiersPersisted"] == false &&
+  case19_lark["sideEffects"] == false
+
 latest_regression = summary.fetch("latestFullRegression")
 fail_validation("最新全量回归摘要不完整") unless
   latest_regression["deploymentImage"].to_s.end_with?("0c4ff023") &&
@@ -202,7 +247,7 @@ fail_validation("案例 12 恢复证据不完整") unless
   }
 
 ornn = summary.fetch("ornnPublication")
-fail_validation("本地 Ornn skill 数不是 17") unless ornn.fetch("localSkillCount") == 17
+fail_validation("本地 Ornn skill 数不是 19") unless ornn.fetch("localSkillCount") == 19
 %w[skillCount serverFormatValidated publishedPublic nameReadbackPassed].each do |field|
   fail_validation("Ornn #{field} 不是 15") unless ornn.fetch(field) == 15
 end
@@ -248,7 +293,7 @@ fail_validation("案例 15 /api/chat 汇总未同步 artifact identity 回归") 
 
 current_deployment = summary.fetch("currentDeployment")
 fail_validation("当前部署证据不完整") unless
-  summary["updatedAtUtc"] == "2026-08-06T03:05:00Z" &&
+  summary["updatedAtUtc"] == "2026-08-06T03:35:16Z" &&
   summary["deployedCommit"] == "20d9ba410d8fe29f0a0ede8e41050743f6de3de4" &&
   summary["deploymentImage"].to_s.end_with?("20d9ba41") &&
   current_deployment["observedAtUtc"] == "2026-08-06T02:52:00Z" &&
@@ -259,7 +304,7 @@ fail_validation("当前部署证据不完整") unless
     %w[03389d0ae 71a38ff59 7ad633e6f e30fdd94a 53e20f9ba 748f98e7d f7f543c51 7a7781067 b010ba614 5a0b545d8 e1aedcae7 20d9ba410] &&
   current_deployment["productionVerificationWindowUtc"] == {
     "startedAt" => "2026-08-06T02:52:00Z",
-    "completedAt" => "2026-08-06T03:05:00Z"
+    "completedAt" => "2026-08-06T03:35:16Z"
   } &&
   current_deployment["postDeploymentLogCountersSampled"] == false
 
@@ -566,7 +611,10 @@ fail_validation("Lark Bot transport 证据不完整") unless
   lark_bot["ornnSearchObserved"] == true &&
   lark_bot["skillLoadAttempted"] == true &&
   lark_bot["replyRelayObserved"] == true &&
-  lark_bot["conversationTurnCompleted"] == true
+  lark_bot["conversationTurnCompleted"] == true &&
+  lark_bot["fileUploadCardObserved"] == true &&
+  lark_bot["fileContentParseObserved"] == true &&
+  lark_bot["fileReplyRelayObserved"] == true
 fail_validation("Lark Bot 不得把 transport 成功外推为 workflow 成功") unless
   lark_bot["workflowValidationStatus"] == "typed-failure" &&
   lark_bot["workflowFailureClasses"] == [
@@ -733,10 +781,10 @@ end
 
 expected_html_counts = {
   "源版本族" => [/<tr data-source-family=/, 7],
-  "能力矩阵" => [/<tr data-family=/, 18],
-  "直接证据" => [/<tr data-result=/, 18],
+  "能力矩阵" => [/<tr data-family=/, 19],
+  "直接证据" => [/<tr data-result=/, 19],
   "自然语言证据" => [/<tr data-chat-case=/, 5],
-  "阻塞项" => [/<div class="gap-row">/, 3],
+  "阻塞项" => [/<div class="gap-row">/, 4],
   "修复记录" => [/<div class="repair-item">/, 13]
 }
 expected_html_counts.each do |label, (pattern, expected)|
@@ -835,14 +883,16 @@ stale_schedule_claims.each do |claim|
     [readme, report, html].any? { |document| document.include?(claim) }
 end
 fail_validation("README 缺少最新全量回归口径") unless
-  readme.include?("生产镜像 `20d9ba41`") && readme.include?("17 个案例") &&
-  readme.include?("只对 14、16、17、18 强制 typed artifact 契约")
+  readme.include?("生产镜像 `20d9ba41`") && readme.include?("共 18 个案例") &&
+  readme.include?("14、16、17、18、19 强制 typed artifact 契约") &&
+  readme.include?("严格状态为 `start-blocked`")
 fail_validation("文字报告缺少最新全量回归口径") unless
-  report.include?("镜像 `20d9ba41`") && report.include?("18 个案例的最新终态均为 committed `completed`") &&
-  report.include?("只对 14、16、17、18 强制 typed artifact 契约")
+  report.include?("镜像 `20d9ba41`") && report.include?("19 个案例的 direct runtime 最新终态均为 committed `completed`") &&
+  report.include?("只对 14、16、17、18、19 强制 typed artifact 契约") &&
+  report.include?("`service_catalog_missing`") && report.include?("run catalog 增量为 0")
 fail_validation("分析页缺少最新全量回归口径") unless
-  html.include?("18 / 18") && html.include?("<code>20d9ba41</code>") &&
-  html.include?("只对 14、16、17、18 强制 typed artifact 契约")
+  html.include?("19 / 19") && html.include?("<code>20d9ba41</code>") &&
+  html.include?("只对 14、16、17、18、19 强制 typed artifact 契约")
 fail_validation("分析页阻塞状态未使用红色") unless
   html.include?(".status-blocked { background: var(--red-soft); color: var(--red); }")
 fail_validation("分析页仍把已验证失败或回归显示为蓝色") if
@@ -917,4 +967,4 @@ fail_validation("定向报告仍把 #3161 authority 写成待复测") unless
   focused_report.include?("补齐了 #3161 的真实 published-operation authority 主链") &&
   focused_report.include?("只覆盖 no-send 只读执行")
 
-puts "通过 报告案例=18 财务源验收=3 源版本族=7 能力矩阵=18 自然语言=5 阻塞=3 修复记录=13"
+puts "通过 报告案例=19 财务源验收=3 源版本族=7 能力矩阵=19 自然语言=5 阻塞=4 修复记录=13"

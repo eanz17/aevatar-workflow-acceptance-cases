@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "set"
+require "digest"
 require "json"
 require "yaml"
 
@@ -25,7 +26,8 @@ EXPECTED = {
   "15-weekly-budget-variance-digest.workflow.yaml" => [11, 6, 6, 0],
   "16-nyxid-read-receipt-probe.workflow.yaml" => [4, 1, 1, 0],
   "17-lark-post-search-approval-probe.workflow.yaml" => [4, 1, 0, 1],
-  "18-supplier-control-attestation-review.workflow.yaml" => [15, 0, 0, 0]
+  "18-supplier-control-attestation-review.workflow.yaml" => [15, 0, 0, 0],
+  "19-lark-bot-file-upload-validation.workflow.yaml" => [3, 0, 0, 0]
 }.freeze
 
 CODEX_EXEC_WORKFLOW = "11-complex-codex-exec-validation.workflow.yaml"
@@ -46,6 +48,10 @@ CONTACT_WORKFLOW = "14-lark-contact-batch-resolution.workflow.yaml"
 BUDGET_WORKFLOW = "15-weekly-budget-variance-digest.workflow.yaml"
 NYXID_RECEIPT_WORKFLOW = "16-nyxid-read-receipt-probe.workflow.yaml"
 POST_APPROVAL_WORKFLOW = "17-lark-post-search-approval-probe.workflow.yaml"
+LARK_BOT_FILE_WORKFLOW = "19-lark-bot-file-upload-validation.workflow.yaml"
+LARK_BOT_FILE_NAME = "lark-bot-upload-manifest.json"
+LARK_BOT_FILE_BYTES = 114
+LARK_BOT_FILE_SHA256 = "5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb"
 
 ALLOWED_PLACEHOLDERS = Set.new(
   YAML.safe_load(File.read(File.join(ROOT, "config.example.yaml")), aliases: false)
@@ -222,6 +228,38 @@ files.each do |file|
            resume_template.include?("side_effects == false")
       fail_validation("#{name}：缺少 approval resume 与无副作用断言")
     end
+  end
+  if name == LARK_BOT_FILE_WORKFLOW
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    extraction = steps_by_id.fetch("extract_uploaded_file").fetch("parameters")
+    extraction_arguments = JSON.parse(extraction.fetch("sub_param_arguments"))
+    unless extraction == {
+      "items_source" => "input_file_refs",
+      "sub_step_type" => "tool_call",
+      "sub_param_tool" => "document_extract",
+      "sub_param_arguments" => '{"maxChars":1000}',
+      "min_concurrent_workers" => "1",
+      "max_concurrent_workers" => "1"
+    } && extraction_arguments == { "maxChars" => 1000 }
+      fail_validation("#{name}：必须从单个类型化 file ref 精确调用一次 document_extract")
+    end
+
+    fixture = File.join(ROOT, "fixtures", LARK_BOT_FILE_NAME)
+    fixture_ok = File.file?(fixture) &&
+                 File.binread(fixture).bytesize == LARK_BOT_FILE_BYTES &&
+                 Digest::SHA256.file(fixture).hexdigest == LARK_BOT_FILE_SHA256
+    fail_validation("#{name}：Lark Bot 合成文件 fixture 契约漂移") unless fixture_ok
+
+    receipt_template = steps_by_id.fetch("verify_file_contract").fetch("template")
+    receipt_ok = receipt_template.include?("data.extracted_chars == #{LARK_BOT_FILE_BYTES}") &&
+                 receipt_template.include?("get(file, 'size_bytes', 0) == #{LARK_BOT_FILE_BYTES}") &&
+                 receipt_template.include?(LARK_BOT_FILE_SHA256) &&
+                 receipt_template.include?("source_message_id != ''") &&
+                 receipt_template.include?("source_resource_key != ''") &&
+                 receipt_template.include?("lark_bot_ingress_validated:") &&
+                 receipt_template.include?("identifiers_redacted: true") &&
+                 receipt_template.include?("side_effects: false")
+    fail_validation("#{name}：文件内容、Lark ingress 或脱敏断言不完整") unless receipt_ok
   end
   expected_codex_count = name == CODEX_EXEC_WORKFLOW ? 1 : 0
   fail_validation("#{name}：codex_exec 调用数应为 #{expected_codex_count}") unless codex_steps.length == expected_codex_count

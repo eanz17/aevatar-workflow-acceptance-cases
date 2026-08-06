@@ -2,7 +2,7 @@
 
 [![验证工作流](https://github.com/eanz17/aevatar-workflow-acceptance-cases/actions/workflows/validate.yml/badge.svg)](https://github.com/eanz17/aevatar-workflow-acceptance-cases/actions/workflows/validate.yml)
 
-本仓库提供 17 个公开、安全、可复现的 Aevatar workflow，以及与它们一一对应的 Ornn skill。案例覆盖基础原语、文件与图片输入、Base、Lark 审批、Lark 消息、contact、通用代码执行、`codex_exec`、schedule、NyxID provider receipt 和 typed tool approval resume 等能力，并使用不同于源目录的实际业务场景。
+本仓库提供 19 个公开、安全、可复现的 Aevatar workflow，以及与它们一一对应的 Ornn skill。案例覆盖基础原语、文件与图片输入、Lark Bot 入站附件、Base、Lark 审批、Lark 消息、contact、通用代码执行、`codex_exec`、schedule、NyxID provider receipt 和 typed tool approval resume 等能力，并使用不同于源目录的实际业务场景。
 
 公开 YAML 只保存占位符和合成数据，不包含组织专属 Base、用户、审批、NyxID 资源标识或未脱敏运行 ID。工作流 `name`、步骤 `id`、工具名、API 字段、错误码等技术契约保留英文，其余说明使用中文。
 
@@ -10,10 +10,11 @@
 
 验证基线日期：2026-08-05；状态更新：2026-08-06。
 
-- 18/18 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
-- 18/18 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
-- 最近一次全量回归在生产镜像 `20d9ba41` 上一次性重跑 17 个案例（01-05、07-18），全部 committed `completed` 且业务 artifact 断言成立；案例 06 会真实创建 Lark 审批，本轮未重跑，沿用 `0c4ff023` 的既有证据并已在表中标注。需要注意验收脚本只对 14、16、17、18 强制 typed artifact 契约，其余案例的 artifact 由人工逐条复核。
-- 本地 18/18 个 Ornn skill 与 workflow 字节一致；原有 15 个线上 `.1` 版本已 public 并回读，新增的 16、17、18 三个 skill 尚未发布。
+- 19/19 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
+- 19/19 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview；案例 19 preview 为 0 个外部 call site。
+- 最近一次回归在生产镜像 `20d9ba41` 上覆盖 01-05、07-19 共 18 个案例，均取得 committed `completed` 与业务 artifact 断言；案例 06 会真实创建 Lark 审批，本轮未重跑，沿用 `0c4ff023` 的既有证据并已在表中标注。当前验收脚本对 14、16、17、18、19 强制 typed artifact 契约；其余案例的 artifact 由人工逐条复核。
+- 案例 19 direct synthetic fixture run 为 committed `completed`、`stateVersion=30`、4/4 步，核心文件登记、抽取与内容契约通过，按设计 `lark_bot_ingress_validated=false`。真实 Lark canary 已证明文件卡片、附件解析和回复 relay，但 `aevatar_start_workflow` 因 current-scope catalog 缺少可启动定义而稳定返回 `service_catalog_missing`，运行目录增量为 0，因此严格状态为 `start-blocked`，不是 Lark workflow E2E 通过。
+- 本地 19/19 个 Ornn skill 与 workflow 字节一致；原有 15 个线上 `.1` 版本已 public 并回读，新增的 16、17、18、19 四个 skill 尚未发布。
 - `/api/chat` 已用自然语言验证 01、12、13、14、15：4/5 取得 committed `completed` 与业务断言，1/5 取得 committed `failed` 与稳定 typed blocker。
 - 案例 15 又在生产镜像 `d7844b5e` 上完成 artifact actor identity 回归：Assistant 读取到 committed typed artifact 并明确报告 `Completed`，没有再把最终结果误报为 pending。
 - 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
@@ -26,7 +27,7 @@
 
 ## 财务源工作流 post-fix 验收
 
-这组结果独立于下方公开 17-case 统计，使用当前 `~/workflows` 源定义和脱敏生产输入取得。它们证明功能主链已在线执行成功，但不代表安全限制下的发送、审批和排程分支也已运行。
+这组结果独立于下方公开案例统计，使用当前 `~/workflows` 源定义和脱敏生产输入取得。它们证明功能主链已在线执行成功，但不代表安全限制下的发送、审批和排程分支也已运行。
 
 | 源定义 | Preview / 输入边界 | 真实终态 | 副作用与结论 |
 |---|---|---|---|
@@ -58,6 +59,7 @@
 | 16 | `nyxid_read_receipt_probe` | 4 | 单次 Base GET、provider receipt、首步输出与终态 | committed 通过，`stateVersion=31` | 无 |
 | 17 | `lark_post_search_approval_probe` | 4 | 语义只读 POST、bind-time 批准契约、nested resume | committed 通过，`stateVersion=31`；preview `approvalEnforcement=bind_time_confirmation` | 无 |
 | 18 | `supplier_control_attestation_review` | 15 | `guard`、`conditional`、`while` 三个确定性原语 | committed 通过，`stateVersion=92`，15/15 步 | 无 |
+| 19 | `lark_bot_file_upload_validation` | 3 | Lark 入站 file ref、单次 `document_extract`、SHA-256 与 transport 证据分层 | preview 通过；direct committed 4/4，`stateVersion=30`；Lark canary `start-blocked` | `service_catalog_missing`；附件 transport 已验证，workflow 未启动 |
 
 最新全量回归使用部署镜像 `0c4ff023`。其中 11 曾在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；修复镜像 `f7f543c5` 部署后，11 的定向复验已 committed `completed`。12 的连续两次成功证据继续保留。14 和 17 的业务 artifact 均成功，但没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
 
@@ -91,9 +93,13 @@
 
 调用语义只读的 Lark Base `records/search` POST，不创建或修改记录。Production preview 仍确认单次 `post`、`effectiveRisk=write`、`approvalRequired=true`；最新 run 却未出现 typed pending/resume 即 committed `completed`，`stateVersion=31`。即使 artifact 写有 `approval_resumed=true`，也不能替代运行时身份链证据，因此严格判定为 `TOOL_APPROVAL_IDENTITY_NOT_OBSERVED`。历史 state 34 run 曾完整消费 nested `toolApproval`，继续保留；当前回归使拒绝路径不可达，durable preview 仍未验证。
 
+### 19 Lark Bot 文件上传验证
+
+使用仓库内 114 字节合成 JSON，通过 `input_file_refs -> document_extract` 验证文件名、媒体类型、字节数和固定 SHA-256，全程不调用 Lark 写接口。Production preview 已通过且为 0 个外部 call site；direct run committed `completed`、`stateVersion=30`、4/4 步，`file_ref_registered=true`、`document_extract_succeeded=true`、`content_contract_matches=true`，并按入口分层得到 `lark_bot_ingress_validated=false`。真实 Lark Bot canary 已观察到文件卡片、合成内容解析和回复 relay，但三次启动尝试均以稳定 `service_catalog_missing` 在 workflow 创建前终止，运行目录增量为 0。因而当前结论是“核心文件链通过、Lark 附件 transport 已验证、Lark workflow `start-blocked`”；没有 committed `lark_bot_ingress_validated=true`，不能写成 Lark workflow E2E 通过。公开摘要不保存文件消息、resource key 或其他 opaque ID。
+
 ## Ornn skills
 
-`skills/` 下有 17 个与 workflow 一一对应的 skill。Ornn 服务端只接受 `SKILL.md`、`scripts/`、`references/`、`assets/` 等根目录，因此 workflow 放在 `assets/*.yaml`。本地同步器保证 asset 与公开 workflow 字节一致。
+`skills/` 下有 19 个与 workflow 一一对应的 skill。Ornn 服务端只接受 `SKILL.md`、`scripts/`、`references/`、`assets/` 等根目录，因此 workflow 放在 `assets/*.yaml`。本地同步器保证 asset 与公开 workflow 字节一致。
 
 已完成的生产发布证据：
 
@@ -102,7 +108,7 @@
 - 权限均设置为 public；
 - 15 个名称均回读到预期版本和 `isPrivate=false`。
 
-新增 16、17 已通过本地 skill validator，但尚未调用 Ornn 服务端校验或发布。
+新增 16、17、18、19 已通过本地 skill validator，但尚未调用 Ornn 服务端校验或发布。
 
 发布命令：
 
@@ -138,6 +144,7 @@ ruby scripts/publish_skills.rb --verify-only
 | 16 | 运行 NyxID 只读回执探针，只接受 committed typed artifact，不执行写入。 |
 | 17 | 运行语义只读的 Base POST 搜索批准恢复探针；批准由 bind 时的 explicit-request confirmation 兑现。 |
 | 18 | 运行无副作用的供应商控制项自证审查，覆盖 guard、conditional 与 while 三个确定性原语。 |
+| 19 | 验证当前消息中的 `lark-bot-upload-manifest.json`，运行对应 Ornn workflow；只有 typed artifact 的 `lark_bot_ingress_validated=true` 才报告 Lark Bot 入站通过。 |
 
 可复现 `/api/chat` 验证：
 
@@ -192,12 +199,15 @@ ruby scripts/validate_report.rb
 
 ```bash
 ruby scripts/materialize_workflows.rb config.local.yaml
-ruby scripts/production_validate.rb --cases 16,17
+ruby scripts/production_validate.rb --cases 16,17,19
 ruby scripts/production_validate.rb --cases 16 --run
 ruby scripts/production_validate.rb --cases 17 --run --approve-read-only 17 --approve
+ruby scripts/production_validate.rb --cases 19 --run
 ```
 
 Case 17 必须逐行消费 SSE 并在 pending 出现时立即发送 nested `toolApproval` resume；`202 Accepted` 不是终态成功证据。如果 preview 要求批准但运行没有产生 typed pending，必须记为契约回归，不能用 artifact 的 `approval_resumed=true` 代替。拒绝路径和 durable preview 需要单独的新 run。
+
+Case 19 的 `--run` 使用 direct synthetic fixture，只能验证文件登记、抽取与内容契约，预期 `lark_bot_ingress_validated=false`。本轮真实 canary 已在 Lark Bot 会话上传同一 fixture 并取得附件解析与回复 relay，但由于 19 的 Ornn skill 尚未发布，current-scope catalog 没有可启动定义，`aevatar_start_workflow` 稳定返回 `service_catalog_missing`，没有新增 run。只有后续 canary 从 committed typed artifact 读取到 `lark_bot_ingress_validated=true` 才能升级为通过；Bot 回复文案、文件卡片或 direct run 均不能替代该证据。
 
 `build/`、`tmp/` 和 `config.local.yaml` 均被忽略。合成附件位于 `fixtures/`，schedule 示例位于 `schedules/`。
 
@@ -210,6 +220,7 @@ Case 17 必须逐行消费 SSE 并在 pending 出现时立即发送 nested `tool
 - managed `codex_exec`、typed approval 和 schedule 的现有边界不得通过 mock 成功结果或业务 artifact 掩盖；contact 的业务成功必须同时核对批准身份链与脱敏断言。
 - #3161 已关闭；Case 16 覆盖共同 receipt/runtime 平面，源 P2 no-send 又在当前部署上覆盖 published-operation authority 主链并 committed 完成。该结论只适用于 no-send 只读执行，不外推到消息发送或 durable schedule。
 - #3184 仍开放；Case 17 的历史 run 证明过批准 resume，但最新 `0c4ff023` run 未观察到 typed pending/resume，当前记为契约回归。拒绝路径在此状态下不可达，durable preview 仍需独立证据。
+- Case 19 已有静态、preview、direct committed 与 Lark 文件 transport 证据；direct fixture 和 Bot 附件解析都不证明 Lark workflow committed 成功。当前 `service_catalog_missing` / run 增量 0 必须保持为 `start-blocked`，直到 typed artifact 明确给出 `lark_bot_ingress_validated=true`。
 - 不得提交 token、真实组织标识、业务载荷、审批表单或未脱敏运行证据。
 
 新增和维护案例的完整规则见 [AGENTS.md](AGENTS.md)。

@@ -13,9 +13,9 @@
 
 ## 总结
 
-- 18/18 个公开 workflow 通过本地静态校验和 production explicit-request preview。
-- 最近一次全量回归在镜像 `20d9ba41` 上一次性重跑 01-05、07-18 共 17 个案例，全部 committed `completed`；连同案例 06 的既有证据，18 个案例的最新终态均为 committed `completed`。案例 06 会真实创建 Lark 审批，本轮未重跑，其证据仍来自 `0c4ff023`。
-- 本地 18/18 个 Ornn skill 与 workflow 一一对应；原有 15 个通过服务端格式校验并公开回读，新增的 16、17、18 尚未发布。
+- 19/19 个公开 workflow 通过本地静态校验和 production explicit-request preview。
+- 镜像 `20d9ba41` 上已重跑 01-05、07-19 共 18 个案例，全部 committed `completed`；连同案例 06 的既有证据，19 个案例的 direct runtime 最新终态均为 committed `completed`。案例 06 会真实创建 Lark 审批，本轮未重跑，其证据仍来自 `0c4ff023`。
+- 本地 19/19 个 Ornn skill 与 workflow 一一对应；原有 15 个通过服务端格式校验并公开回读，新增的 16、17、18、19 尚未发布。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
 - `/api/chat` 自然语言验证 5 个代表案例，4 个取得 committed `completed` 和业务断言，1 个取得 committed `failed` 和稳定 typed blocker。
 - 五个案例均按 search-first 顺序经过精确 skill 加载、typed mount approval、workflow 启动和 committed observation，重复 tool start call ID 为 0。
@@ -27,7 +27,7 @@
 
 必须先看清"通过"在本报告里代表什么，否则会高估覆盖面。
 
-- 验收脚本 `production_validate.rb` **只对 14、16、17、18 强制 typed artifact 契约**。其余案例的"通过"仅等于 committed terminal `completed` 且 read model `success=true`。
+- 验收脚本 `production_validate.rb` **只对 14、16、17、18、19 强制 typed artifact 契约**。其余案例的"通过"仅等于 committed terminal `completed` 且 read model `success=true`。
 - 因此工作流完全可能路由进自身的失败分支、仍被脚本判为"通过"。案例 18 初版就出现过这种情况：terminal `completed`、`success=true`，但 artifact 是 `attested=false`、`reason=while_replay_parity_mismatch`。本轮 17 份 artifact 已由人工逐条复核，未发现任何失败信号；但这是人工兜底，不是脚本门禁。
 - 案例 05、07、08、09、10 本轮只运行 preview 分支；写入、发送与建审批分支未运行。案例 09 的 artifact 明确记录 `identity_resolved=false`、`history_checked=false`。
 - 案例 06 会真实创建 Lark 审批，本轮未重跑，沿用 `0c4ff023` 证据。
@@ -112,10 +112,11 @@
 | 16 | managed workflow NyxID provider receipt | 静态与 preview 通过；单次 `get`、read-only、无需批准 | committed `completed`，`stateVersion=31`，4/4 步 | #3161 receipt/runtime 最小回归通过；源 P2 no-send 另行补齐 authority 分支 |
 | 17 | POST search bind-time 批准契约 | 静态与 preview 通过；单次 `post`、write、`approvalEnforcement=bind_time_confirmation` | committed `completed`，`stateVersion=31`，`approval_resumed=true`、`side_effects=false` | 覆盖；#3184 口径已澄清 |
 | 18 | `guard`、`conditional`、`while` 三个确定性原语 | 静态与 preview 通过；无外部调用、无副作用 | committed `completed`，`stateVersion=92`，15/15 步，`leading_control=breach_notice` | 覆盖；并由此定位并修复 `while` 挂起缺陷 |
+| 19 | Lark Bot 入站附件与确定性文件契约 | 静态与 preview 通过；0 个外部 call site | direct committed `completed`，`stateVersion=30`，4/4；Lark 文件卡片、解析与回复 relay 已观察，但 workflow start 为 `service_catalog_missing`、run 增量 0 | 核心文件链覆盖；Lark workflow `start-blocked` |
 
 ## Ornn 发布证据
 
-18 个 skill 均采用 Ornn validator 接受的 `SKILL.md + assets/*.yaml` 布局，且 asset 与公开 workflow 字节一致。原有 15 个线上 skill 已通过服务端格式校验，并逐个回读名称、`.1` 版本和 public 状态；新增的 16、17、18 目前只有本地 validator 证据，尚未上传或公开。
+19 个 skill 均采用 Ornn validator 接受的 `SKILL.md + assets/*.yaml` 布局，且 asset 与公开 workflow 字节一致。原有 15 个线上 skill 已通过服务端格式校验，并逐个回读名称、`.1` 版本和 public 状态；新增的 16、17、18、19 目前只有本地 validator 证据，尚未上传或公开。
 
 本地 Aevatar 源码的 `SkillWorkflowExtractor` 已包含 `assets/*.yaml` fallback。生产 `/api/chat` 中 01、12、13、14、15 都能完成 search、skill load、typed mount approval 和 workflow start；复杂 capability 的 mount/admission 与模型绕过问题已在镜像 `7ba3fa3e` 上重跑关闭。案例 15 又在镜像 `d7844b5e` 上验证 artifact 工具可使用 workflow start 同时返回的 actor identity 读取 committed artifact，不再依赖最终一致的短 run binding。
 
@@ -143,11 +144,14 @@
 
 因此 `/api/chat` 成功不能替代 Lark transport 证据；Lark 中出现回复也不能证明 workflow 终态成功。本轮两类证据已经分别取得；前两次 Bot 重试证明 typed approval resume 被接受，但运行最终都以 `NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN` committed failed。Developer App 默认项修复后的 fresh `/init` 又创建了 allow-all consent 和新 binding，第三次 run 仍以同一错误 committed failed。Aevatar authorize URL 的显式 core resource 不含 Lark；NyxID 会据此缩窄 authorization code/binding，所以默认项预选无法扩展实际 resource grant。
 
+案例 19 又补充了文件消息维度的独立证据：Lark 中发送 114 字节合成 JSON 后，Bot 收到文件卡片、解析出合成内容并经 relay 回传回复。随后按 workflow name、slug 和已绑定 member descriptor 共发起三次 `aevatar_start_workflow`，均在创建 run 前以稳定 `service_catalog_missing` 拒绝；验收窗口内案例 19 run catalog 增量为 0。原因是 direct validator 的 member binding 不属于 Assistant current-scope workflow catalog，且案例 19 的 Ornn skill 尚未发布。该证据严格记为 `start-blocked`，不能由附件解析成功外推为 `lark_bot_ingress_validated=true`。
+
 ## 当前阻塞与待复测项
 
-1. 验收脚本断言覆盖面：`production_validate.rb` 只对 14、16、17、18 强制 typed artifact 契约，01-13、15 的“通过”仅等于 committed `completed`。工作流走进自身失败分支仍会被判通过，目前靠人工复核 artifact 兜底。Case 17 的拒绝分支在 bind-time 契约下不再经由 per-run resume 到达，durable preview 仍未验证。
+1. 验收脚本断言覆盖面：`production_validate.rb` 只对 14、16、17、18、19 强制 typed artifact 契约，01-13、15 的“通过”仅等于 committed `completed`。工作流走进自身失败分支仍会被判通过，目前靠人工复核 artifact 兜底。Case 17 的拒绝分支在 bind-time 契约下不再经由 per-run resume 到达，durable preview 仍未验证。
 2. Lark Bot sender service grant：Aevatar `1.0.10` 为 Released，Bot Enabled、Availability=All，NyxID committed Bot 为 `active`、`webhook_registered=true`。镜像 `8cf280e2` 上的案例 14 直接 run 和 `/api/chat` Ornn mount/run 均 committed `completed`；前两次 Lark Bot 重试也都启动 workflow，并在 typed approval resume 后从 `awaiting_tool_approval` 进入 committed `failed`。失败步骤均为 `resolve_contact`，稳定错误码均为 `NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN`；run 哈希为 `1436a2852f8d`（state 18）和 `e491a2690b03`（state 17）。生产 `aevatar` Developer App 把 `api-lark-bot` 追加到 `default_service_catalog_slugs` 后，fresh `/init` 于 `11:34Z` 创建 allow-all consent 与新 sender binding；镜像 `e30fdd94` 上的第三次 run `93ece1c36951` 仍在 `resolve_contact` 以同一错误 committed `failed`（state 14）。源码契约确认 Aevatar authorize 仍只显式请求 core resources，NyxID 会在 authorization-code 阶段按这些 resources 缩窄 binding；默认项只提供 consent hints。因此该 blocker 已验证，不能再要求用户重复 `/init`。`ornn.skill` mount failure、`scope_workflows_get/list` outcome unverified 和后续 fallback 的 `InvalidWorkflowYaml` 继续作为独立 receipt 缺陷保留。
-3. 财务源定义的安全边界：P2 send、P1 v6、源 durable/weekly schedule 和 P1 v2 旧定义仍未运行。公开验收案例 15 的 schedule 已通过，但不能替代这些源副作用或 authority 分支。
+3. 案例 19 Lark workflow catalog：文件上传、附件解析和 Lark 回复 relay 已验证；direct run 也 committed 4/4。但当前 scope 未公开案例 19 skill，Assistant catalog 无可启动定义，三次 start 均为 `service_catalog_missing` 且 run 增量为 0。发布或挂载属于独立副作用，本轮未执行。
+4. 财务源定义的安全边界：P2 send、P1 v6、源 durable/weekly schedule 和 P1 v2 旧定义仍未运行。公开验收案例 15 的 schedule 已通过，但不能替代这些源副作用或 authority 分支。
 
 ## #3161 与 #3184 定向回归
 

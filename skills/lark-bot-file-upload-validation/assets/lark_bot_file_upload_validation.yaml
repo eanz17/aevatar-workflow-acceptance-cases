@@ -1,0 +1,35 @@
+name: lark_bot_file_upload_validation
+description: 验证用户通过 Lark Bot 上传的合成文件能以类型化 file ref 进入工作流并完成确定性抽取；不上传到 Lark 云空间，也不产生外部写入。
+roles:
+  - id: verifier
+    name: Lark Bot 文件上传验证员
+steps:
+  - id: extract_uploaded_file
+    type: foreach
+    parameters:
+      items_source: input_file_refs
+      sub_step_type: tool_call
+      sub_param_tool: document_extract
+      sub_param_arguments: '{"maxChars":1000}'
+      min_concurrent_workers: "1"
+      max_concurrent_workers: "1"
+    next: verify_file_contract
+
+  - id: verify_file_contract
+    type: transform
+    op: template
+    template: >-
+      {{~ file = get(data, 'file', {}); source_kind = get(file, 'source_kind', ''); source_message_id = get(file, 'source_message_id', ''); source_resource_key = get(file, 'source_resource_key', '') ~}}
+      {{~ file_ref_registered = get(file, 'file_id', '') != '' && get(file, 'artifact_id', '') != '' ~}}
+      {{~ extraction_ok = data.extraction_kind == 'utf8_text' && data.media_type == 'application/json' && data.truncated == false && data.extracted_chars == 114 ~}}
+      {{~ content_contract_matches = get(file, 'file_name', '') == 'lark-bot-upload-manifest.json' && get(file, 'size_bytes', 0) == 114 && get(file, 'sha256', '') == '5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb' ~}}
+      {{~ lark_bot_ingress_validated = (source_kind == 'ChatInput' || source_kind == 'ConnectedServiceResource') && source_message_id != '' && source_resource_key != '' ~}}
+      {{~ success = file_ref_registered && extraction_ok && content_contract_matches ~}}
+      {{ json({ case: 'lark_bot_file_upload_validation', success: success, execution_mode: 'preview', file_ref_registered: file_ref_registered, document_extract_succeeded: extraction_ok, content_contract_matches: content_contract_matches, lark_bot_ingress_validated: lark_bot_ingress_validated, identifiers_redacted: true, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

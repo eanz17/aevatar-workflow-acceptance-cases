@@ -1,6 +1,6 @@
 {
   "date": "2026-08-05",
-  "updatedAtUtc": "2026-08-06T03:05:00Z",
+  "updatedAtUtc": "2026-08-06T03:35:16Z",
   "deployedCommit": "20d9ba410d8fe29f0a0ede8e41050743f6de3de4",
   "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:20d9ba41",
   "ingress": "nyxid proxy request aevatar",
@@ -27,39 +27,40 @@
     ],
     "productionVerificationWindowUtc": {
       "startedAt": "2026-08-06T02:52:00Z",
-      "completedAt": "2026-08-06T03:05:00Z"
+      "completedAt": "2026-08-06T03:35:16Z"
     },
     "postDeploymentLogCountersSampled": false
   },
   "staticValidation": {
-    "workflowCount": 18,
-    "passed": 18,
+    "workflowCount": 19,
+    "passed": 19,
     "genericCodeExecuteCount": 1,
     "managedCodexExecCount": 1,
     "placeholderCount": 16
   },
   "productionPreview": {
-    "passed": 18,
+    "passed": 19,
     "failed": 0,
     "unverified": 0,
     "executionMode": "interactive"
   },
   "directRuntimeSummary": {
-    "passed": 18,
+    "passed": 19,
     "platformBlocked": 0,
     "contractRegressions": 0,
-    "terminalCompleted": 18,
+    "terminalCompleted": 19,
     "terminalFailed": 0,
     "unverified": 0,
     "scriptEnforcedArtifactContracts": [
       "14",
       "16",
       "17",
-      "18"
+      "18",
+      "19"
     ],
     "artifactsManuallyReviewed": true,
     "freshRegressionImage": "20d9ba41",
-    "casesRerunOnFreshImage": 17,
+    "casesRerunOnFreshImage": 18,
     "caseNotRerun": "06"
   },
   "latestFullRegression": {
@@ -681,10 +682,24 @@
       "scriptEnforcedArtifactContract": true,
       "assertion": "guard(json_valid)、conditional(true 分支)、while(3 次 reverse_lines) 全部命中；attested=true、control_count=3、leading_control=breach_notice、replay_iterations=3、side_effects=false",
       "sideEffects": false
+    },
+    {
+      "case": "19",
+      "result": "通过",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 30,
+      "completedSteps": 4,
+      "totalSteps": 4,
+      "runIdHash": "6f134c48d571",
+      "evidenceImage": "20d9ba41",
+      "scriptEnforcedArtifactContract": true,
+      "assertion": "direct synthetic file ref 已登记并由 document_extract 完成 114 字节 JSON 与固定 SHA-256 断言；lark_bot_ingress_validated=false、identifiers_redacted=true、side_effects=false",
+      "sideEffects": false
     }
   ],
   "ornnPublication": {
-    "localSkillCount": 17,
+    "localSkillCount": 19,
     "skillCount": 15,
     "serverFormatValidated": 15,
     "publishedPublic": 15,
@@ -696,7 +711,7 @@
       "09": "2.1",
       "10": "3.1",
       "11-15": "1.1",
-      "16-17": "本地 1.1，尚未发布"
+      "16-19": "本地 1.1，尚未发布"
     }
   },
   "assistantNaturalLanguage": {
@@ -787,7 +802,7 @@
     ]
   },
   "larkBotTransportValidation": {
-    "validatedAt": "2026-08-05T09:44:00Z",
+    "validatedAt": "2026-08-06T03:35:16Z",
     "app": "Aevatar",
     "bot": "aevatar-virtual-assistant",
     "productionVersion": "1.0.10",
@@ -810,6 +825,9 @@
     "skillLoadAttempted": true,
     "replyRelayObserved": true,
     "conversationTurnCompleted": true,
+    "fileUploadCardObserved": true,
+    "fileContentParseObserved": true,
+    "fileReplyRelayObserved": true,
     "workflowValidationStatus": "typed-failure",
     "workflowFailureClasses": [
       "Skill workflow mounting failed",
@@ -817,6 +835,56 @@
       "WorkflowExternalCapabilityAdmissionException"
     ],
     "result": "transport 已验证，workflow typed failure"
+  },
+  "case19Validation": {
+    "validatedAt": "2026-08-06T03:35:16Z",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:20d9ba41",
+    "fixture": {
+      "name": "lark-bot-upload-manifest.json",
+      "mediaType": "application/json",
+      "sizeBytes": 114,
+      "sha256": "5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb",
+      "synthetic": true
+    },
+    "preview": {
+      "passed": true,
+      "callSiteCount": 0,
+      "executionMode": "interactive"
+    },
+    "directRun": {
+      "runIdHash": "6f134c48d571",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 30,
+      "completedSteps": 4,
+      "totalSteps": 4,
+      "finalArtifact": {
+        "case": "lark_bot_file_upload_validation",
+        "success": true,
+        "execution_mode": "preview",
+        "file_ref_registered": true,
+        "document_extract_succeeded": true,
+        "content_contract_matches": true,
+        "lark_bot_ingress_validated": false,
+        "identifiers_redacted": true,
+        "side_effects": false
+      }
+    },
+    "larkBotCanary": {
+      "entryPoint": "Lark Aevatar Bot private chat",
+      "fileUploadCardObserved": true,
+      "inboundFileContentParsed": true,
+      "replyRelayObserved": true,
+      "workflowStartAttempts": 3,
+      "workflowValidationStatus": "start-blocked",
+      "stableErrorCode": "service_catalog_missing",
+      "newWorkflowRunCount": 0,
+      "committedTerminalObserved": false,
+      "larkBotIngressValidated": false,
+      "rawIdentifiersPersisted": false,
+      "sideEffects": false,
+      "result": "附件 transport 与解析已验证；current-scope catalog 无可启动定义，workflow 未启动"
+    }
   },
   "case14PostFailureRecovery": {
     "validatedAt": "2026-08-05T09:59:00Z",
