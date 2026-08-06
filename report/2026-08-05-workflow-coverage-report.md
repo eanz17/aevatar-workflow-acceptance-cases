@@ -44,7 +44,7 @@
 | Case 21 | rejected | 真实 Lark inbound/relay；审批回调只分发一次；同一审批链返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start 为 0；run catalog 增量为 0；不持久化原始身份 | `pending-deployment` |
 | Case 22 | approved | skill 已挂载且不出现新 mount 审批；workflow start 恰好 1 次且 run 增量 1；run committed 到 `awaiting_tool_approval`；workflow 审批卡出现；callback 精确包含 `actor_id/run_id/step_id/execution_id/tool_call_id/approval_request_id` 且只分发一次；同一 workflow run 恢复；pending receipt 不进入最终回复；最终 committed artifact 精确命中 | `pending-deployment` |
 
-三项都要求 Ready 生产 workload 可从 image/digest/revision 追溯到 `b7cacf1838a519e83fbfd70953be988b9696ee2b`，并确认其历史包含 `b3784feef`、`dd12cd6a6` 与 `452d72ec5`。部署证据、真实 Lark 点击和 committed terminal 尚未写入，因此机器摘要中的运行字段全部保持 `null`，`readyProductionWorkloadTraceable=false`。审批卡、Bot 文案、direct Case 14 或 `/api/chat` 成功都不能把它们升级为通过。
+三项都要求 Ready 生产 workload 可从 image/digest/revision 追溯到 `9f67c528174ac477bb144d6bd1525444e7c971cf`，并确认其历史包含 `b3784feef`、`dd12cd6a6`、`452d72ec5` 与 `b7cacf183`。部署证据、真实 Lark 点击和 committed terminal 尚未写入，因此机器摘要中的运行字段全部保持 `null`，`readyProductionWorkloadTraceable=false`。审批卡、Bot 文案、direct Case 14 或 `/api/chat` 成功都不能把它们升级为通过。
 
 ## while 迭代投递缺陷（由案例 18 发现）
 

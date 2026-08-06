@@ -7,8 +7,8 @@ require "yaml"
 ROOT = File.expand_path("..", __dir__)
 CASE_DIR = File.join(ROOT, "channel-cases")
 EVIDENCE_PATH = File.join(ROOT, "validation", "production-validation-2026-08-05.json")
-REQUIRED_DEPLOYMENT_COMMIT = "b7cacf1838a519e83fbfd70953be988b9696ee2b"
-REQUIRED_ANCESTOR_COMMITS = %w[b3784feef dd12cd6a6 452d72ec5].freeze
+REQUIRED_DEPLOYMENT_COMMIT = "9f67c528174ac477bb144d6bd1525444e7c971cf"
+REQUIRED_ANCESTOR_COMMITS = %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183].freeze
 EXPECTED_FILES = {
   "20" => "20-lark-agent-run-skill-approval-approved.case.yaml",
   "21" => "21-lark-agent-run-skill-approval-rejected.case.yaml",

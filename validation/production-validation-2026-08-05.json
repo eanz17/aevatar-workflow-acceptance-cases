@@ -857,7 +857,7 @@
   },
   "channelE2EAcceptance": {
     "schemaVersion": "1.0",
-    "requiredDeploymentCommit": "b7cacf1838a519e83fbfd70953be988b9696ee2b",
+    "requiredDeploymentCommit": "9f67c528174ac477bb144d6bd1525444e7c971cf",
     "summary": {
       "total": 3,
       "passed": 0,
@@ -897,7 +897,7 @@
         "replyRelayObserved": null,
         "stableErrorCode": null,
         "rawIdentifiersPersisted": false,
-        "result": "等待提交 b7cacf183 部署到 Ready 生产 workload 后执行 Lark skill mount 批准路径"
+        "result": "等待提交 9f67c5281 部署到 Ready 生产 workload 后执行 Lark skill mount 批准路径"
       },
       {
         "case": "21",
@@ -931,7 +931,7 @@
         "replyRelayObserved": null,
         "stableErrorCode": null,
         "rawIdentifiersPersisted": false,
-        "result": "等待提交 b7cacf183 部署到 Ready 生产 workload 后执行 Lark skill mount 拒绝路径"
+        "result": "等待提交 9f67c5281 部署到 Ready 生产 workload 后执行 Lark skill mount 拒绝路径"
       },
       {
         "case": "22",
@@ -968,7 +968,7 @@
         "replyRelayObserved": null,
         "stableErrorCode": null,
         "rawIdentifiersPersisted": false,
-        "result": "等待提交 b7cacf183 部署到 Ready 生产 workload 后执行已挂载 skill 的 workflow 运行期工具批准路径"
+        "result": "等待提交 9f67c5281 部署到 Ready 生产 workload 后执行已挂载 skill 的 workflow 运行期工具批准路径"
       }
     ]
   },

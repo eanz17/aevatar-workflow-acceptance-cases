@@ -73,7 +73,7 @@
 | 21 | `lark_agent_run_skill_approval_rejected` | 拒绝 | 真实 Lark inbound/relay；审批卡可见；回调只分发一次；同一挂起调用返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start=0；run catalog 增量=0 | `pending-deployment` |
 | 22 | `lark_workflow_runtime_tool_approval_approved` | 批准 | skill 已挂载且不出现新 mount 审批；workflow start=1；run 到达 `awaiting_tool_approval`；workflow 审批卡回调精确携带 actor/run/step/execution/tool-call/approval-request identity；同一 workflow run 恢复；最终 artifact 精确命中 | `pending-deployment` |
 
-目标修复提交是 `b7cacf1838a519e83fbfd70953be988b9696ee2b`，且必须包含 `b3784feef`、`dd12cd6a6` 与 `452d72ec5`。只有 Ready 生产 workload 的 image/digest/revision 可追溯到该提交后，才能执行真实 Lark 验收并更新机器证据。Bot 自然语言、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功都不能把 Case 20/21/22 判为通过。
+目标修复提交是 `9f67c528174ac477bb144d6bd1525444e7c971cf`，且必须包含 `b3784feef`、`dd12cd6a6`、`452d72ec5` 与 `b7cacf183`。只有 Ready 生产 workload 的 image/digest/revision 可追溯到该提交后，才能执行真实 Lark 验收并更新机器证据。Bot 自然语言、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功都不能把 Case 20/21/22 判为通过。
 
 最新全量回归使用部署镜像 `0c4ff023`。其中 11 曾在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；修复镜像 `f7f543c5` 部署后，11 的定向复验已 committed `completed`。12 的连续两次成功证据继续保留。14 和 17 的业务 artifact 均成功，但没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
 
@@ -237,7 +237,7 @@ Case 19 的 `--run` 使用 direct synthetic fixture，只能验证文件登记�
 - #3161 已关闭；Case 16 覆盖共同 receipt/runtime 平面，源 P2 no-send 又在当前部署上覆盖 published-operation authority 主链并 committed 完成。该结论只适用于 no-send 只读执行，不外推到消息发送或 durable schedule。
 - #3184 仍开放；Case 17 的历史 run 证明过批准 resume，但最新 `0c4ff023` run 未观察到 typed pending/resume，当前记为契约回归。拒绝路径在此状态下不可达，durable preview 仍需独立证据。
 - Case 19 已有静态、preview、direct committed 与 Lark 文件 transport 证据；direct fixture 和 Bot 附件解析都不证明 Lark workflow committed 成功。当前 `service_catalog_missing` / run 增量 0 必须保持为 `start-blocked`，直到 typed artifact 明确给出 `lark_bot_ingress_validated=true`。
-- Case 20/21 分别覆盖 #3210 的 skill mount 批准和拒绝路径；Case 22 覆盖 skill 已挂载后的 workflow 运行期工具批准路径。提交 `b7cacf183` 部署前必须保持 `pending-deployment`；部署后仍需真实 Lark 审批卡、对应层级的精确 callback identity 和 typed receipt/committed artifact 证据，不能用 Bot 文案或 direct Case 14 结果代替。
+- Case 20/21 分别覆盖 #3210 的 skill mount 批准和拒绝路径；Case 22 覆盖 skill 已挂载后的 workflow 运行期工具批准路径。提交 `9f67c5281` 部署前必须保持 `pending-deployment`；部署后仍需真实 Lark 审批卡、对应层级的精确 callback identity 和 typed receipt/committed artifact 证据，不能用 Bot 文案或 direct Case 14 结果代替。
 - 不得提交 token、真实组织标识、业务载荷、审批表单或未脱敏运行证据。
 
 新增和维护案例的完整规则见 [AGENTS.md](AGENTS.md)。

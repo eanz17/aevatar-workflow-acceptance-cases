@@ -627,7 +627,7 @@ fail_validation("Lark Bot 不得把 transport 成功外推为 workflow 成功") 
 channel_e2e = summary.fetch("channelE2EAcceptance")
 fail_validation("Lark channel E2E 机器证据摘要漂移") unless
   channel_e2e["schemaVersion"] == "1.0" &&
-  channel_e2e["requiredDeploymentCommit"] == "b7cacf1838a519e83fbfd70953be988b9696ee2b" &&
+  channel_e2e["requiredDeploymentCommit"] == "9f67c528174ac477bb144d6bd1525444e7c971cf" &&
   channel_e2e["summary"] == {
     "total" => 3,
     "passed" => 0,

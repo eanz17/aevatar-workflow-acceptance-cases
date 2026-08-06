@@ -9,11 +9,12 @@ target:
   skill: lark-contact-batch-resolution
   workflow: lark_contact_batch_resolution
   direct_workflow_case: "14"
-  required_deployment_commit: b7cacf1838a519e83fbfd70953be988b9696ee2b
+  required_deployment_commit: 9f67c528174ac477bb144d6bd1525444e7c971cf
   required_ancestor_commits:
     - b3784feef
     - dd12cd6a6
     - 452d72ec5
+    - b7cacf183
 preconditions:
   skill_already_mounted: true
   new_mount_approval_expected: false
