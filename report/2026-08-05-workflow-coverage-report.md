@@ -1,6 +1,6 @@
 # 工作流验证与能力覆盖报告
 
-报告基线日期：2026-08-05；状态更新：2026-08-06（当前生产镜像 `6df43b83`）。
+报告基线日期：2026-08-05；状态更新：2026-08-06（当前生产镜像 `19b5906b`；部分 fresh 批次运行于其祖先镜像 `ee031038`）。
 
 ## 路径与统计口径
 
@@ -14,11 +14,11 @@
 ## 总结
 
 - 25/25 个公开 workflow 通过本地静态校验和 production explicit-request preview；`production_validate.rb` 与 `assistant_validate.rb` 共用 25/25 个 strict artifact contract。
-- 另有 3 个既有 Lark channel E2E case 和 21 个 risk case。Channel 严格结果为 1/3；risk 汇总为 8 passed、4 blocked、4 failed、0 pending-execution、5 not-configured。
-- 旧 01-20 保留既有 committed 基线；新增 21-25 当前最新结果为 5/5 completed：21/22/23 从 clean isolated `config.local.yaml` materialization 分别完成 7/7、8/8、4/4 并命中严格 artifact，24/25 最近一次仍分别完成一次和两次 typed approval resume。共享 `build/workflows` 被示例配置覆盖时的 HTTP 400 只保留为无效物化负面对照。24/25 三轮成功复验累计新增 9 条可清理 Base 探针记录，尚未清理。
-- 本地 25/25 个 Ornn skill 与 workflow 一一对应，25/25 通过服务端格式校验；19/25 可按精确名称 public 回读，缺 Case 19 与新增 21-25 六个 skill。本轮未上传、未改权限。
+- 另有 3 个既有 Lark channel E2E case 和 21 个 risk case。Channel fresh 严格结果为 1 passed、2 failed；risk 汇总为 12 passed、2 blocked、2 failed、0 pending-execution、5 not-configured。
+- 旧 01-20 保留既有 committed 基线；新增 21-25 当前最新结果为 5/5 completed。Cases 05/24/25 fresh 写探针共创建 4 条固定合成记录，随后连同 2 条同契约历史残留精确清理；回读匹配数为 0，未匹配记录未触碰。
+- 本地 25/25 个 Ornn skill 与 workflow 一一对应；missing-only 只发布原缺失 6 个，19 个既有精确项跳过；发布后的正式 verify-only 与独立 catalog 验证器均确认 25/25 格式、名称、版本与 public 状态精确一致。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
-- `/api/chat` 自然语言验证 5 个代表案例，4 个取得 committed `completed` 和业务断言，1 个取得 committed `failed` 和稳定 typed blocker。
+- `/api/chat` 在 Ready 镜像 `ee031038` 上 fresh 验证 5 个代表案例，5/5 取得 committed `completed` 和严格业务 artifact；12/14 的最终模型文案陈旧，不覆盖 authoritative committed 证据。
 - 五个案例均按 search-first 顺序经过精确 skill 加载、typed mount approval、workflow 启动和 committed observation，重复 tool start call ID 为 0。
 - `/api/chat` 与 Lark Bot 共用 Assistant/Ornn/workflow 核心；Lark Bot 已独立覆盖 webhook、NyxID channel relay、会话映射、Lark 回传和 typed approval resume。Developer App 默认项追加 `api-lark-bot` 后的 fresh `/init` 已完成，但第三次新镜像重试仍在 `resolve_contact` 以 `NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN` committed failed；根因已收敛到 authorization-code resource narrowing。
 - 当前生产补充验证已覆盖 scope 特定的 `code_execute` 认证修复：单步无副作用 probe、可访问 Base 的 P2 no-send 同类链，以及 exact P1 v5 sanitized image + `submit=false` 均为 terminal `completed`、`lastSuccess=true` 且 final output 非空；既有 PDF probe 2/2 证据继续有效。
@@ -40,23 +40,23 @@
 
 | Case | 决策 | 必须观察到的通过证据 | 当前状态 |
 |---|---|---|---|
-| Case 20 | approved | 真实 Lark inbound/relay；Ornn 搜索并解析到精确 skill；Lark 审批卡出现；pending receipt 不进入模型回复；回调身份精确匹配且只分发一次；同一 AgentRun 恢复；`use_skill=Completed`；mount 执行；workflow start 恰好 1 次且 run 增量 1；最终 committed artifact 精确命中 `resolved_count=1`、`identifiers_redacted=true`、`side_effects=false` | `pending-execution` |
-| Case 21 | rejected | 真实 Lark inbound/relay；审批回调只分发一次；同一审批链返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start 为 0；run catalog 增量为 0；不持久化原始身份 | `pending-execution` |
+| Case 20 | approved | 真实 Lark inbound/relay 已观察；未搜索/解析精确 skill，未出现新的 mount 审批卡；`aevatar_start_workflow` 在创建 run 前以 `InvalidWorkflowYaml` 失败，目标 run 增量 0 | `failed` |
+| Case 21 | rejected | 真实 Lark inbound/relay 已观察；未出现可拒绝的新 mount 审批卡，未分发决策；`aevatar_start_workflow` 在创建 run 前以 `InvalidWorkflowYaml` 失败，目标 run 增量 0 | `failed` |
 | Case 22 | approved | skill 已挂载且不出现新 mount 审批；workflow start 恰好 1 次且新 run 晚于 Lark inbound；run committed 到 `awaiting_tool_approval`；workflow 审批卡与 callback 各一次；同一 workflow run 恢复；普通 AgentRun 可见回复为 0；3/3 steps、stateVersion 30、脱敏 committed artifact 精确命中 | `passed` |
 
-Case 22 目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入 Ready 生产 workload。真实 Lark inbound 于 `12:33:10Z` 到达，新 workflow run 随后启动，审批卡投递与 CardAction 各一次，同一 run 恢复并 committed `completed`；公开 run hash 为 `9c3d41015b52`。Case 20/21 仍需各自完整路径，不能由 Case 22、Bot 文案、direct Case 14 或 `/api/chat` 成功外推。
+Case 22 所需提交已包含在 Ready 镜像 `ee031038`。fresh Lark inbound 后唯一新增 workflow run 进入 `awaiting_tool_approval`，审批卡只决策一次，同一 run 恢复并 committed `completed`、3/3；公开 run hash 为 `08cdd96d61dd`。Case 20/21 的 `InvalidWorkflowYaml` 缺陷不能由 Case 22、Bot 文案、direct Case 14 或 `/api/chat` 成功外推关闭。
 
 ## 可靠性与准入风险验收（2026-08-06）
 
-新增 workflow 21-25 与 risk case 23-43 专门验证此前证据不足或容易假绿的路径。所有生产 API 均经 `nyxid proxy request aevatar`；公开机器摘要只保存 run hash。Case 24/25 的外部写入已在显式批准下发生，三轮成功复验累计 9 条固定前缀的可清理 Base 探针记录。
+新增 workflow 21-25 与 risk case 23-43 专门验证此前证据不足或容易假绿的路径。所有生产 API 均经 `nyxid proxy request aevatar`；公开机器摘要只保存 run hash。本轮 Base 写探针及同契约历史残留已精确清理，回读匹配数为 0。
 
 | Risk Case | 目标 | 状态 | 生产证据 / 仍不可靠处 |
 |---:|---|---|---|
 | 23 | Lark workflow 工具拒绝 | `failed` | run committed failed 且下游未执行，但缺 typed `approval_denied`；Bot 回显完整 Run ID，已决卡片按钮仍 active |
-| 24 | Lark 附件经 public catalog 启动 | `blocked` | `lark-bot-file-upload-validation` 不在 public catalog；未重传附件、未自动发布 |
-| 25 | Lark sender scope | `failed` | 消息可见，60 秒内 AgentRun/workflow run 增量 0，`CHANNEL_AGENT_RUN_NOT_STARTED` |
-| 26 | `/api/chat` code_execute | `failed` | 原 `/api/chat` case committed run state 12 以 `NYXID_PROXY_UNAUTHORIZED` failed；修正 sandbox bearer 转发后，direct member-stream 单步 `code_execute` 已通过，但该 `/api/chat` case 尚未按原入口重跑，不能借用 direct 证据改判 |
-| 27 | Ornn catalog 完整性 | `blocked` | 25/25 format；19/25 public readback；缺 6 个 skill |
+| 24 | Lark 附件经 public catalog 启动 | `passed` | public skill `1.1` 精确解析；目标 run 基线 `6 -> 7`，唯一新 run `03c3f4ded68e` committed 4/4、state 32；114 字节文件卡片归一化为 113 字节 descriptor/extraction，Lark ingress、文件内容/SHA、脱敏和无副作用 artifact 精确命中 |
+| 25 | Lark sender scope | `passed` | 同 sender 的 fresh Case 22 已启动 AgentRun、解析精确 skill/workflow、完成同一 run 的 typed approval resume，并以 contact artifact committed completed；精确 UserService grant 已由真实调用证明 |
+| 26 | `/api/chat` code_execute | `passed` | Ready `ee031038` 上按原入口 fresh 重跑 Case 12，search-first、精确 skill、workflow start 与 committed observation 全部完成；4/4、`total_cents=16623`、`side_effects=false` |
+| 27 | Ornn catalog 完整性 | `passed` | 25/25 format、精确名称、版本与 public readback 全部一致；独立 verify-only 未写入 |
 | 28 | 当前部署精确源 P1 v5 | `passed` | exact source + sanitized PNG + `submit=false` 只 invoke 一次；14/14 completed，写入/审批分支未执行 |
 | 29 | P2 四表 schema 保真 | `not-configured` | disposable 合成表未配置；shared Base 不作语义替代 |
 | 30 | 源 Durable schedule cleanup | `not-configured` | 源 target/authority 未配置；公开 Case 15 不作替代 |
@@ -126,7 +126,7 @@ Case 22 目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入 Ready 
 | 发票审批 | 7 | 02、03、09、13、14 + 源 P1 v5 | 图片/PDF、提取、SGD/金额/供应商规则、历史、去重、审批、contact | 源 v5 的 sanitized image + `submit=false` 已 14/14 完成；审批提交、v6 和旧 v2 未运行 | 功能主链覆盖 / 写入边界未运行 |
 | 预算监控 | 5 | 04、08、15 + 源 P2 no-send | 六路 Base、预算差异、阈值、周/月摘要、消息、Durable schedule | 源 no-send 已 8/8 完成；公开案例 15 schedule 在 `b010ba61` 上已创建、回读、真实 cron 触发并删除清理；源 send 与源 durable schedule 未运行 | 公开主链与排程覆盖 / 源副作用边界未运行 |
 | 旧验收案例副本 | 10 | 01-10 | 新仓库是修复、中文化并取得 committed 证据的权威版本 | 源副本仍保留旧契约 | 覆盖 |
-| Ornn 资产副本 | 10 | 01-17 | 原有 15 个 skill 已 public 发布并回读；新增两个已本地同步 | 16、17 尚未服务端校验或发布；Lark channel 的 mount/get/list receipt 仍异常 | 部分覆盖 / 发布待完成 |
+| Ornn 资产副本 | 10 | 01-25 | 25/25 本地 asset 同步、服务端格式、精确名称、version 与 public 状态一致 | Lark channel 的 mount/get/list receipt 仍需独立实测 | catalog 覆盖 |
 
 ## 财务源工作流 post-fix 验收
 
@@ -182,7 +182,7 @@ Case 22 目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入 Ready 
 | 16 | managed workflow NyxID provider receipt | 静态与 preview 通过；单次 `get`、read-only、无需批准 | committed `completed`，`stateVersion=31`，4/4 步 | #3161 receipt/runtime 最小回归通过；源 P2 no-send 另行补齐 authority 分支 |
 | 17 | POST search bind-time 批准契约 | 静态与 preview 通过；单次 `post`、write、`approvalEnforcement=bind_time_confirmation` | committed `completed`，`stateVersion=31`，`approval_resumed=true`、`side_effects=false` | 覆盖；#3184 口径已澄清 |
 | 18 | `guard`、`conditional`、`while` 三个确定性原语 | 静态与 preview 通过；无外部调用、无副作用 | committed `completed`，`stateVersion=92`，15/15 步，`leading_control=breach_notice` | 覆盖；并由此定位并修复 `while` 挂起缺陷 |
-| 19 | Lark Bot 入站附件与确定性文件契约 | 静态与 preview 通过；0 个外部 call site | direct committed `completed`，`stateVersion=30`，4/4；Lark 文件卡片、解析与回复 relay 已观察，但 workflow start 为 `service_catalog_missing`、run 增量 0 | 核心文件链覆盖；Lark workflow `start-blocked` |
+| 19 | Lark Bot 入站附件与确定性文件契约 | 静态与 preview 通过；0 个外部 call site；public skill `1.1` | direct run `e6d17331400b` committed `completed`、`stateVersion=30`、4/4；fresh Lark run `03c3f4ded68e` committed `completed`、`stateVersion=32`、4/4，typed artifact 精确命中 | direct 与 Lark workflow 均覆盖；114 字节文件卡片与 113 字节 committed extraction 分层记录；无副作用 |
 | 20 | `map_reduce` 与 `cache` | 静态与 preview 通过 | committed `completed`，`stateVersion=89`，15/15 | 覆盖 |
 | 21 | 审批窗口完整性 | 2 个只读 GET | committed `completed`，`stateVersion=49`，7/7；legacy 36 vs active 48 | 旧查询窗口已过期，需重基线 |
 | 22 | fixture 漂移体检 | 4 个只读 GET | committed `completed`，`stateVersion=55`，8/8；`fixtures_intact=true` | 当前基线通过 |
@@ -192,7 +192,7 @@ Case 22 目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入 Ready 
 
 ## Ornn 发布证据
 
-25 个 skill 均采用 Ornn validator 接受的 `SKILL.md + assets/*.yaml` 布局，且 asset 与公开 workflow 字节一致。全量 25/25 服务端格式校验通过，19/25 精确名称、版本和 public 状态回读通过；Case 19 与新增 21-25 尚未上传或公开。
+25 个 skill 均采用 Ornn validator 接受的 `SKILL.md + assets/*.yaml` 布局，且 asset 与公开 workflow 字节一致。missing-only 发布前先校验全部 25 个包并精确跳过 19 个既有项，只创建并公开原缺失 6 个；发布后的正式 verify-only 与独立 catalog 验证器均确认 25/25 服务端格式、精确名称、版本和 public 状态一致，缺失/private/version mismatch 均为空。
 
 本地 Aevatar 源码的 `SkillWorkflowExtractor` 已包含 `assets/*.yaml` fallback。生产 `/api/chat` 中 01、12、13、14、15 都能完成 search、skill load、typed mount approval 和 workflow start；复杂 capability 的 mount/admission 与模型绕过问题已在镜像 `7ba3fa3e` 上重跑关闭。案例 15 又在镜像 `d7844b5e` 上验证 artifact 工具可使用 workflow start 同时返回的 actor identity 读取 committed artifact，不再依赖最终一致的短 run binding。
 
@@ -201,7 +201,7 @@ Case 22 目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入 Ready 
 | 案例 | Assistant 回合 | Ornn/skill | workflow | typed artifact 判定 |
 |---|---|---|---|---|
 | 01 | completed | 搜索、精确加载、mount approval 成功 | 已启动 | `validated`，13/13，`stateVersion=80` |
-| 12 | completed | 搜索、精确加载、mount approval 成功 | 已启动 | `typed-failure`，`NYXID_PROXY_UNAUTHORIZED`，`stateVersion=12` |
+| 12 | completed | 搜索、精确加载、mount approval 成功 | 已启动 | `validated`，4/4，`stateVersion=31`，`total_cents=16623`；模型文案陈旧但不覆盖 committed artifact |
 | 13 | completed | 搜索、精确加载、图片 file ref 成功 | 已启动 | `validated`，12/12，`stateVersion=82` |
 | 14 | completed | 搜索、精确加载、mount approval 成功 | 已启动 | `validated`，3/3，`stateVersion=28`，`resolved_count=1` |
 | 15 | completed | 搜索、精确加载、mount approval 成功 | 已启动 | `validated`，11/11，`stateVersion=73`；最终 committed artifact 已由 Assistant 正确报告 |
@@ -220,14 +220,13 @@ Case 22 目标提交 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398` 已进入 Ready 
 
 因此 `/api/chat` 成功不能替代 Lark transport 证据；Lark 中出现回复也不能证明 workflow 终态成功。本轮两类证据已经分别取得；前两次 Bot 重试证明 typed approval resume 被接受，但运行最终都以 `NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN` committed failed。Developer App 默认项修复后的 fresh `/init` 又创建了 allow-all consent 和新 binding，第三次 run 仍以同一错误 committed failed。Aevatar authorize URL 的显式 core resource 不含 Lark；NyxID 会据此缩窄 authorization code/binding，所以默认项预选无法扩展实际 resource grant。
 
-案例 19 又补充了文件消息维度的独立证据：Lark 中发送 114 字节合成 JSON 后，Bot 收到文件卡片、解析出合成内容并经 relay 回传回复。随后按 workflow name、slug 和已绑定 member descriptor 共发起三次 `aevatar_start_workflow`，均在创建 run 前以稳定 `service_catalog_missing` 拒绝；验收窗口内案例 19 run catalog 增量为 0。原因是 direct validator 的 member binding 不属于 Assistant current-scope workflow catalog，且案例 19 的 Ornn skill 尚未发布。该证据严格记为 `start-blocked`，不能由附件解析成功外推为 `lark_bot_ingress_validated=true`。
+案例 19 的 114 字节合成 JSON 已完成 fresh Lark canary，public skill `1.1` 已精确回读。隔离基线有 6 条目标 run，执行后只新增 1 条；run hash `03c3f4ded68e` committed `completed`、state 32、4/4。Lark 文件卡片显示 114 字节，下载后的 committed descriptor/extraction 因尾随 LF 归一化为 113 字节；typed artifact 精确命中 `lark_bot_ingress_validated=true`、文件名/正文/SHA、脱敏与无副作用断言。历史 `service_catalog_missing` 与不完整 artifact 继续保留为恢复过程，不覆盖最新严格通过，也没有原始 run、message、file 或 actor ID 进入公开文件。
 
 ## 当前阻塞与待复测项
 
 1. 步骤数据可在同一 template 内改选目标资源（尚无 issue）：Risk Case 34 的原判定已撤回——`path_params` 槽位取值模板化是平台契约允许形态（#2984 方案 C、PR #2996、#3071），selector 的 `path_template` 仍逐字静态并进入 `request_contract_digest`，运行期只做单段安全与 schema 校验。残留风险是槽位值本身不受绑定期约束：受上游数据影响的步骤输出可以在同一 template 下改选目标资源（例如任意 Base `app_token`），凭证边界仍是 NyxID 的 exact UserService。是否需要绑定期 pin 或槽位值白名单，待平台确认。
 2. Lark Bot sender service grant：Aevatar `1.0.10` 为 Released，Bot Enabled、Availability=All，NyxID committed Bot 为 `active`、`webhook_registered=true`。镜像 `8cf280e2` 上的案例 14 直接 run 和 `/api/chat` Ornn mount/run 均 committed `completed`；前两次 Lark Bot 重试也都启动 workflow，并在 typed approval resume 后从 `awaiting_tool_approval` 进入 committed `failed`。失败步骤均为 `resolve_contact`，稳定错误码均为 `NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN`；run 哈希为 `1436a2852f8d`（state 18）和 `e491a2690b03`（state 17）。生产 `aevatar` Developer App 把 `api-lark-bot` 追加到 `default_service_catalog_slugs` 后，fresh `/init` 于 `11:34Z` 创建 allow-all consent 与新 sender binding；镜像 `e30fdd94` 上的第三次 run `93ece1c36951` 仍在 `resolve_contact` 以同一错误 committed `failed`（state 14）。源码契约确认 Aevatar authorize 仍只显式请求 core resources，NyxID 会在 authorization-code 阶段按这些 resources 缩窄 binding；默认项只提供 consent hints。因此该 blocker 已验证，不能再要求用户重复 `/init`。`ornn.skill` mount failure、`scope_workflows_get/list` outcome unverified 和后续 fallback 的 `InvalidWorkflowYaml` 继续作为独立 receipt 缺陷保留。
-3. 案例 19 Lark workflow catalog：文件上传、附件解析和 Lark 回复 relay 已验证；direct run 也 committed 4/4。但当前 scope 未公开案例 19 skill，Assistant catalog 无可启动定义，三次 start 均为 `service_catalog_missing` 且 run 增量为 0。发布或挂载属于独立副作用，本轮未执行。
-4. 财务源定义的安全边界：P2 send、P1 v6、源 durable/weekly schedule 和 P1 v2 旧定义仍未运行。公开验收案例 15 的 schedule 已通过，但不能替代这些源副作用或 authority 分支。
+3. 财务源定义的安全边界：P2 send、P1 v6、源 durable/weekly schedule 和 P1 v2 旧定义仍未运行。公开验收案例 15 的 schedule 已通过，但不能替代这些源副作用或 authority 分支。Case 19/Risk 24 已关闭，不再列为待复测项。
 
 ## #3161 与 #3184 定向回归
 
@@ -241,7 +240,7 @@ Case 16、可访问 Base 的 P2 no-send 同结构链与 exact P1 v5 `submit=fals
 
 ## #3182 证据边界
 
-`#3182` 未解决时，不能用直接 workflow committed 成功替代 Ornn + 自然语言链证据。本轮没有做这种外推，而是在生产镜像 `7ba3fa3e` 上逐个重跑 `/api/chat`：4/5 为严格 `validated`，1/5 为有 committed blocker 的 `typed-failure`。随后在 `d7844b5e` 上再次通过自然语言运行案例 15，验证短 run ID 与 actor identity 分离时仍能读取 committed artifact。
+`#3182` 未解决时，不能用直接 workflow committed 成功替代 Ornn + 自然语言链证据。本轮没有做这种外推，而是在 Ready 镜像 `ee031038` 上逐个 fresh 重跑 `/api/chat`：5/5 为严格 `validated`。12/14 的最终自然语言仍描述旧状态，但验证器只采用 committed typed artifact。
 
 因此，`/api/chat` 的 mount/admission、run identity 和模型绕过已由当前镜像上的案例 14 新生产证据关闭；issue 是否关闭应由其验收范围决定，不能反过来否定本轮证据。Lark Bot transport 已独立验证，三次 Bot 重试也已取得 committed 失败终态；fresh `/init` 已证明 Developer App 默认项不足以改变 authorization-code resource grant。当前边界是平台修复 resource narrowing，以及 channel-only 的 mount/get/list/invalid-YAML receipt 缺陷。
 

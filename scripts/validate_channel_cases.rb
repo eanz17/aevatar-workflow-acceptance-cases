@@ -54,7 +54,7 @@ OBSERVATION_FIELDS = %w[
   workflowRunHash committedStateVersion completedSteps totalSteps
   requestParametersRedacted outputPreviewIdentifiersRedacted timelineIdentifiersRedacted
 ].freeze
-ALLOWED_STATUSES = %w[pending-deployment passed failed].freeze
+ALLOWED_STATUSES = %w[pending-deployment pending-execution passed failed].freeze
 FORBIDDEN_EVIDENCE_KEYS = %w[
   runId actorId messageId approvalRequestId toolRequestId toolCallId senderId
   registrationScopeId conversationKey callbackCredential replyToken accessToken
@@ -270,7 +270,7 @@ expected_summary = {
   "total" => 3,
   "passed" => counts["passed"],
   "failed" => counts["failed"],
-  "pendingDeployment" => counts["pending-deployment"]
+  "pendingExecution" => counts["pending-execution"]
 }
 fail_validation("机器证据汇总与逐案例状态不一致") unless summary.fetch("summary") == expected_summary
 
@@ -292,6 +292,14 @@ results.each do |item|
       item["readyProductionWorkloadTraceable"] == false
     fail_validation("案例 #{case_id} 待部署时不得伪造运行证据") unless
       OBSERVATION_FIELDS.all? { |field| item[field].nil? }
+  when "pending-execution"
+    fail_validation("案例 #{case_id} 待执行时缺少 Ready workload 证据") unless
+      item["deploymentCommit"].to_s.length.positive? &&
+      item["requiredAncestorsPresent"] == true &&
+      item["readyProductionWorkloadTraceable"] == true &&
+      item["deploymentImage"].to_s.length.positive?
+    fail_validation("案例 #{case_id} 待执行时不得伪造运行证据") unless
+      item["observedAtUtc"].nil? && OBSERVATION_FIELDS.all? { |field| item[field].nil? }
   when "passed"
     fail_validation("案例 #{case_id} 缺少可追溯 Ready 生产部署") unless
       item["requiredDeploymentCommit"] == REQUIRED_DEPLOYMENT_COMMITS.fetch(case_id) &&
@@ -373,4 +381,4 @@ end
 raw_case_text = paths.map { |path| File.read(path) }.join("\n")
 fail_validation("案例定义中出现 UUID") if raw_case_text.match?(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i)
 
-puts "通过 Channel E2E 案例=#{results.length} passed=#{counts['passed']} failed=#{counts['failed']} pending-deployment=#{counts['pending-deployment']}"
+puts "通过 Channel E2E 案例=#{results.length} passed=#{counts['passed']} failed=#{counts['failed']} pending-execution=#{counts['pending-execution']}"

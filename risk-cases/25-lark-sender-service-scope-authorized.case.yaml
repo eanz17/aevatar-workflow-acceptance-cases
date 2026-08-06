@@ -2,7 +2,7 @@ schema_version: "1.0"
 case: "25"
 name: lark_sender_service_scope_authorized
 title: Lark sender binding 包含 workflow 所需精确 UserService grant
-status: failed
+status: passed
 surface: lark_private_bot
 target:
   source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff

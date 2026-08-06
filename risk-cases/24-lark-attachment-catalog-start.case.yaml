@@ -2,7 +2,7 @@ schema_version: "1.0"
 case: "24"
 name: lark_attachment_catalog_start
 title: Lark 合成附件经公开 catalog 启动并提交 workflow
-status: blocked
+status: passed
 surface: lark_private_bot
 target:
   source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
@@ -21,20 +21,36 @@ safety:
   raw_identifiers_persisted: false
 required_evidence:
   exact_skill_public: true
+  public_skill_version: "1.1"
   exact_skill_resolved: true
   file_upload_card_observed: true
+  file_upload_card_size_bytes: 114
   inbound_file_content_parsed: true
   workflow_start_calls: 1
+  baseline_target_run_count: 6
   new_workflow_run_count: 1
+  workflow_run_hash: 03c3f4ded68e
   terminal_status: completed
+  terminal_success: true
+  state_version: 32
+  completed_steps: 4
+  total_steps: 4
+  committed_descriptor_size_bytes: 113
+  trailing_lf_normalized: true
   final_artifact:
     case: lark_bot_file_upload_validation
     success: true
+    execution_mode: preview
     file_ref_registered: true
     document_extract_succeeded: true
     content_contract_matches: true
     lark_bot_ingress_validated: true
     identifiers_redacted: true
     side_effects: false
+    observed_extracted_chars: 113
+    observed_size_bytes: 113
+    file_name_matches: true
+    text_contract_matches: true
+    sha256_matches: true
   reply_relay_observed: true
   raw_identifiers_persisted: false

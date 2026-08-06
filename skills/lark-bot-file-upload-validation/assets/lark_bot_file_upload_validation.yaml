@@ -19,13 +19,17 @@ steps:
     type: transform
     op: template
     template: >-
-      {{~ file = get(data, 'file', {}); source_kind = get(file, 'source_kind', ''); source_message_id = get(file, 'source_message_id', ''); source_resource_key = get(file, 'source_resource_key', '') ~}}
+      {{~ file = get(data, 'file', {}); raw_text = get(data, 'text', ''); extracted_chars = get(data, 'extracted_chars', 0); file_size = get(file, 'size_bytes', 0); file_sha256 = get(file, 'sha256', ''); source_kind = get(file, 'source_kind', ''); source_message_id = get(file, 'source_message_id', ''); source_resource_key = get(file, 'source_resource_key', '') ~}}
+      {{~ expected_payload = '{"case":"lark_bot_file_upload_validation","document_type":"synthetic_manifest","revision":1,"side_effects":false}' ~}}
+      {{~ text_contract_matches = (raw_text == expected_payload && extracted_chars == 113) || (raw_text == expected_payload + '\n' && extracted_chars == 114) || (raw_text == expected_payload + '\r\n' && extracted_chars == 115) ~}}
+      {{~ sha256_matches = (file_size == 113 && file_sha256 == 'ac83c56b0d1f200c9299e74effb5d570f3921f5cc0dec1be0dc057e74d73e671') || (file_size == 114 && file_sha256 == '5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb') || (file_size == 115 && file_sha256 == '26daf820a262a8ae5c96998337d6df26dd0c248e43cb044f819ce75ff17a3d6c') ~}}
+      {{~ file_name_matches = get(file, 'file_name', '') == 'lark-bot-upload-manifest.json' ~}}
       {{~ file_ref_registered = get(file, 'file_id', '') != '' && get(file, 'artifact_id', '') != '' ~}}
-      {{~ extraction_ok = data.extraction_kind == 'utf8_text' && data.media_type == 'application/json' && data.truncated == false && data.extracted_chars == 114 ~}}
-      {{~ content_contract_matches = get(file, 'file_name', '') == 'lark-bot-upload-manifest.json' && get(file, 'size_bytes', 0) == 114 && get(file, 'sha256', '') == '5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb' ~}}
+      {{~ extraction_ok = data.extraction_kind == 'utf8_text' && data.media_type == 'application/json' && data.truncated == false && text_contract_matches ~}}
+      {{~ content_contract_matches = file_name_matches && text_contract_matches && sha256_matches ~}}
       {{~ lark_bot_ingress_validated = (source_kind == 'ChatInput' || source_kind == 'ConnectedServiceResource') && source_message_id != '' && source_resource_key != '' ~}}
       {{~ success = file_ref_registered && extraction_ok && content_contract_matches ~}}
-      {{ json({ case: 'lark_bot_file_upload_validation', success: success, execution_mode: 'preview', file_ref_registered: file_ref_registered, document_extract_succeeded: extraction_ok, content_contract_matches: content_contract_matches, lark_bot_ingress_validated: lark_bot_ingress_validated, identifiers_redacted: true, side_effects: false }) }}
+      {{ json({ case: 'lark_bot_file_upload_validation', success: success, execution_mode: 'preview', file_ref_registered: file_ref_registered, document_extract_succeeded: extraction_ok, content_contract_matches: content_contract_matches, lark_bot_ingress_validated: lark_bot_ingress_validated, identifiers_redacted: true, side_effects: false, observed_extracted_chars: extracted_chars, observed_size_bytes: file_size, file_name_matches: file_name_matches, text_contract_matches: text_contract_matches, sha256_matches: sha256_matches }) }}
     next: done
 
   - id: done

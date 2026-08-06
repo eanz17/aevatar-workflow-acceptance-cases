@@ -312,34 +312,24 @@ fail_validation("案例 23 未保存拒绝缺少 typed code 的真实失败") un
   result_by_case.dig("23", "stableErrorCode") == "APPROVAL_REJECTED_WITHOUT_TYPED_CODE" &&
   result_by_case.dig("23", "actualEvidence", "typedApprovalDeniedCodePresent") == false &&
   result_by_case.dig("23", "actualEvidence", "downstreamToolExecuted") == false
-fail_validation("案例 25 未保存 channel turn 未启动的真实失败") unless
-  result_by_case.dig("25", "stableErrorCode") == "CHANNEL_AGENT_RUN_NOT_STARTED" &&
-  result_by_case.dig("25", "actualEvidence", "newChannelAgentRunCount") == 0 &&
-  result_by_case.dig("25", "actualEvidence", "newWorkflowRunCount") == 0
-fail_validation("案例 26 未保存 api/chat committed blocker") unless
-  result_by_case.dig("26", "stableErrorCode") == "NYXID_PROXY_UNAUTHORIZED" &&
-  result_by_case.dig("26", "actualEvidence", "chatCompleted") == true &&
-  result_by_case.dig("26", "actualEvidence", "terminalStatus") == "failed"
+fail_validation("案例 24 缺少唯一 fresh Lark run 与换行归一化证据") unless
+  result_by_case.dig("24", "status") == "passed" &&
+  result_by_case.dig("24", "actualEvidence") == cases.dig("24", "required_evidence") &&
+  result_by_case.dig("24", "actualEvidence", "workflow_run_hash") == "03c3f4ded68e" &&
+  result_by_case.dig("24", "actualEvidence", "baseline_target_run_count") == 6 &&
+  result_by_case.dig("24", "actualEvidence", "new_workflow_run_count") == 1 &&
+  result_by_case.dig("24", "actualEvidence", "file_upload_card_size_bytes") == 114 &&
+  result_by_case.dig("24", "actualEvidence", "committed_descriptor_size_bytes") == 113 &&
+  result_by_case.dig("24", "actualEvidence", "trailing_lf_normalized") == true
+fail_validation("案例 25 缺少同 sender 的精确 grant、批准恢复和 committed artifact") unless
+  result_by_case.dig("25", "status") == "passed" &&
+  result_by_case.dig("25", "actualEvidence") == cases.dig("25", "required_evidence")
+fail_validation("案例 26 缺少原 api/chat 入口的 committed code_execute artifact") unless
+  result_by_case.dig("26", "status") == "passed" &&
+  result_by_case.dig("26", "actualEvidence") == cases.dig("26", "required_evidence")
 fail_validation("案例 27 public catalog 聚合证据漂移") unless
-  result_by_case.dig("27", "actualEvidence") == {
-    "localSkillCount" => 25,
-    "serverFormatValidated" => 25,
-    "exactNameReadback" => 19,
-    "publicSkillCount" => 19,
-    "versionMatches" => 19,
-    "missingSkills" => %w[
-      acceptance-fixture-drift-attestation
-      approval-window-integrity-audit
-      lark-bot-file-upload-validation
-      readonly-attested-post-probe
-      runtime-tool-approval-write-probe
-      sequential-tool-approval-write-probe
-    ],
-    "privateSkills" => [],
-    "versionMismatches" => [],
-    "uploadsPerformed" => false,
-    "permissionsChanged" => false
-  }
+  result_by_case.dig("27", "status") == "passed" &&
+  result_by_case.dig("27", "actualEvidence") == cases.dig("27", "required_evidence")
 # 34 的两条负例（模板化 selector、槽位值越出单段）已于 2026-08-06T09:14:57Z 实测：
 # 前者在 preview 被 NYXID_OPERATION_SELECTION_REQUIRED 拒绝，后者在调用 provider 前被
 # NYXID_OPERATION_PATH_PARAMETER_INVALID 拦下。证据必须逐条在案，且不得再残留

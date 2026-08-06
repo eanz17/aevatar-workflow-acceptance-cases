@@ -3,7 +3,7 @@ case: "21"
 name: lark_agent_run_skill_approval_rejected
 title: Lark AgentRun 拒绝 skill mount 后终止执行
 issue: "#3210"
-status: pending-deployment
+status: failed
 surface: lark_private_bot
 target:
   skill: lark-contact-batch-resolution

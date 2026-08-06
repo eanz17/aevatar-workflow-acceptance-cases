@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "updatedAtUtc": "2026-08-06T09:51:05Z",
+  "updatedAtUtc": "2026-08-06T14:54:46Z",
   "targetSource": {
     "repository": "aevatarAI/aevatar",
     "ref": "origin/feature/integrate",
@@ -148,9 +148,9 @@
   },
   "summary": {
     "total": 21,
-    "passed": 8,
-    "blocked": 4,
-    "failed": 4,
+    "passed": 12,
+    "blocked": 2,
+    "failed": 2,
     "pendingExecution": 0,
     "notConfigured": 5
   },
@@ -186,93 +186,128 @@
     {
       "case": "24",
       "name": "lark_attachment_catalog_start",
-      "status": "blocked",
-      "observedAtUtc": "2026-08-06T07:50:33Z",
-      "stableErrorCode": "ORNN_PUBLIC_SKILL_MISSING",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T14:37:18Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
       "actualEvidence": {
-        "serverFormatValidated": true,
-        "exactSkillPublic": false,
-        "repeatLarkUploadPerformed": false,
-        "workflowStartCalls": 0,
-        "newWorkflowRunCount": 0
+        "exact_skill_public": true,
+        "public_skill_version": "1.1",
+        "exact_skill_resolved": true,
+        "file_upload_card_observed": true,
+        "file_upload_card_size_bytes": 114,
+        "inbound_file_content_parsed": true,
+        "workflow_start_calls": 1,
+        "baseline_target_run_count": 6,
+        "new_workflow_run_count": 1,
+        "workflow_run_hash": "03c3f4ded68e",
+        "terminal_status": "completed",
+        "terminal_success": true,
+        "state_version": 32,
+        "completed_steps": 4,
+        "total_steps": 4,
+        "committed_descriptor_size_bytes": 113,
+        "trailing_lf_normalized": true,
+        "final_artifact": {
+          "case": "lark_bot_file_upload_validation",
+          "success": true,
+          "execution_mode": "preview",
+          "file_ref_registered": true,
+          "document_extract_succeeded": true,
+          "content_contract_matches": true,
+          "lark_bot_ingress_validated": true,
+          "identifiers_redacted": true,
+          "side_effects": false,
+          "observed_extracted_chars": 113,
+          "observed_size_bytes": 113,
+          "file_name_matches": true,
+          "text_contract_matches": true,
+          "sha256_matches": true
+        },
+        "reply_relay_observed": true,
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "只读 public 回读确认目标 skill 不存在；未重复发送 Lark 文件，也未自动发布 skill"
+      "result": "public skill 1.1 精确解析；隔离基线后目标 run 数量 6 -> 7，唯一新增 run committed completed、state 32、4/4，typed artifact 精确命中且无副作用"
     },
     {
       "case": "25",
       "name": "lark_sender_service_scope_authorized",
-      "status": "failed",
-      "observedAtUtc": "2026-08-06T07:39:00Z",
-      "stableErrorCode": "CHANNEL_AGENT_RUN_NOT_STARTED",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T14:33:00Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
       "actualEvidence": {
-        "larkMessageVisible": true,
-        "waitWindowSeconds": 60,
-        "approvalCardObserved": false,
-        "newChannelAgentRunCount": 0,
-        "newWorkflowRunCount": 0,
-        "correlatedInboundLogObserved": false,
-        "repeatMessageSent": false,
-        "exactUserServiceGrantVerified": false
+        "sender_binding_resolved": true,
+        "exact_user_service_grant_present": true,
+        "approval_resume_completed": true,
+        "terminal_status": "completed",
+        "forbidden_failure_codes_absent": [
+          "NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN",
+          "NYXID_PROXY_UNAUTHORIZED"
+        ],
+        "final_artifact": {
+          "case": "lark_contact_batch_resolution",
+          "success": true,
+          "contact_api_reachable": true,
+          "resolved_count": 1,
+          "identifiers_redacted": true,
+          "side_effects": false
+        },
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "消息已在唯一 Bot 私聊可见，但观察窗口内没有新的 channel AgentRun、审批卡、workflow run 或可关联入站日志；未重发以避免重复执行"
+      "result": "fresh Lark Case 22 的同一 sender、精确 skill/workflow 路径已启动 AgentRun；运行期批准恢复同一 workflow run，最终 committed completed 且 contact artifact 精确命中，排除历史 scope/unauthorized blocker"
     },
     {
       "case": "26",
       "name": "assistant_safe_code_execute_authorized",
-      "status": "failed",
-      "observedAtUtc": "2026-08-06T07:41:08Z",
-      "stableErrorCode": "NYXID_PROXY_UNAUTHORIZED",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T14:16:30Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
       "actualEvidence": {
-        "runHash": "95db7d06bce1",
-        "chatCompleted": true,
-        "ornnSearchConfirmed": true,
-        "exactSkillResolved": true,
-        "mountApprovalCompleted": true,
-        "workflowStartCalls": 1,
-        "committedTerminalObserved": true,
-        "terminalStatus": "failed",
-        "stateVersion": 12,
-        "completedSteps": 1,
-        "totalSteps": 1,
-        "failingStep": "calculate_settlement",
-        "finalArtifactContractMet": false
+        "chat_completed": true,
+        "ornn_search_confirmed": true,
+        "exact_skill_resolved": true,
+        "workflow_start_calls": 1,
+        "committed_terminal_observed": true,
+        "terminal_status": "completed",
+        "forbidden_failure_codes_absent": [
+          "NYXID_PROXY_UNAUTHORIZED"
+        ],
+        "final_artifact": {
+          "case": "safe_code_execute_validation",
+          "success": true,
+          "structured_receipt": true,
+          "total_cents": 16623,
+          "side_effects": false
+        },
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "Assistant 搜索、精确 skill、mount approval 与 workflow start 均发生，但 code_execute 在 committed run 中以 NYXID_PROXY_UNAUTHORIZED 失败"
+      "result": "Ready 镜像 ee031038 上按原 /api/chat 入口 fresh 重跑；Assistant 完成 search-first、精确 skill、workflow start 和 committed observation，4/4 completed 且固定结算 artifact 精确命中"
     },
     {
       "case": "27",
       "name": "ornn_public_catalog_complete",
-      "status": "blocked",
-      "observedAtUtc": "2026-08-06T07:50:33Z",
-      "stableErrorCode": "ORNN_PUBLIC_SKILL_MISSING",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T10:01:53Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
       "actualEvidence": {
-        "localSkillCount": 25,
-        "serverFormatValidated": 25,
-        "exactNameReadback": 19,
-        "publicSkillCount": 19,
-        "versionMatches": 19,
-        "missingSkills": [
-          "acceptance-fixture-drift-attestation",
-          "approval-window-integrity-audit",
-          "lark-bot-file-upload-validation",
-          "readonly-attested-post-probe",
-          "runtime-tool-approval-write-probe",
-          "sequential-tool-approval-write-probe"
-        ],
-        "privateSkills": [],
-        "versionMismatches": [],
-        "uploadsPerformed": false,
-        "permissionsChanged": false
+        "local_skill_count": 25,
+        "server_format_validated": 25,
+        "exact_name_readback": 25,
+        "public_skill_count": 25,
+        "version_matches": 25,
+        "missing_skills": [],
+        "private_skills": [],
+        "version_mismatches": [],
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "25/25 服务端格式通过；19/25 精确名称公开回读，缺 Case 19 与本轮五个新 skill；未上传、未改权限"
+      "result": "missing-only 发布后，正式 verify-only 与独立 catalog 验证器均确认 25/25 格式、名称、版本与 public 状态精确一致；验证批次未上传、未改权限"
     },
     {
       "case": "28",

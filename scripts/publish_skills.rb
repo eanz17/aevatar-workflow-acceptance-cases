@@ -15,7 +15,8 @@ options = {
   service: ENV.fetch("ORNN_SERVICE_SLUG", "ornn-api"),
   via_service: ENV["ORNN_USER_SERVICE_ID"],
   verify_only: false,
-  missing_only: false
+  missing_only: false,
+  skills: nil
 }
 
 OptionParser.new do |parser|
@@ -27,6 +28,9 @@ OptionParser.new do |parser|
   end
   parser.on("--missing-only", "校验全部包，只发布线上缺失的 skill") do
     options[:missing_only] = true
+  end
+  parser.on("--skills LIST", "只处理逗号分隔的 skill 名称") do |value|
+    options[:skills] = value.split(",").map(&:strip).reject(&:empty?).uniq
   end
 end.parse!
 
@@ -85,6 +89,13 @@ end
 
 packages = Dir[File.join(PACKAGE_DIR, "*.zip")].sort
 abort "没有找到 skill ZIP，请先执行 ruby scripts/package_skills.rb config.local.yaml" if packages.empty?
+if options[:skills]
+  requested = options.fetch(:skills)
+  available = packages.to_h { |package| [File.basename(package, ".zip"), package] }
+  missing = requested.reject { |name| available.key?(name) }
+  abort "找不到指定 skill ZIP：#{missing.join(', ')}" unless missing.empty?
+  packages = requested.sort.map { |name| available.fetch(name) }
+end
 
 prepared = packages.map do |package|
   name = File.basename(package, ".zip")

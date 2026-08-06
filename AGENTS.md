@@ -103,7 +103,7 @@ Ornn 服务端 validator 当前允许 `SKILL.md`、`scripts/`、`references/` �
 - `ApprovalRequired` 只能表示挂起；`[tool receipt] Approval pending` 不得进入模型最终回复，也不得记为通过。
 - 批准路径必须证明同一 AgentRun 恢复、mount 完成、workflow 启动次数、run catalog 增量和 committed typed artifact。
 - 拒绝路径必须证明 typed `Denied`、稳定错误码、不执行 mount、workflow 启动次数为 0 且 run catalog 增量为 0。
-- 未取得可追溯 Ready 生产部署和真实 channel 证据时，状态必须为 `pending-deployment`；运行字段保持 `null`，报告不得渲染为绿色。
+- 未取得可追溯 Ready 生产部署时，状态必须为 `pending-deployment`；已确认目标提交进入 Ready workload、但尚未执行真实 channel 操作时，状态必须为 `pending-execution`。两种状态的运行字段都保持 `null`，报告不得渲染为绿色。
 - 不得保存 run ID、actor ID、消息 ID、UUID、callback credential 或原始审批身份；只保存布尔断言、计数、稳定错误码和脱敏 artifact。
 
 ## 提交前检查

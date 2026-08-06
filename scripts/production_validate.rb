@@ -341,7 +341,7 @@ class ProductionValidator
     end
 
     display_name = "公开验收案例 #{case_id}-#{Digest::SHA256.hexdigest(yaml)[0, 10]}"
-    preview = preview_workflow(yaml, display_name)
+    preview = with_stage("preview") { preview_workflow(yaml, display_name) }
     if config[:preview_contract]
       items = preview.fetch("items")
       expected = config.fetch(:preview_contract)
@@ -383,9 +383,13 @@ class ProductionValidator
       return base_result.merge(result: "仅预检", runSkipped: "未授权副作用：#{config[:side_effect]}")
     end
 
-    member_id, revision_id, binding_reused = prepare_binding(yaml, preview, display_name)
-    wait_for_endpoint(member_id, revision_id)
-    run_result = invoke_workflow(case_id, config, member_id, revision_id)
+    member_id, revision_id, binding_reused = with_stage("prepare_binding") do
+      prepare_binding(yaml, preview, display_name)
+    end
+    with_stage("wait_for_endpoint") { wait_for_endpoint(member_id, revision_id) }
+    run_result = with_stage("invoke_workflow") do
+      invoke_workflow(case_id, config, member_id, revision_id)
+    end
     base_result
       .merge(binding: binding_reused ? "复用现有 revision" : "新建 revision")
       .merge(run_result)
@@ -435,14 +439,26 @@ class ProductionValidator
   def prepare_binding(yaml, preview, display_name)
     provision_key = build_provision_key(display_name)
     expected_member_id = "wf-#{provision_key}"
-    existing_revision_id = resolve_existing_revision(expected_member_id)
+    existing_revision_id = with_stage("binding_lookup") do
+      resolve_existing_revision(expected_member_id)
+    end
     if existing_revision_id
       return [expected_member_id, existing_revision_id, true]
     end
 
-    provision = provision_workflow(yaml, preview, display_name)
-    binding = wait_for_binding(provision.fetch("memberId"), provision.fetch("bindingRunId"))
+    provision = with_stage("provision_workflow") do
+      provision_workflow(yaml, preview, display_name)
+    end
+    binding = with_stage("wait_for_binding") do
+      wait_for_binding(provision.fetch("memberId"), provision.fetch("bindingRunId"))
+    end
     [provision.fetch("memberId"), binding.dig("result", "revisionId"), false]
+  end
+
+  def with_stage(stage)
+    yield
+  rescue ValidationError => e
+    raise ValidationError, "#{stage}: #{e.message}"
   end
 
   def resolve_existing_revision(member_id)

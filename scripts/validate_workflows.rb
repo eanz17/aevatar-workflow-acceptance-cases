@@ -257,9 +257,19 @@ files.each do |file|
     fail_validation("#{name}：Lark Bot 合成文件 fixture 契约漂移") unless fixture_ok
 
     receipt_template = steps_by_id.fetch("verify_file_contract").fetch("template")
-    receipt_ok = receipt_template.include?("data.extracted_chars == #{LARK_BOT_FILE_BYTES}") &&
-                 receipt_template.include?("get(file, 'size_bytes', 0) == #{LARK_BOT_FILE_BYTES}") &&
-                 receipt_template.include?(LARK_BOT_FILE_SHA256) &&
+    canonical_variants = {
+      113 => "ac83c56b0d1f200c9299e74effb5d570f3921f5cc0dec1be0dc057e74d73e671",
+      LARK_BOT_FILE_BYTES => LARK_BOT_FILE_SHA256,
+      115 => "26daf820a262a8ae5c96998337d6df26dd0c248e43cb044f819ce75ff17a3d6c"
+    }
+    receipt_ok = canonical_variants.all? do |bytes, sha256|
+                   receipt_template.include?("extracted_chars == #{bytes}") &&
+                     receipt_template.include?("file_size == #{bytes}") &&
+                     receipt_template.include?(sha256)
+                 end &&
+                 receipt_template.include?("expected_payload") &&
+                 receipt_template.include?("text_contract_matches") &&
+                 receipt_template.include?("sha256_matches") &&
                  receipt_template.include?("source_message_id != ''") &&
                  receipt_template.include?("source_resource_key != ''") &&
                  receipt_template.include?("lark_bot_ingress_validated:") &&

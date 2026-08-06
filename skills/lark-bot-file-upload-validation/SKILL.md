@@ -1,7 +1,7 @@
 ---
 name: lark-bot-file-upload-validation
 description: 验证通过 Lark Bot 上传的文件、附件引用或 document_extract 主链。用户提到“Lark Bot 文件上传验证”、对应英文名称或要求运行该验收 workflow 时使用。
-version: "1.0"
+version: "1.1"
 metadata:
   category: mixed
   output-type: text

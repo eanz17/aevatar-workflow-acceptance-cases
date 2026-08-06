@@ -2,7 +2,7 @@ schema_version: "1.0"
 case: "26"
 name: assistant_safe_code_execute_authorized
 title: API chat 安全 code_execute 经精确 skill 和 committed artifact 验证
-status: failed
+status: passed
 surface: api_chat
 target:
   source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
