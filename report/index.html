@@ -205,7 +205,7 @@
       <div class="container masthead-inner">
         <p class="eyebrow">基线 2026-08-05 · 状态更新 2026-08-06</p>
         <h1>Aevatar 工作流验收分析</h1>
-        <p class="subtitle">19 个公开 workflow、19 个 Ornn skill、2 个独立 Lark channel E2E case，以及对源目录 41 个非 n8n 定义的功能对照。页面严格区分 direct workflow 通过与尚待生产验证的 channel 审批链。</p>
+        <p class="subtitle">19 个公开 workflow、19 个 Ornn skill、3 个独立 Lark channel E2E case，以及对源目录 41 个非 n8n 定义的功能对照。页面严格区分 direct workflow 通过与尚待生产验证的 channel 审批链。</p>
         <div class="path-line"><strong>实际源目录：<code>~/workflows</code></strong><span><code>~/Code/workflows</code> 当前不存在</span><span>两个 n8n JSON 已排除</span></div>
       </div>
     </header>
@@ -217,7 +217,7 @@
         <div class="metric"><span class="metric-value">20 / 20</span><span class="metric-label">直接 runtime 严格通过</span></div>
         <div class="metric"><span class="metric-value">19 / 20</span><span class="metric-label">Ornn skill public 发布并回读</span></div>
         <div class="metric"><span class="metric-value">4 / 5</span><span class="metric-label">/api/chat 严格 workflow validated</span></div>
-        <div class="metric"><span class="metric-value">0 / 2</span><span class="metric-label">Lark channel E2E 严格通过</span></div>
+        <div class="metric"><span class="metric-value">0 / 3</span><span class="metric-label">Lark channel E2E 严格通过</span></div>
       </div>
     </section>
 
@@ -382,13 +382,14 @@
 
         <div class="section">
           <div class="section-heading"><h2>Lark channel E2E 案例</h2><p class="caption">#3210 · 19 workflows 之外的审批回调验收</p></div>
-          <div class="note"><p><strong>当前严格结果：0/2。</strong>目标提交 <code>452d72ec5</code> 尚未在本摘要中取得可追溯的 Ready 生产部署证据，因此批准和拒绝路径都保持待部署验证，不能由 direct Case 14 或 <code>/api/chat</code> 的通过结果代替。</p></div>
+          <div class="note"><p><strong>当前严格结果：0/3。</strong>目标提交 <code>b7cacf183</code> 尚未在本摘要中取得可追溯的 Ready 生产部署证据，因此 skill mount 批准/拒绝和 workflow 运行期工具批准路径都保持待部署验证，不能由 direct Case 14 或 <code>/api/chat</code> 的通过结果代替。</p></div>
           <div class="table-wrap">
             <table aria-label="Lark channel E2E 证据">
               <thead><tr><th>案例</th><th>决策</th><th>AgentRun / receipt 契约</th><th>Workflow 契约</th><th>状态</th></tr></thead>
               <tbody>
                 <tr data-channel-case="20" data-channel-status="pending-deployment"><td class="case-id">20</td><td>批准</td><td>Lark inbound/relay；审批卡；pending 不进模型；精确身份；回调一次；同一 AgentRun 恢复；<code>use_skill=Completed</code></td><td>start=1、run 增量=1、精确 committed artifact</td><td><span class="status status-pending">待部署验证</span></td></tr>
                 <tr data-channel-case="21" data-channel-status="pending-deployment"><td class="case-id">21</td><td>拒绝</td><td>Lark inbound/relay；审批卡；精确身份；回调一次；typed <code>Denied</code> / <code>approval_denied</code></td><td>mount=false、start=0、run 增量=0</td><td><span class="status status-pending">待部署验证</span></td></tr>
+                <tr data-channel-case="22" data-channel-status="pending-deployment"><td class="case-id">22</td><td>批准</td><td>skill 已挂载；无新 mount 审批；workflow 审批卡；actor/run/step/execution/tool-call/approval-request 精确身份；回调一次</td><td>start=1、到达 <code>awaiting_tool_approval</code>、同一 run 恢复、精确 committed artifact</td><td><span class="status status-pending">待部署验证</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -402,7 +403,7 @@
           </div>
         </div>
 
-        <div class="boundary"><h2>不能外推</h2><p><code>/api/chat</code> 成功不能替代 Lark Bot transport 证据；Lark 回复也不能证明 workflow committed 成功。案例 14 的三次 Bot run 均因 resource narrowing committed failed；案例 19 的文件卡片、解析与回复 relay 已验证，但 Assistant catalog 没有可启动定义，三次 start 均为 <code>service_catalog_missing</code> 且 run 增量为 0。Case 20/21 只有在真实 Lark 审批回调分别取得 approved committed artifact 与 rejected <code>Denied</code> receipt 后才能通过。</p></div>
+        <div class="boundary"><h2>不能外推</h2><p><code>/api/chat</code> 成功不能替代 Lark Bot transport 证据；Lark 回复也不能证明 workflow committed 成功。案例 14 的三次 Bot run 均因 resource narrowing committed failed；案例 19 的文件卡片、解析与回复 relay 已验证，但 Assistant catalog 没有可启动定义，三次 start 均为 <code>service_catalog_missing</code> 且 run 增量为 0。Case 20/21 只有在真实 Lark skill mount 审批回调分别取得 approved committed artifact 与 rejected <code>Denied</code> receipt 后才能通过；Case 22 还必须独立证明 workflow 运行期审批卡和同一 run continuation。</p></div>
       </section>
 
       <section class="view" id="view-blockers" role="tabpanel" aria-labelledby="tab-blockers" hidden>

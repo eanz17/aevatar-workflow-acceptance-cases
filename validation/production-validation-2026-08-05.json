@@ -857,12 +857,12 @@
   },
   "channelE2EAcceptance": {
     "schemaVersion": "1.0",
-    "requiredDeploymentCommit": "452d72ec57694e327c6c57c2e2af595271147252",
+    "requiredDeploymentCommit": "b7cacf1838a519e83fbfd70953be988b9696ee2b",
     "summary": {
-      "total": 2,
+      "total": 3,
       "passed": 0,
       "failed": 0,
-      "pendingDeployment": 2
+      "pendingDeployment": 3
     },
     "results": [
       {
@@ -897,7 +897,7 @@
         "replyRelayObserved": null,
         "stableErrorCode": null,
         "rawIdentifiersPersisted": false,
-        "result": "等待提交 452d72ec5 部署到 Ready 生产 workload 后执行 Lark 批准路径"
+        "result": "等待提交 b7cacf183 部署到 Ready 生产 workload 后执行 Lark skill mount 批准路径"
       },
       {
         "case": "21",
@@ -931,7 +931,44 @@
         "replyRelayObserved": null,
         "stableErrorCode": null,
         "rawIdentifiersPersisted": false,
-        "result": "等待提交 452d72ec5 部署到 Ready 生产 workload 后执行 Lark 拒绝路径"
+        "result": "等待提交 b7cacf183 部署到 Ready 生产 workload 后执行 Lark skill mount 拒绝路径"
+      },
+      {
+        "case": "22",
+        "name": "lark_workflow_runtime_tool_approval_approved",
+        "expectedDecision": "approved",
+        "status": "pending-deployment",
+        "observedAtUtc": null,
+        "deploymentImage": null,
+        "deploymentDigest": null,
+        "deploymentCommit": null,
+        "requiredAncestorsPresent": null,
+        "readyProductionWorkloadTraceable": false,
+        "larkInboundObserved": null,
+        "channelAgentRunStarted": null,
+        "ornnSearchConfirmed": null,
+        "exactSkillResolved": null,
+        "skillAlreadyMounted": null,
+        "newMountApprovalCardObserved": null,
+        "newMountApprovalDecisionDispatchCount": null,
+        "useSkillReceiptStatus": null,
+        "mountExecuted": null,
+        "workflowStartCalls": null,
+        "newWorkflowRunCount": null,
+        "awaitingToolApprovalObserved": null,
+        "workflowApprovalCardObserved": null,
+        "approvalPendingExposedToModel": null,
+        "workflowApprovalDecisionDispatched": null,
+        "workflowApprovalDecisionDispatchCount": null,
+        "workflowApprovalIdentityMatched": null,
+        "sameWorkflowRunResumed": null,
+        "committedTerminalObserved": null,
+        "terminalStatus": null,
+        "finalArtifact": null,
+        "replyRelayObserved": null,
+        "stableErrorCode": null,
+        "rawIdentifiersPersisted": false,
+        "result": "等待提交 b7cacf183 部署到 Ready 生产 workload 后执行已挂载 skill 的 workflow 运行期工具批准路径"
       }
     ]
   },

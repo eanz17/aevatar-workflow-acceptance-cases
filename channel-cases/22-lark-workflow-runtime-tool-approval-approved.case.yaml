@@ -1,0 +1,64 @@
+schema_version: "1.0"
+case: "22"
+name: lark_workflow_runtime_tool_approval_approved
+title: Lark 已挂载 skill 的 workflow 运行期工具批准后继续执行
+issue: "#3210"
+status: pending-deployment
+surface: lark_private_bot
+target:
+  skill: lark-contact-batch-resolution
+  workflow: lark_contact_batch_resolution
+  direct_workflow_case: "14"
+  required_deployment_commit: b7cacf1838a519e83fbfd70953be988b9696ee2b
+  required_ancestor_commits:
+    - b3784feef
+    - dd12cd6a6
+    - 452d72ec5
+preconditions:
+  skill_already_mounted: true
+  new_mount_approval_expected: false
+trigger:
+  decision: approved
+  prompt: 请使用已挂载的 lark-contact-batch-resolution 解析 1 个合成联系人标识，并只返回脱敏结果。
+identity:
+  exact_match_required:
+    - actor_id
+    - run_id
+    - step_id
+    - execution_id
+    - tool_call_id
+    - approval_request_id
+safety:
+  synthetic_input_only: true
+  side_effects: false
+  raw_identifiers_persisted: false
+required_evidence:
+  lark_inbound_observed: true
+  channel_agent_run_started: true
+  ornn_search_confirmed: true
+  exact_skill_resolved: true
+  skill_already_mounted: true
+  new_mount_approval_card_observed: false
+  new_mount_approval_decision_dispatch_count: 0
+  use_skill_receipt_status: Completed
+  mount_executed: false
+  workflow_start_calls: 1
+  new_workflow_run_count: 1
+  awaiting_tool_approval_observed: true
+  workflow_approval_card_observed: true
+  approval_pending_exposed_to_model: false
+  workflow_approval_decision_dispatched: true
+  workflow_approval_decision_dispatch_count: 1
+  workflow_approval_identity_matched: true
+  same_workflow_run_resumed: true
+  committed_terminal_observed: true
+  terminal_status: completed
+  reply_relay_observed: true
+  final_artifact:
+    case: lark_contact_batch_resolution
+    success: true
+    contact_api_reachable: true
+    resolved_count: 1
+    identifiers_redacted: true
+    side_effects: false
+  raw_identifiers_persisted: false

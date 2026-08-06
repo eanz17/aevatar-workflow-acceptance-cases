@@ -14,7 +14,7 @@
 ## 总结
 
 - 19/19 个公开 workflow 通过本地静态校验和 production explicit-request preview。
-- 另有 2 个 Lark channel E2E case 通过静态契约校验，但生产严格结果为 0/2；Case 20/21 都是 `pending-deployment`，不计入 19 个 workflow 或 19 个 Ornn skill。
+- 另有 3 个 Lark channel E2E case 通过静态契约校验，但生产严格结果为 0/3；Case 20/21/22 都是 `pending-deployment`，不计入 19 个 workflow 或 19 个 Ornn skill。
 - 镜像 `20d9ba41` 上已重跑 01-05、07-19 共 18 个案例，全部 committed `completed`；连同案例 06 的既有证据，19 个案例的 direct runtime 最新终态均为 committed `completed`。案例 06 会真实创建 Lark 审批，本轮未重跑，其证据仍来自 `0c4ff023`。
 - 本地 19/19 个 Ornn skill 与 workflow 一一对应；原有 15 个通过服务端格式校验并公开回读，新增的 16、17、18、19 尚未发布。
 - 13 已补齐合成图片/PDF、发票字段归一化与财务去重规则；14 精确覆盖 Lark contact API；15 补齐预算周报/月报公式与 schedule 契约；16、17 分别针对 #3161 和 #3184 增加最小回归探针。
@@ -36,14 +36,15 @@
 
 ## Lark channel E2E 案例（#3210）
 
-既有 Case 14 证明 direct workflow 和 `/api/chat` 可以运行 `lark_contact_batch_resolution`，但无法证明 Lark channel AgentRun 收到 `use_skill` 的 `ApprovalRequired` 后会挂起、发卡、处理回调并继续同一调用。#3210 暴露的 `[tool receipt] Approval pending` 最终回复正落在这个空白里，因此新增两个独立 channel case，而不是复制第 20、21 个 workflow。
+既有 Case 14 证明 direct workflow 和 `/api/chat` 可以运行 `lark_contact_batch_resolution`，但无法证明 Lark channel AgentRun 收到 `use_skill` 的 `ApprovalRequired` 后会挂起、发卡、处理回调并继续同一调用，也无法证明 skill 已挂载时 workflow 内部 `tool_approval` 会通过同一 channel 发卡并恢复原 workflow run。#3210 暴露的 `[tool receipt] Approval pending` 最终回复和“workflow 已挂起但无审批卡”分别落在这两个空白里，因此新增三个独立 channel case，而不是复制新的 workflow。
 
 | Case | 决策 | 必须观察到的通过证据 | 当前状态 |
 |---|---|---|---|
 | Case 20 | approved | 真实 Lark inbound/relay；Ornn 搜索并解析到精确 skill；Lark 审批卡出现；pending receipt 不进入模型回复；回调身份精确匹配且只分发一次；同一 AgentRun 恢复；`use_skill=Completed`；mount 执行；workflow start 恰好 1 次且 run 增量 1；最终 committed artifact 精确命中 `resolved_count=1`、`identifiers_redacted=true`、`side_effects=false` | `pending-deployment` |
 | Case 21 | rejected | 真实 Lark inbound/relay；审批回调只分发一次；同一审批链返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start 为 0；run catalog 增量为 0；不持久化原始身份 | `pending-deployment` |
+| Case 22 | approved | skill 已挂载且不出现新 mount 审批；workflow start 恰好 1 次且 run 增量 1；run committed 到 `awaiting_tool_approval`；workflow 审批卡出现；callback 精确包含 `actor_id/run_id/step_id/execution_id/tool_call_id/approval_request_id` 且只分发一次；同一 workflow run 恢复；pending receipt 不进入最终回复；最终 committed artifact 精确命中 | `pending-deployment` |
 
-两项都要求 Ready 生产 workload 可从 image/digest/revision 追溯到 `452d72ec57694e327c6c57c2e2af595271147252`，并确认其历史包含 `b3784feef` 与 `dd12cd6a6`。部署证据、真实 Lark 点击和 committed terminal 尚未写入，因此机器摘要中的运行字段全部保持 `null`，`readyProductionWorkloadTraceable=false`。审批卡、Bot 文案、direct Case 14 或 `/api/chat` 成功都不能把它们升级为通过。
+三项都要求 Ready 生产 workload 可从 image/digest/revision 追溯到 `b7cacf1838a519e83fbfd70953be988b9696ee2b`，并确认其历史包含 `b3784feef`、`dd12cd6a6` 与 `452d72ec5`。部署证据、真实 Lark 点击和 committed terminal 尚未写入，因此机器摘要中的运行字段全部保持 `null`，`readyProductionWorkloadTraceable=false`。审批卡、Bot 文案、direct Case 14 或 `/api/chat` 成功都不能把它们升级为通过。
 
 ## while 迭代投递缺陷（由案例 18 发现）
 
