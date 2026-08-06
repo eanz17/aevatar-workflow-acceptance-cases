@@ -1,0 +1,56 @@
+schema_version: "1.0"
+case: R01
+name: lark_init_actor_activation_recovery
+title: Lark /init 在 checkpoint 恢复后仍由 Actor activation 串行推进
+issue: "#3210"
+status: pending-deployment
+surfaces:
+  - orleans_integration
+  - lark_private_bot
+target:
+  required_deployment_commit: f5e51e99f
+  required_ancestor_commits:
+    - db72f22c9
+    - a452d4917
+    - 330bfa74f
+    - 9f67c5281
+    - b3784feef
+  implementation_paths:
+    - src/Aevatar.AI.Core/RoleGAgent.cs
+    - src/workflow/Aevatar.Workflow.Integration.AI/WorkflowRoleGAgent.cs
+regression_test:
+  project: test/Aevatar.Integration.Tests/Aevatar.Integration.Tests.csproj
+  name: CheckpointRecovery_ShouldRetainActivationContext_AfterDurableCredentialResolution
+  fault_injection:
+    tool_completion_checkpoint_append_failures: 1
+    durable_credential_resolution_yields_to_thread_pool: true
+  required_assertions:
+    provider_call_count: 2
+    tool_call_count: 1
+    injected_failure_count: 1
+    terminal_completion_success: true
+production_probe:
+  command: /init
+  expected_visible_reply_count: 1
+  expected_duplicate_reply_count: 0
+  forbidden_log_signatures:
+    - Activation access violation
+    - CommittedStatePublicationException
+safety:
+  external_writes: false
+  raw_identifiers_persisted: false
+required_evidence:
+  local_build_passed: true
+  local_regression_test_passed: true
+  architecture_guards_passed: true
+  workflow_binding_guard_passed: true
+  test_stability_guard_passed: true
+  solution_split_guards_passed: true
+  ready_production_workload_traceable:
+  lark_init_inbound_observed:
+  lark_init_reply_relay_observed:
+  visible_reply_count:
+  duplicate_reply_count:
+  activation_access_violation_observed:
+  committed_state_publication_exception_observed:
+  raw_identifiers_persisted: false

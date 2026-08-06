@@ -21,6 +21,8 @@ jobs:
         run: ruby scripts/validate_channel_cases.rb
       - name: 验证风险验收案例
         run: ruby scripts/validate_risk_cases.rb
+      - name: 验证 Actor 恢复回归案例
+        run: ruby scripts/validate_regression_cases.rb
       - name: 生成示例配置
         run: ruby scripts/materialize_workflows.rb config.example.yaml
       - name: 解析生成后的工作流

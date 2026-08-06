@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "summary": {
+    "total": 1,
+    "localPassed": 1,
+    "productionPassed": 0,
+    "pendingDeployment": 1
+  },
+  "results": [
+    {
+      "case": "R01",
+      "name": "lark_init_actor_activation_recovery",
+      "status": "pending-deployment",
+      "requiredDeploymentCommit": "f5e51e99f",
+      "localRegressionPassed": true,
+      "readyProductionWorkloadTraceable": false,
+      "observedAtUtc": null,
+      "deploymentImage": null,
+      "deploymentDigest": null,
+      "larkInitInboundObserved": null,
+      "larkInitReplyRelayObserved": null,
+      "visibleReplyCount": null,
+      "duplicateReplyCount": null,
+      "activationAccessViolationObserved": null,
+      "committedStatePublicationExceptionObserved": null,
+      "rawIdentifiersPersisted": false,
+      "result": "Local fault-injection regression passed; awaiting traceable Ready deployment and fresh Lark /init proof"
+    }
+  ]
+}
