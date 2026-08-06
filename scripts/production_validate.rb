@@ -88,6 +88,7 @@ CASES = {
       method: "post",
       effectiveRisk: "write",
       approvalRequired: true,
+      approvalEnforcement: "bind_time_confirmation",
       allowedExecutionModes: ["interactive"]
     }
   },
@@ -108,6 +109,7 @@ CASES = {
       method: "post",
       effectiveRisk: "write",
       approvalRequired: true,
+      approvalEnforcement: "bind_time_confirmation",
       allowedExecutionModes: ["interactive"]
     }
   },
@@ -646,7 +648,7 @@ class ProductionValidator
                      "identifiers_redacted" => true,
                      "side_effects" => false
                    },
-                   approval_required: true
+                   approval_required: false
                  }
                when "16"
                  {
@@ -666,7 +668,7 @@ class ProductionValidator
                      "approval_resumed" => true,
                      "side_effects" => false
                    },
-                   approval_required: true
+                   approval_required: false
                  }
                when "18"
                  {
