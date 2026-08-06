@@ -117,6 +117,10 @@ CASES = {
     file: "18-supplier-control-attestation-review.workflow.yaml",
     prompt: "运行无副作用的供应商控制项自证审查。"
   },
+  "20" => {
+    file: "20-supplier-risk-tier-aggregation.workflow.yaml",
+    prompt: "运行无副作用的供应商风险分档汇总。"
+  },
   "19" => {
     file: "19-lark-bot-file-upload-validation.workflow.yaml",
     prompt: "验证当前消息中的合成上传文件，不执行任何外部写入。",
@@ -676,6 +680,18 @@ class ProductionValidator
                    expected_artifact: {
                      "success" => true,
                      "approval_resumed" => true,
+                     "side_effects" => false
+                   },
+                   approval_required: false
+                 }
+               when "20"
+                 {
+                   step_id: "aggregate_risk_tiers",
+                   expected_artifact: {
+                     "aggregated" => true,
+                     "mapped_tier_count" => 3,
+                     "merged_line_count" => 5,
+                     "cache_hit_returned_first_value" => true,
                      "side_effects" => false
                    },
                    approval_required: false

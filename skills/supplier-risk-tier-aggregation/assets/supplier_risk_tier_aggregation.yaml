@@ -1,0 +1,98 @@
+name: supplier_risk_tier_aggregation
+description: 无副作用的供应商风险分档汇总，覆盖 map_reduce 与 cache 两个此前未验证的确定性工作流原语。
+roles:
+  - id: risk_analyst
+    name: 风险分析员
+steps:
+  - id: seed_risk_tiers
+    type: assign
+    parameters:
+      target: risk_tiers
+      value: '["tier_a","tier_b","tier_c"]'
+    next: aggregate_risk_tiers
+
+  - id: aggregate_risk_tiers
+    type: map_reduce
+    parameters:
+      map_step_type: transform
+      reduce_step_type: transform
+      delimiter: "\n---\n"
+      max_concurrent_workers: "3"
+      min_concurrent_workers: "1"
+    next: count_aggregated_lines
+
+  - id: count_aggregated_lines
+    type: transform
+    parameters:
+      op: count
+    next: verify_map_reduce_shape
+
+  - id: verify_map_reduce_shape
+    type: switch
+    parameters:
+      on: "${steps.count_aggregated_lines.output}"
+      branch.5: cache_probe_primary
+      branch._default: invalid_map_reduce_shape
+    branches:
+      "5": cache_probe_primary
+      _default: invalid_map_reduce_shape
+
+  - id: cache_probe_primary
+    type: cache
+    parameters:
+      cache_key: supplier-risk-tier-aggregation-probe
+      ttl_seconds: "600"
+      child_step_type: transform
+    next: reseed_cache_probe_input
+
+  - id: reseed_cache_probe_input
+    type: assign
+    parameters:
+      target: cache_probe_input
+      value: CACHE_MUST_NOT_RETURN_THIS
+    next: cache_probe_repeat
+
+  - id: cache_probe_repeat
+    type: cache
+    parameters:
+      cache_key: supplier-risk-tier-aggregation-probe
+      ttl_seconds: "600"
+      child_step_type: transform
+    next: verify_cache_hit
+
+  - id: verify_cache_hit
+    type: switch
+    parameters:
+      on: "${steps.cache_probe_repeat.output}"
+      branch.5: aggregated
+      branch._default: invalid_cache_hit
+    branches:
+      "5": aggregated
+      _default: invalid_cache_hit
+
+  - id: aggregated
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"supplier_risk_tier_aggregation","aggregated":true,"mapped_tier_count":3,"merged_line_count":5,"cache_hit_returned_first_value":true,"side_effects":false}'
+    next: done
+
+  - id: invalid_map_reduce_shape
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"supplier_risk_tier_aggregation","aggregated":false,"reason":"map_reduce_merge_shape_mismatch","side_effects":false}'
+    next: done
+
+  - id: invalid_cache_hit
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"supplier_risk_tier_aggregation","aggregated":false,"reason":"cache_did_not_return_first_value","side_effects":false}'
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

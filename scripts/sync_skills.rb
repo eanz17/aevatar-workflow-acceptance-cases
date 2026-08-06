@@ -23,6 +23,7 @@ SKILLS = {
   "nyxid-read-receipt-probe" => ["16-nyxid-read-receipt-probe.workflow.yaml", "NyxID 只读回执探针", "验证 managed workflow 的 NyxID provider receipt、首步输出或 issue 3161 回归", "运行单次只读 NyxID receipt 探针，不执行任何写入。", "success=true、provider_response_verified=true、side_effects=false"],
   "lark-post-search-approval-probe" => ["17-lark-post-search-approval-probe.workflow.yaml", "Lark POST 搜索批准恢复探针", "验证 POST 搜索的 typed tool approval pending、resume 或 issue 3184 回归", "运行语义只读的 Base POST 搜索批准恢复探针，不修改任何记录。", "preview 为 effectiveRisk=write 且 approvalRequired=true；终态 success=true、approval_resumed=true、side_effects=false"],
   "supplier-control-attestation-review" => ["18-supplier-control-attestation-review.workflow.yaml", "供应商控制项自证审查", "验证 guard、conditional 与 while 三个确定性工作流原语的真实运行行为", "运行无副作用的供应商控制项自证审查。", "attested=true、control_count=3、leading_control=breach_notice、replay_iterations=3、side_effects=false"],
+  "supplier-risk-tier-aggregation" => ["20-supplier-risk-tier-aggregation.workflow.yaml", "供应商风险分档汇总", "验证 map_reduce 与 cache 两个确定性工作流原语的真实运行行为", "运行无副作用的供应商风险分档汇总。", "aggregated=true、mapped_tier_count=3、merged_line_count=5、cache_hit_returned_first_value=true、side_effects=false"],
   "lark-bot-file-upload-validation" => ["19-lark-bot-file-upload-validation.workflow.yaml", "Lark Bot 文件上传验证", "验证通过 Lark Bot 上传的文件、附件引用或 document_extract 主链", "验证当前消息中的合成上传文件，不执行任何外部写入。", "success=true；通过 Lark Bot 运行时还必须 lark_bot_ingress_validated=true"]
 }.freeze
 
@@ -45,6 +46,7 @@ VERSIONS = {
   "nyxid-read-receipt-probe" => "1.1",
   "lark-post-search-approval-probe" => "1.1",
   "supplier-control-attestation-review" => "1.0",
+  "supplier-risk-tier-aggregation" => "1.0",
   "lark-bot-file-upload-validation" => "1.0"
 }.freeze
 

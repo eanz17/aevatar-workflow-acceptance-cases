@@ -27,7 +27,8 @@ EXPECTED = {
   "16-nyxid-read-receipt-probe.workflow.yaml" => [4, 1, 1, 0],
   "17-lark-post-search-approval-probe.workflow.yaml" => [4, 1, 0, 1],
   "18-supplier-control-attestation-review.workflow.yaml" => [15, 0, 0, 0],
-  "19-lark-bot-file-upload-validation.workflow.yaml" => [3, 0, 0, 0]
+  "19-lark-bot-file-upload-validation.workflow.yaml" => [3, 0, 0, 0],
+  "20-supplier-risk-tier-aggregation.workflow.yaml" => [12, 0, 0, 0]
 }.freeze
 
 CODEX_EXEC_WORKFLOW = "11-complex-codex-exec-validation.workflow.yaml"
