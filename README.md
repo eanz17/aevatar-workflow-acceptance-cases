@@ -10,15 +10,15 @@
 
 验证基线日期：2026-08-05；状态更新：2026-08-06。
 
-- 17/17 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
-- 17/17 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
-- 最近一次 17-case 全量回归使用生产镜像 `0c4ff023`；随后案例 11 在修复镜像 `f7f543c5` 上完成定向复验。按逐案例最新证据，17 个终态均为 committed `completed`，严格判定为 15/17 通过和 2 个审批契约回归（14、17）。当前镜像 `7a778106` 没有整体重跑 17 个案例，不能外推为最新镜像已全量回归。
-- 本地 17/17 个 Ornn skill 与 workflow 字节一致；原有 15/17 个线上 `.1` 版本已 public 并回读，新增两个 skill 尚未发布。
+- 18/18 个 workflow 通过本地 YAML、步骤图、安全边界和专用契约校验。
+- 18/18 个已配置定义通过 Aevatar 主网 `interactive` explicit-request preview。
+- 最近一次全量回归在生产镜像 `20d9ba41` 上一次性重跑 17 个案例（01-05、07-18），全部 committed `completed` 且业务 artifact 断言成立；案例 06 会真实创建 Lark 审批，本轮未重跑，沿用 `0c4ff023` 的既有证据并已在表中标注。需要注意验收脚本只对 14、16、17、18 强制 typed artifact 契约，其余案例的 artifact 由人工逐条复核。
+- 本地 18/18 个 Ornn skill 与 workflow 字节一致；原有 15 个线上 `.1` 版本已 public 并回读，新增的 16、17、18 三个 skill 尚未发布。
 - `/api/chat` 已用自然语言验证 01、12、13、14、15：4/5 取得 committed `completed` 与业务断言，1/5 取得 committed `failed` 与稳定 typed blocker。
 - 案例 15 又在生产镜像 `d7844b5e` 上完成 artifact actor identity 回归：Assistant 读取到 committed typed artifact 并明确报告 `Completed`，没有再把最终结果误报为 pending。
 - 五个代表案例均按 `ornn_search_skills -> use_skill -> mount approval -> aevatar_start_workflow -> committed observation` 到达可判定终态，未出现重复 tool start call ID。
 - 源财务 P2 no-send、P1 v5 sanitized image + `submit=false` 和 PDF attachment probe 的既有 `71a38ff5` 证据分别为 8/8、14/14、2/2 completed，均有 `lastSuccess=true` 和非空 final output。
-- Durable schedule 修复提交 `748f98e7d` 的 actor-owned provisioning 链和 `7a7781067` 的 binder-attested 只读窄放行均已随生产镜像 `7a778106` 部署。2026-08-06 SGT 的 fresh NyxID 验证取得 HTTP 200 `confirmation_required`、六个只读 Durable call site 和 HTTP 202 typed `pending_binding` receipt；binding committed `succeeded`（state 7），provisioning 首次 attempt committed `succeeded`（state 9），schedule/operation ID 均非空。schedule 回读为 enabled，Cron `0 9 * * 1`、时区 `Asia/Singapore`；单次 `run-now` 后 `fireCount=1`、`failureCount=0`，workflow 11/11 committed `completed`（state 73），六路 Base 与预算断言全部命中。`f7f543c5` 上的 `NyxIdOperationAuthorityContractUnavailable` 只作为历史回归背景保留；POST、WRITE 与 DESTRUCTIVE 仍 fail-closed。隔离工作树的第二轮全量 solution test、642/642 Capabilities、solution split、架构与全部专项门禁均通过；该测试工作树基于 `7a7781067`，另含 4 个尚未提交的 fixture/boot/admitted-terminal 修复文件，不把它们写成已部署内容。
+- Durable schedule 修复提交 `748f98e7d` 的 actor-owned provisioning 链和 `7a7781067` 的 binder-attested 只读窄放行均包含在当前生产镜像 `b010ba61`。2026-08-06 SGT 的 fresh NyxID 验证先完成六个只读 GET 的 interactive run，取得 11/11 committed `completed` 和精确预算 artifact；随后取得 HTTP 200 `confirmation_required` 与 HTTP 202 typed `pending_binding` receipt，binding committed `succeeded`（state 7）、provisioning committed `succeeded`（state 11），schedule/operation ID 均非空。每分钟 schedule 回读为 enabled，六次真实 cron 触发均完成，`fireCount=6`、`failureCount=0`；抽查 run 为 workflow 11/11 committed `completed`（state 73），六路 Base 与预算断言全部命中。NyxID DELETE 返回 typed accepted receipt 后 list 为空，跨下一分钟 workflow run count 保持 `6 -> 6`。`f7f543c5` 上的 `NyxIdOperationAuthorityContractUnavailable` 只作为历史回归背景保留；POST、WRITE 与 DESTRUCTIVE 仍 fail-closed。编译修复提交 `b010ba614` 已普通推送 `origin/feature/integrate`，Release publish、真实 `linux/amd64` Docker build、镜像内 `.NET 10.0.10 linux-x64`、完整架构/稳定性门禁和排除 3 个本机 Redis 版本契约用例后的 solution tests 均通过。
 - `~/workflows` 中除 n8n 外的 41 个可解析定义已按 7 个版本族比较；剩余边界明确落在 per-run typed approval、Lark sender binding/channel canary，以及受安全约束未运行的源发送、审批和排程定义。公开案例 15 的 Durable schedule 已通过，不替代未运行的源财务 schedule 分支。
 - 已检查 #3161 作者此前在 `aevatarAI/aevatar` 提交的全部 11 条 issue，并用 13、15、16 做新一轮只读 committed 回归；没有为 channel/scheduler 外层缺口复制无效 workflow。详见 [定向回归报告](report/2026-08-05-issue-3161-author-regression.md) 与 [机器摘要](validation/issue-3161-author-regression-2026-08-05.json)。
 
@@ -53,10 +53,11 @@
 | 11 | `complex_codex_exec_validation` | 32 | 固定 managed probe、五项 gate、receipt 恢复、并行证据 | committed 通过，30/30 步，`parallel_check_count=5` | 无 |
 | 12 | `safe_code_execute_validation` | 4 | 固定 JavaScript、结构化 receipt、金额断言 | 连续两次 committed 通过，`total_cents=16623` | 无 |
 | 13 | `invoice_ocr_policy_review` | 10 | 合成 PDF、字段提取、SGD/金额归一化、历史去重 | committed 通过，`stateVersion=82` | 无 |
-| 14 | `lark_contact_batch_resolution` | 3 | `contact/v3/users/batch_get_id`、标识脱敏 | 业务 completed；未观察到 preview 要求的 typed approval identity，契约回归 | 无 |
+| 14 | `lark_contact_batch_resolution` | 3 | `contact/v3/users/batch_get_id`、标识脱敏 | committed 通过，`stateVersion=25`；preview `approvalEnforcement=bind_time_confirmation` | 无 |
 | 15 | `weekly_budget_variance_digest` | 11 | 六路 Base、预算差异、周报/月报、schedule 契约 | committed 通过，`stateVersion=73` | 无 |
 | 16 | `nyxid_read_receipt_probe` | 4 | 单次 Base GET、provider receipt、首步输出与终态 | committed 通过，`stateVersion=31` | 无 |
-| 17 | `lark_post_search_approval_probe` | 4 | 语义只读 POST、typed pending、nested resume | 业务 completed；未观察到 typed pending/resume，契约回归 | 无 |
+| 17 | `lark_post_search_approval_probe` | 4 | 语义只读 POST、bind-time 批准契约、nested resume | committed 通过，`stateVersion=31`；preview `approvalEnforcement=bind_time_confirmation` | 无 |
+| 18 | `supplier_control_attestation_review` | 15 | `guard`、`conditional`、`while` 三个确定性原语 | committed 通过，`stateVersion=92`，15/15 步 | 无 |
 
 最新全量回归使用部署镜像 `0c4ff023`。其中 11 曾在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；修复镜像 `f7f543c5` 部署后，11 的定向复验已 committed `completed`。12 的连续两次成功证据继续保留。14 和 17 的业务 artifact 均成功，但没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
 
@@ -80,7 +81,7 @@
 
 ### 15 周度/月度预算差异摘要
 
-六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。真实 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例同时提供每周一和每月一日的 Cron；生产镜像 `7a778106` 上已完成 confirmation、HTTP 202 typed receipt、binding/provisioning committed success、schedule 回读和单次 `run-now`。触发后 `fireCount=1`、`failureCount=0`，workflow 11/11 committed `completed`，最终 artifact 与直接运行断言一致。
+六路 Base GET 后对合成财务数据计算周度实际、预算、超支与观察类别，并生成四周月度投影。镜像 `b010ba61` 上的直接 run committed `completed`，`stateVersion=73`；周度 2340/2400、月度 9360/9600、`over_count=1`、`watch_count=1` 均命中。schedule 示例仍提供每周一和每月一日的正式 Cron，本次生产 canary 使用每分钟 Cron 完成 confirmation、HTTP 202 typed receipt、binding/provisioning committed success 与 schedule 回读。六次真实 cron 触发均无失败，抽查 workflow 11/11 committed `completed`，最终 artifact 与直接运行断言一致；DELETE 后 list 消失，跨下一分钟 run count 未增长。
 
 ### 16 NyxID 只读 provider receipt
 
@@ -135,7 +136,8 @@ ruby scripts/publish_skills.rb --verify-only
 | 14 | 把验收入职邮箱解析为 Lark 联系人 ID，只返回成功与数量，缺权限时报告 typed blocker。 |
 | 15 | 生成合成预算的周度和月度差异摘要，不发送消息，使用 Ornn skill 并读取 typed artifact。 |
 | 16 | 运行 NyxID 只读回执探针，只接受 committed typed artifact，不执行写入。 |
-| 17 | 运行语义只读的 Base POST 搜索批准恢复探针；等待 typed pending 后再决定是否批准。 |
+| 17 | 运行语义只读的 Base POST 搜索批准恢复探针；批准由 bind 时的 explicit-request confirmation 兑现。 |
+| 18 | 运行无副作用的供应商控制项自证审查，覆盖 guard、conditional 与 while 三个确定性原语。 |
 
 可复现 `/api/chat` 验证：
 
