@@ -36,6 +36,32 @@ steps:
         dpa
         subprocessor
         breach_notice
+    next: count_required_controls
+
+  - id: count_required_controls
+    type: transform
+    parameters:
+      op: count
+    next: verify_control_count
+
+  - id: verify_control_count
+    type: switch
+    parameters:
+      on: "${steps.count_required_controls.output}"
+      branch.3: restore_controls_for_replay
+      branch._default: invalid_control_count
+    branches:
+      "3": restore_controls_for_replay
+      _default: invalid_control_count
+
+  - id: restore_controls_for_replay
+    type: assign
+    parameters:
+      target: replay_input
+      value: |-
+        dpa
+        subprocessor
+        breach_notice
     next: replay_control_order
 
   - id: replay_control_order
@@ -45,23 +71,7 @@ steps:
       sub_param_op: reverse_lines
       condition: "true"
       max_iterations: "3"
-    next: count_controls
-
-  - id: count_controls
-    type: transform
-    parameters:
-      op: count
-    next: verify_control_count
-
-  - id: verify_control_count
-    type: switch
-    parameters:
-      on: "${steps.count_controls.output}"
-      branch.3: take_leading_control
-      branch._default: invalid_control_count
-    branches:
-      "3": take_leading_control
-      _default: invalid_control_count
+    next: take_leading_control
 
   - id: take_leading_control
     type: transform

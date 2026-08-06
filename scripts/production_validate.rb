@@ -668,6 +668,18 @@ class ProductionValidator
                    },
                    approval_required: true
                  }
+               when "18"
+                 {
+                   step_id: "replay_control_order",
+                   expected_artifact: {
+                     "attested" => true,
+                     "control_count" => 3,
+                     "leading_control" => "breach_notice",
+                     "replay_iterations" => 3,
+                     "side_effects" => false
+                   },
+                   approval_required: false
+                 }
                else
                  return {}
                end
