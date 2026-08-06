@@ -955,6 +955,7 @@
         "mountExecuted": null,
         "workflowStartCalls": null,
         "newWorkflowRunCount": null,
+        "workflowRunStartedAfterInbound": null,
         "awaitingToolApprovalObserved": null,
         "workflowApprovalCardObserved": null,
         "approvalPendingExposedToModel": null,
@@ -968,7 +969,7 @@
         "replyRelayObserved": null,
         "stableErrorCode": null,
         "rawIdentifiersPersisted": false,
-        "result": "等待提交 9f67c5281 部署到 Ready 生产 workload 后执行已挂载 skill 的 workflow 运行期工具批准路径"
+        "result": "等待提交 3f62ff62b 部署到 Ready 生产 workload 后执行已挂载 skill 的 workflow 运行期工具批准路径，并证明新 workflow run 晚于本次 Lark inbound 启动"
       }
     ]
   },

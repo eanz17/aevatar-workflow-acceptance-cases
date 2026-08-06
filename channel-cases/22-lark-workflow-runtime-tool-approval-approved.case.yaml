@@ -9,13 +9,16 @@ target:
   skill: lark-contact-batch-resolution
   workflow: lark_contact_batch_resolution
   direct_workflow_case: "14"
-  required_deployment_commit: 330bfa74f2901bd40e5de7b9a82b4aef072604e1
+  required_deployment_commit: 3f62ff62bcb32f7fb7c97aea8a7920aadd29d398
   required_ancestor_commits:
     - b3784feef
     - dd12cd6a6
     - 452d72ec5
     - b7cacf183
     - 9f67c5281
+    - 330bfa74f
+    - a452d4917
+    - f5e51e99f
 preconditions:
   skill_already_mounted: true
   new_mount_approval_expected: false
@@ -48,6 +51,7 @@ required_evidence:
   ordinary_agent_run_visible_reply_count: 0
   awaiting_tool_approval_visible_text_count: 0
   new_workflow_run_count: 1
+  workflow_run_started_after_inbound: true
   awaiting_tool_approval_observed: true
   workflow_approval_card_observed: true
   workflow_approval_card_count: 1

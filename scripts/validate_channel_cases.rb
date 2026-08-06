@@ -11,12 +11,15 @@ EVIDENCE_BASELINE_COMMIT = "9f67c528174ac477bb144d6bd1525444e7c971cf"
 REQUIRED_DEPLOYMENT_COMMITS = {
   "20" => EVIDENCE_BASELINE_COMMIT,
   "21" => EVIDENCE_BASELINE_COMMIT,
-  "22" => "330bfa74f2901bd40e5de7b9a82b4aef072604e1"
+  "22" => "3f62ff62bcb32f7fb7c97aea8a7920aadd29d398"
 }.freeze
 REQUIRED_ANCESTOR_COMMITS = {
   "20" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183],
   "21" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183],
-  "22" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183 9f67c5281]
+  "22" => %w[
+    b3784feef dd12cd6a6 452d72ec5 b7cacf183 9f67c5281
+    330bfa74f a452d4917 f5e51e99f
+  ]
 }.transform_values(&:freeze).freeze
 EXPECTED_FILES = {
   "20" => "20-lark-agent-run-skill-approval-approved.case.yaml",
@@ -41,6 +44,7 @@ OBSERVATION_FIELDS = %w[
   approvalCardObserved approvalPendingExposedToModel approvalDecisionDispatched
   approvalDecisionDispatchCount approvalIdentityMatched sameAgentRunResolved sameAgentRunResumed
   useSkillReceiptStatus mountExecuted workflowStartCalls newWorkflowRunCount
+  workflowRunStartedAfterInbound
   skillAlreadyMounted newMountApprovalCardObserved newMountApprovalDecisionDispatchCount
   awaitingToolApprovalObserved workflowApprovalCardObserved workflowApprovalDecisionDispatched
   workflowApprovalDecisionDispatchCount workflowApprovalIdentityMatched sameWorkflowRunResumed
@@ -176,6 +180,7 @@ fail_validation("案例 22 workflow 运行期批准链证据契约不完整") un
   "ordinary_agent_run_visible_reply_count" => 0,
   "awaiting_tool_approval_visible_text_count" => 0,
   "new_workflow_run_count" => 1,
+  "workflow_run_started_after_inbound" => true,
   "awaiting_tool_approval_observed" => true,
   "workflow_approval_card_observed" => true,
   "workflow_approval_card_count" => 1,
@@ -323,6 +328,7 @@ results.each do |item|
         item["useSkillReceiptStatus"] == "Completed" && item["mountExecuted"] == false &&
         item["workflowStartCalls"] == 1 && item["ordinaryAgentRunVisibleReplyCount"] == 0 &&
         item["awaitingToolApprovalVisibleTextCount"] == 0 && item["newWorkflowRunCount"] == 1 &&
+        item["workflowRunStartedAfterInbound"] == true &&
         item["awaitingToolApprovalObserved"] == true && item["workflowApprovalCardObserved"] == true &&
         item["workflowApprovalCardCount"] == 1 &&
         item["workflowApprovalDecisionDispatched"] == true &&

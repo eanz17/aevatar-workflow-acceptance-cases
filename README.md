@@ -98,9 +98,9 @@
 |---:|---|---|---|---|
 | 20 | `lark_agent_run_skill_approval_approved` | 批准 | 真实 Lark inbound/relay；审批卡可见；`Approval pending` 不进入模型回复；回调精确匹配 run/request/call/hash/sender/scope/conversation 且只分发一次；同一 AgentRun 恢复；`use_skill=Completed`；workflow 只启动一次；取得精确 committed artifact | `pending-execution` |
 | 21 | `lark_agent_run_skill_approval_rejected` | 拒绝 | 真实 Lark inbound/relay；审批卡可见；回调只分发一次；同一挂起调用返回 typed `Denied` / `approval_denied`；不执行 mount；workflow start=0；run catalog 增量=0 | `pending-execution` |
-| 22 | `lark_workflow_runtime_tool_approval_approved` | 批准 | skill 已挂载且不出现新 mount 审批；workflow start=1；run 到达 `awaiting_tool_approval`；workflow 审批卡回调精确携带 actor/run/step/execution/tool-call/approval-request identity；同一 workflow run 恢复；最终 artifact 精确命中 | `pending-execution` |
+| 22 | `lark_workflow_runtime_tool_approval_approved` | 批准 | skill 已挂载且不出现新 mount 审批；workflow start=1；新 run 必须晚于本次 Lark inbound 启动；run 到达 `awaiting_tool_approval`；workflow 审批卡回调精确携带 actor/run/step/execution/tool-call/approval-request identity；同一 workflow run 恢复；最终 artifact 精确命中 | `pending-deployment` |
 
-目标修复提交 `9f67c528174ac477bb144d6bd1525444e7c971cf` 已包含在 Ready 生产镜像 `6df43b83` 中，部署前置条件已满足；三项当前仅缺真实 Lark 操作和严格证据，因此状态是 `pending-execution`。Bot 自然语言、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功都不能把 Case 20/21/22 判为通过。
+Case 20/21 的目标修复提交 `9f67c528174ac477bb144d6bd1525444e7c971cf` 已包含在 Ready 生产镜像 `6df43b83` 中，当前仅缺真实 Lark 操作和严格证据，因此状态是 `pending-execution`。Case 22 已提升目标提交到 `3f62ff62bcb32f7fb7c97aea8a7920aadd29d398`，在 Ready 生产 workload 可追溯到该提交前保持 `pending-deployment`。Bot 自然语言、`[tool receipt] Approval pending`、审批卡本身或 direct workflow 成功都不能把 Case 20/21/22 判为通过。
 
 最新全量回归使用部署镜像 `0c4ff023`。其中 11 曾在账号 managed credential 已显示 `execution_ready=true` 的情况下连续两次于 `execute_probe` 以 `codex_execution_admission_denied` 失败；修复镜像 `f7f543c5` 部署后，11 的定向复验已 committed `completed`。12 的连续两次成功证据继续保留。14 和 17 的业务 artifact 均成功，但没有出现 preview 所要求的 per-run typed approval identity，因此不能把终态完成写成严格通过；历史批准路径证据继续保留。
 
