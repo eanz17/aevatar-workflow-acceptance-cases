@@ -7,8 +7,17 @@ require "yaml"
 ROOT = File.expand_path("..", __dir__)
 CASE_DIR = File.join(ROOT, "channel-cases")
 EVIDENCE_PATH = File.join(ROOT, "validation", "production-validation-2026-08-05.json")
-REQUIRED_DEPLOYMENT_COMMIT = "9f67c528174ac477bb144d6bd1525444e7c971cf"
-REQUIRED_ANCESTOR_COMMITS = %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183].freeze
+EVIDENCE_BASELINE_COMMIT = "9f67c528174ac477bb144d6bd1525444e7c971cf"
+REQUIRED_DEPLOYMENT_COMMITS = {
+  "20" => EVIDENCE_BASELINE_COMMIT,
+  "21" => EVIDENCE_BASELINE_COMMIT,
+  "22" => "330bfa74f49bd48f22d01dbdf851c44db9a23414"
+}.freeze
+REQUIRED_ANCESTOR_COMMITS = {
+  "20" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183],
+  "21" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183],
+  "22" => %w[b3784feef dd12cd6a6 452d72ec5 b7cacf183 9f67c5281]
+}.transform_values(&:freeze).freeze
 EXPECTED_FILES = {
   "20" => "20-lark-agent-run-skill-approval-approved.case.yaml",
   "21" => "21-lark-agent-run-skill-approval-rejected.case.yaml",
@@ -36,6 +45,8 @@ OBSERVATION_FIELDS = %w[
   awaitingToolApprovalObserved workflowApprovalCardObserved workflowApprovalDecisionDispatched
   workflowApprovalDecisionDispatchCount workflowApprovalIdentityMatched sameWorkflowRunResumed
   committedTerminalObserved terminalStatus finalArtifact replyRelayObserved stableErrorCode
+  ordinaryAgentRunVisibleReplyCount awaitingToolApprovalVisibleTextCount
+  workflowApprovalCardCount workflowTerminalResultCount
 ].freeze
 ALLOWED_STATUSES = %w[pending-deployment passed failed].freeze
 FORBIDDEN_EVIDENCE_KEYS = %w[
@@ -130,8 +141,8 @@ cases.each do |path, spec|
     target["workflow"] == "lark_contact_batch_resolution" &&
     target["direct_workflow_case"] == "14"
   fail_validation("案例 #{case_id} 部署提交漂移") unless
-    target["required_deployment_commit"] == REQUIRED_DEPLOYMENT_COMMIT &&
-    target["required_ancestor_commits"] == REQUIRED_ANCESTOR_COMMITS
+    target["required_deployment_commit"] == REQUIRED_DEPLOYMENT_COMMITS.fetch(case_id) &&
+    target["required_ancestor_commits"] == REQUIRED_ANCESTOR_COMMITS.fetch(case_id)
   fail_validation("案例 #{case_id} 决策漂移") unless
     spec.dig("trigger", "decision") == EXPECTED_DECISIONS.fetch(case_id)
   fail_validation("案例 #{case_id} 必须使用合成输入") unless
@@ -162,9 +173,12 @@ fail_validation("案例 22 workflow 运行期批准链证据契约不完整") un
   "use_skill_receipt_status" => "Completed",
   "mount_executed" => false,
   "workflow_start_calls" => 1,
+  "ordinary_agent_run_visible_reply_count" => 0,
+  "awaiting_tool_approval_visible_text_count" => 0,
   "new_workflow_run_count" => 1,
   "awaiting_tool_approval_observed" => true,
   "workflow_approval_card_observed" => true,
+  "workflow_approval_card_count" => 1,
   "approval_pending_exposed_to_model" => false,
   "workflow_approval_decision_dispatched" => true,
   "workflow_approval_decision_dispatch_count" => 1,
@@ -173,6 +187,7 @@ fail_validation("案例 22 workflow 运行期批准链证据契约不完整") un
   "committed_terminal_observed" => true,
   "terminal_status" => "completed",
   "reply_relay_observed" => true,
+  "workflow_terminal_result_count" => 1,
   "final_artifact" => expected_artifact,
   "raw_identifiers_persisted" => false
 }
@@ -228,7 +243,7 @@ fail_validation("案例 21 拒绝链证据契约不完整") unless rejected == {
 
 summary = JSON.parse(File.read(EVIDENCE_PATH)).fetch("channelE2EAcceptance")
 fail_validation("机器证据 schemaVersion 漂移") unless summary["schemaVersion"] == "1.0"
-fail_validation("机器证据目标提交漂移") unless summary["requiredDeploymentCommit"] == REQUIRED_DEPLOYMENT_COMMIT
+fail_validation("机器证据基线提交漂移") unless summary["requiredDeploymentCommit"] == EVIDENCE_BASELINE_COMMIT
 results = summary.fetch("results")
 fail_validation("机器证据案例编号不完整") unless results.map { |item| item.fetch("case") } == %w[20 21 22]
 forbidden_key_path = find_forbidden_key(summary)
@@ -265,8 +280,8 @@ results.each do |item|
       OBSERVATION_FIELDS.all? { |field| item[field].nil? }
   when "passed"
     fail_validation("案例 #{case_id} 缺少可追溯 Ready 生产部署") unless
-      item["deploymentCommit"] == REQUIRED_DEPLOYMENT_COMMIT &&
-      item["requiredAncestorsPresent"] == true &&
+      item["requiredDeploymentCommit"] == REQUIRED_DEPLOYMENT_COMMITS.fetch(case_id) &&
+      item["deploymentCommit"].to_s.length.positive? && item["requiredAncestorsPresent"] == true &&
       item["readyProductionWorkloadTraceable"] == true &&
       item["deploymentImage"].to_s.length.positive? && item["deploymentDigest"].to_s.length.positive?
     begin
@@ -306,18 +321,21 @@ results.each do |item|
         item["skillAlreadyMounted"] == true && item["newMountApprovalCardObserved"] == false &&
         item["newMountApprovalDecisionDispatchCount"] == 0 &&
         item["useSkillReceiptStatus"] == "Completed" && item["mountExecuted"] == false &&
-        item["workflowStartCalls"] == 1 && item["newWorkflowRunCount"] == 1 &&
+        item["workflowStartCalls"] == 1 && item["ordinaryAgentRunVisibleReplyCount"] == 0 &&
+        item["awaitingToolApprovalVisibleTextCount"] == 0 && item["newWorkflowRunCount"] == 1 &&
         item["awaitingToolApprovalObserved"] == true && item["workflowApprovalCardObserved"] == true &&
+        item["workflowApprovalCardCount"] == 1 &&
         item["workflowApprovalDecisionDispatched"] == true &&
         item["workflowApprovalDecisionDispatchCount"] == 1 &&
         item["workflowApprovalIdentityMatched"] == true && item["sameWorkflowRunResumed"] == true &&
         item["committedTerminalObserved"] == true && item["terminalStatus"] == "completed" &&
+        item["workflowTerminalResultCount"] == 1 &&
         item["finalArtifact"] == expected_artifact && item["stableErrorCode"].nil?
     end
   when "failed"
     fail_validation("案例 #{case_id} 失败证据缺少可追溯 Ready 生产部署") unless
-      item["deploymentCommit"] == REQUIRED_DEPLOYMENT_COMMIT &&
-      item["requiredAncestorsPresent"] == true &&
+      item["requiredDeploymentCommit"] == REQUIRED_DEPLOYMENT_COMMITS.fetch(case_id) &&
+      item["deploymentCommit"].to_s.length.positive? && item["requiredAncestorsPresent"] == true &&
       item["readyProductionWorkloadTraceable"] == true &&
       item["deploymentImage"].to_s.length.positive? && item["deploymentDigest"].to_s.length.positive?
     begin
