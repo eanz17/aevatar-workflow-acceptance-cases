@@ -7,10 +7,12 @@ require_relative "runtime_contracts"
 
 ROOT = File.expand_path("..", __dir__)
 EXPECTED_CASES = (1..20).map { |number| format("%02d", number) }.freeze
-EXPECTED_WORKFLOW_CASES = (1..25).map { |number| format("%02d", number) }.freeze
+EXPECTED_WORKFLOW_CASES = RuntimeContracts::CONTRACTS.keys.freeze
 EXPECTED_NEW_WORKFLOW_CASES = (21..25).map { |number| format("%02d", number) }.freeze
+EXPECTED_COMPOSITION_WORKFLOW_CASES = (26..28).map { |number| format("%02d", number) }.freeze
+EXPECTED_INTEGRATION_WORKFLOW_CASES = ["29"].freeze
 EXPECTED_RISK_CASES = (23..43).map(&:to_s).freeze
-EXPECTED_BLOCKED = [].freeze
+EXPECTED_BLOCKED = %w[11].freeze
 EXPECTED_CONTRACT_REGRESSIONS = [].freeze
 EXPECTED_UNVERIFIED = [].freeze
 EXPECTED_ISSUE_3161_AUTHOR_HISTORY = [2411, 2412, 2447, 2944, 2958, 2999, 3000, 3001, 3061, 3086, 3087].freeze
@@ -31,11 +33,11 @@ fail_validation("production preview 已验证数不是 20/20") unless summary.di
   summary.dig("productionPreview", "unverified") == 0
 fail_validation("production runtime 案例数不是 20") unless runtime.length == 20
 fail_validation("production runtime 案例编号不完整") unless runtime.map { |item| item.fetch("case") } == EXPECTED_CASES
-fail_validation("直接 runtime 严格通过数不是 20") unless summary.dig("directRuntimeSummary", "passed") == 20
-fail_validation("直接 runtime 平台阻塞数不是 0") unless summary.dig("directRuntimeSummary", "platformBlocked") == 0
+fail_validation("直接 runtime 严格通过数不是 19") unless summary.dig("directRuntimeSummary", "passed") == 19
+fail_validation("直接 runtime 平台阻塞数不是 1") unless summary.dig("directRuntimeSummary", "platformBlocked") == 1
 fail_validation("直接 runtime 契约回归数不是 0") unless summary.dig("directRuntimeSummary", "contractRegressions") == 0
-fail_validation("直接 runtime completed 数不是 20") unless summary.dig("directRuntimeSummary", "terminalCompleted") == 20
-fail_validation("直接 runtime failed 数不是 0") unless summary.dig("directRuntimeSummary", "terminalFailed") == 0
+fail_validation("直接 runtime completed 数不是 19") unless summary.dig("directRuntimeSummary", "terminalCompleted") == 19
+fail_validation("直接 runtime failed 数不是 1") unless summary.dig("directRuntimeSummary", "terminalFailed") == 1
 fail_validation("直接 runtime 待验证数不是 0") unless summary.dig("directRuntimeSummary", "unverified") == 0
 
 runtime.each do |item|
@@ -67,14 +69,25 @@ new_summary_path = File.join(ROOT, "validation", "production-validation-#{CURREN
 risk_summary_path = File.join(ROOT, "validation", "risk-validation-#{CURRENT_DATE}.json")
 new_summary = JSON.parse(File.read(new_summary_path))
 risk_summary = JSON.parse(File.read(risk_summary_path))
+composition_summary_path = File.join(ROOT, "validation", "production-validation-2026-08-07-cases-26-28.json")
+composition_summary = JSON.parse(File.read(composition_summary_path))
+integration_summary_path = File.join(ROOT, "validation", "production-validation-2026-08-07-case-29.json")
+integration_summary = JSON.parse(File.read(integration_summary_path))
+current_schedule_summary_path = File.join(ROOT, "validation", "production-validation-2026-08-07-schedule.json")
+current_schedule_summary = JSON.parse(File.read(current_schedule_summary_path))
 
 fail_validation("21-25 机器证据 schemaVersion 漂移") unless new_summary["schemaVersion"] == "1.0"
 fail_validation("风险机器证据 schemaVersion 漂移") unless risk_summary["schemaVersion"] == "1.0"
-fail_validation("21-25 与风险证据目标提交不一致") unless
+fail_validation("26-28 机器证据 schemaVersion 漂移") unless composition_summary["schemaVersion"] == "1.0"
+fail_validation("Case 29 机器证据 schemaVersion 漂移") unless integration_summary["schemaVersion"] == "1.0"
+fail_validation("当前 Durable schedule 机器证据 schemaVersion 漂移") unless
+  current_schedule_summary["schemaVersion"] == "1.0"
+fail_validation("21-25 与风险证据的目标基线或 Ready 部署语义不一致") unless
   new_summary.dig("targetSource", "commit") == risk_summary.dig("targetSource", "commit") &&
-  new_summary.dig("productionDeployment", "commit") == risk_summary.dig("productionDeployment", "commit") &&
+  new_summary.dig("productionDeployment", "commit") == new_summary.dig("targetSource", "commit") &&
   new_summary.dig("productionDeployment", "readyReplicas") == "1/1" &&
-  risk_summary.dig("productionDeployment", "readyReplicas") == "1/1"
+  risk_summary.dig("productionDeployment", "readyReplicas") == "1/1" &&
+  risk_summary.dig("productionDeployment", "requiredSourceCommitPresent") == true
 
 probe_validation = risk_summary.fetch("newWorkflowProbeValidation")
 probe_results = probe_validation.fetch("results")
@@ -123,6 +136,75 @@ new_production_results.each do |item|
   fail_validation("21-25 独立生产摘要案例 #{case_id} artifact 漂移：#{mismatch.inspect}") if mismatch
 end
 
+composition_results = composition_summary.fetch("results")
+fail_validation("26-28 独立生产摘要案例编号不完整") unless
+  composition_results.map { |item| item.fetch("case") } == EXPECTED_COMPOSITION_WORKFLOW_CASES
+fail_validation("26-28 独立生产摘要部署证据不完整") unless
+  composition_summary.dig("productionDeployment", "commit") ==
+    "4c0596c764b45abc36d00e27577cd5a949796f79" &&
+  composition_summary.dig("productionDeployment", "readyReplicas") == "1/1" &&
+  risk_summary.dig("productionDeployment", "commit") ==
+    "6558db8db00bcc43d38d3c3e3781246d8079d5cc" &&
+  risk_summary.dig("productionDeployment", "readyReplicas") == "1/1"
+composition_results.each do |item|
+  case_id = item.fetch("case")
+  fail_validation("26-28 独立生产摘要案例 #{case_id} 未完成") unless
+    item["previewPassed"] == true && item["callSiteCount"] == 0 &&
+    item["terminalStatus"] == "completed" && item["terminalSuccess"] == true &&
+    item["completedSteps"] == item["totalSteps"] && item["sideEffectsPerformed"] == false &&
+    item["runHash"].to_s.match?(/\A[0-9a-f]{12}\z/)
+  mismatch = RuntimeContracts.mismatch(case_id, item.fetch("finalArtifact"))
+  fail_validation("26-28 独立生产摘要案例 #{case_id} artifact 漂移：#{mismatch.inspect}") if mismatch
+end
+
+integration_results = integration_summary.fetch("results")
+fail_validation("Case 29 独立生产摘要案例编号不完整") unless
+  integration_results.map { |item| item.fetch("case") } == EXPECTED_INTEGRATION_WORKFLOW_CASES
+case29 = integration_results.fetch(0)
+expected_case29_call_sites = [
+  {
+    "method" => "get",
+    "pathTemplate" => "/open-apis/approval/v4/instances",
+    "effectiveRisk" => "read_only",
+    "approvalRequired" => false,
+    "approvalEnforcement" => "none",
+    "allowedExecutionModes" => ["interactive"]
+  },
+  {
+    "method" => "post",
+    "pathTemplate" => "/open-apis/contact/v3/users/batch_get_id",
+    "effectiveRisk" => "read_only",
+    "approvalRequired" => false,
+    "approvalEnforcement" => "none",
+    "allowedExecutionModes" => ["interactive"]
+  }
+]
+fail_validation("Case 29 preview/runtime/Ornn 严格证据不完整") unless
+  integration_summary.dig("productionDeployment", "commit") ==
+    "6a656d7593c655ba565565824431802c85e2de46" &&
+  integration_summary.dig("productionDeployment", "readyReplicas") == "1/1" &&
+  integration_summary.dig("productionDeployment", "podRestarts") == 0 &&
+  case29["previewPassed"] == true && case29["callSiteCount"] == 2 &&
+  case29["callSites"] == expected_case29_call_sites &&
+  case29["runHash"].to_s.match?(/\A[0-9a-f]{12}\z/) &&
+  case29["terminalStatus"] == "completed" && case29["terminalSuccess"] == true &&
+  case29["stateVersion"] == 77 && case29["completedSteps"] == 11 && case29["totalSteps"] == 11 &&
+  case29["approvalPendingObserved"] == false && case29["approvalResumeCount"] == 0 &&
+  case29["sideEffectsPerformed"] == false &&
+  case29.dig("ornnSkill", "name") == "invoice-approval-routing-preview" &&
+  case29.dig("ornnSkill", "version") == "1.0" &&
+  case29.dig("ornnSkill", "serverFormatValid") == true &&
+  case29.dig("ornnSkill", "public") == true &&
+  RuntimeContracts.mismatch("29", case29.fetch("finalArtifact")).nil?
+fail_validation("Case 29 未声明 Risk 42 retirement 关系") unless
+  integration_summary["retiredRiskCase"] == {
+    "case" => "42",
+    "status" => "skipped-expired",
+    "sourceDefinitionPreserved" => true,
+    "sourceSha256Verified" => true,
+    "replacementCase" => "29"
+  }
+
 invalid_materialization_control = {
   "deploymentCommit" => risk_summary.dig("targetSource", "commit"),
   "cases" => %w[21 22 23],
@@ -141,17 +223,44 @@ risk_status_counts = risk_results.each_with_object(Hash.new(0)) do |item, counts
 end
 fail_validation("风险案例汇总漂移") unless risk_summary.fetch("summary") == {
   "total" => 21,
-  "passed" => 12,
-  "blocked" => 2,
-  "failed" => 2,
+  "passed" => 16,
+  "blocked" => 0,
+  "failed" => 0,
   "pendingExecution" => 0,
-  "notConfigured" => 5
+  "notConfigured" => 4,
+  "skippedExpired" => 1
 } && risk_status_counts == {
-  "passed" => 12,
-  "blocked" => 2,
-  "failed" => 2,
-  "not-configured" => 5
+  "passed" => 16,
+  "not-configured" => 4,
+  "skipped-expired" => 1
 }
+
+risk42 = risk_results.find { |item| item.fetch("case") == "42" }
+fail_validation("风险案例 42 retirement 与 Case 29 replacement 不一致") unless
+  risk42["status"] == "skipped-expired" && risk42["stableErrorCode"].nil? &&
+  risk42["requiredEvidenceMet"] == true &&
+  risk42.dig("actualEvidence", "replacement_workflow_case") == "29" &&
+  risk42.dig("actualEvidence", "replacement_terminal_status") == "completed" &&
+  risk42.dig("actualEvidence", "replacement_artifact_verified") == true &&
+  risk42.dig("actualEvidence", "replacement_ornn_public") == true &&
+  risk42.dig("actualEvidence", "external_writes") == false
+
+risk26 = risk_results.find { |item| item.fetch("case") == "26" }
+fail_validation("风险案例 26 当前严格成功与 Case 12 不一致") unless
+  risk26["status"] == "passed" &&
+  risk26["stableErrorCode"].nil? &&
+  risk26["requiredEvidenceMet"] == true &&
+  risk26.dig("actualEvidence", "run_hash") == "6fa89cd62b15" &&
+  risk26.dig("actualEvidence", "direct_run_hash") == "6659aabee079" &&
+  risk26.dig("actualEvidence", "direct_same_success") == true &&
+  risk26.dig("actualEvidence", "sandbox_health_healthy") == true &&
+  risk26.dig("actualEvidence", "sandbox_execute_success") == true &&
+  risk26.dig("actualEvidence", "sandbox_execute_exit_code") == 0 &&
+  risk26.dig("actualEvidence", "sandbox_execute_output_verified") == true &&
+  risk26.dig("actualEvidence", "forbidden_failure_codes_absent") == ["NYXID_PROXY_UNAUTHORIZED"] &&
+  risk26.dig("actualEvidence", "final_artifact_present") == true &&
+  RuntimeContracts.mismatch("12", risk26.dig("actualEvidence", "final_artifact")).nil? &&
+  risk26.dig("actualEvidence", "side_effects") == false
 
 source_p1_current = risk_results.find { |item| item.fetch("case") == "28" }
 source_p1_evidence = source_p1_current.fetch("actualEvidence")
@@ -179,9 +288,9 @@ workflow_case_ids = Dir[File.join(ROOT, "workflows", "*.workflow.yaml")]
   .map { |path| File.basename(path)[0, 2] }
   .sort
 skill_count = Dir[File.join(ROOT, "skills", "*")].count { |path| File.directory?(path) }
-fail_validation("workflow、skill 或 strict runtime contract 不是 25/25") unless
+fail_validation("workflow、skill 或 strict runtime contract 数量不一致") unless
   workflow_case_ids == EXPECTED_WORKFLOW_CASES &&
-  skill_count == 25 &&
+  skill_count == EXPECTED_WORKFLOW_CASES.length &&
   RuntimeContracts::CONTRACTS.keys == EXPECTED_WORKFLOW_CASES
 
 case14 = summary.fetch("case14Validation")
@@ -391,8 +500,54 @@ fail_validation("案例 11 managed codex_exec 恢复证据不完整") unless
   } &&
   case11_recovery["parallelCheckCount"] == 5 && case11_recovery["sideEffects"] == false
 
+case11_current = summary.fetch("case11CurrentValidation")
+fail_validation("案例 11 当前 capacity blocker 证据不完整") unless
+  case11_current["deploymentImage"].to_s.end_with?("eead35c0") &&
+  case11_current["deployedCommit"] == "eead35c089758b26f7b0fd4c277dbbe71815b0cc" &&
+  case11_current["entryPoint"] == "scripts/production_validate.rb" &&
+  case11_current["transport"] == "nyxid proxy request aevatar" &&
+  case11_current["previewPassed"] == true &&
+  case11_current["canonicalManagedPayloadMatched"] == true &&
+  case11_current["delegationPolicy"] == {
+    "forwardAccessToken" => true,
+    "injectDelegationToken" => true,
+    "delegationTokenScope" => "proxy:*"
+  } &&
+  case11_current["attempts"].map { |attempt| attempt["runIdHash"] } == ["106ecf7b750a"] &&
+  case11_current["attempts"].all? { |attempt|
+    attempt["terminalStatus"] == "failed" && attempt["terminalSuccess"] == false &&
+      attempt["stateVersion"] == 31 && attempt["completedSteps"] == 4 && attempt["totalSteps"] == 4
+  } &&
+  case11_current["failedStep"] == "execute_probe" &&
+  case11_current["stableErrorCode"] == "codex_execution_capacity_unavailable" &&
+  case11_current["currentDiagnosticBoundary"] == {
+    "allowlistedUpstreamCodeObserved" => false,
+    "targetedStdoutLogMatches" => 0,
+    "tenMinuteStdoutLineCount" => 10,
+    "healthCheck" => {
+      "status" => "healthy",
+      "opensandboxConnected" => true,
+      "executeCapacityProven" => false
+    }
+  } &&
+  case11_current["lastCapacityBoundary"] == {
+    "observedAtUtc" => "2026-08-06T22:00:31Z",
+    "deploymentImage" => "docker.io/aelfdevops/aevatar-console-backend:6a656d75",
+    "runIdHashes" => %w[705a69901de5 4caa726585f6],
+    "transportErrorCode" => "managed_proxy_unavailable",
+    "downstreamHttpStatus" => 502,
+    "healthCheck" => {
+      "status" => "healthy",
+      "opensandboxConnected" => true,
+      "executeCapacityProven" => false
+    }
+  } &&
+  case11_current["finalArtifactPresent"] == false &&
+  case11_current["approvalPendingObserved"] == false &&
+  case11_current["sideEffects"] == false && case11_current["status"] == "blocked"
+
 case12 = summary.fetch("case12RecoveryValidation")
-fail_validation("案例 12 恢复证据不完整") unless
+fail_validation("案例 12 历史恢复证据不完整") unless
   case12["deploymentImage"].to_s.end_with?("0c4ff023") &&
   case12["relatedCommit"] == "03389d0ae" && case12["attempts"].length == 2 &&
   case12["attempts"].all? { |run_hash| run_hash.match?(/\A[0-9a-f]{12}\z/) } &&
@@ -406,11 +561,71 @@ fail_validation("案例 12 恢复证据不完整") unless
     "side_effects" => false
   }
 
+case12_current = summary.fetch("case12CurrentValidation")
+fail_validation("案例 12 当前恢复证据不完整") unless
+  case12_current["deploymentImage"].to_s.end_with?("6558db8d") &&
+  case12_current["deployedCommit"] == "6558db8db00bcc43d38d3c3e3781246d8079d5cc" &&
+  case12_current["entryPoint"] == "scripts/production_validate.rb" &&
+  case12_current["transport"] == "nyxid proxy request aevatar" &&
+  case12_current["previewPassed"] == true &&
+  case12_current["directRun"] == {
+    "runIdHash" => "6659aabee079",
+    "terminalStatus" => "completed",
+    "terminalSuccess" => true,
+    "stateVersion" => 31,
+    "completedSteps" => 4,
+    "totalSteps" => 4,
+    "finalArtifact" => {
+      "case" => "safe_code_execute_validation",
+      "success" => true,
+      "structured_receipt" => true,
+      "total_cents" => 16_623,
+      "side_effects" => false
+    },
+    "finalArtifactPresent" => true,
+    "sideEffects" => false
+  } &&
+  case12_current["transientAttempt"] == {
+    "runIdHash" => "c257460dc47a",
+    "terminalStatus" => "failed",
+    "stateVersion" => 12,
+    "completedSteps" => 1,
+    "totalSteps" => 1,
+    "stableErrorCode" => "NYXID_PROXY_HTTP_524",
+    "sideEffects" => false
+  } &&
+  case12_current["sandboxUserServiceProbe"] == {
+    "userServiceIdHash" => "872833a52fc1",
+    "forwardAccessToken" => true,
+    "injectDelegationToken" => true,
+    "delegationTokenScope" => "proxy:*",
+    "healthStatus" => "healthy",
+    "opensandboxConnected" => true,
+    "executeSuccess" => true,
+    "executeExitCode" => 0,
+    "executeOutputVerified" => true,
+    "elapsedSeconds" => 6
+  } &&
+  case12_current["approvalPendingObserved"] == false &&
+  case12_current["sideEffects"] == false && case12_current["status"] == "passed"
+
 ornn = summary.fetch("ornnPublication")
 fail_validation("本地 Ornn skill 数不是 20") unless ornn.fetch("localSkillCount") == 19
 %w[skillCount serverFormatValidated publishedPublic nameReadbackPassed].each do |field|
   fail_validation("Ornn #{field} 不是 15") unless ornn.fetch(field) == 15
 end
+
+ornn_current = summary.fetch("ornnCurrentValidation")
+fail_validation("Ornn 当前 29/29 verify-only 证据不完整") unless
+  ornn_current["service"] == "ornn-api" &&
+  ornn_current["verificationMode"] == "verify-only" &&
+  %w[localPackages serverFormatValidated exactNameReadback publicSkills].all? do |field|
+    ornn_current[field] == 29
+  end &&
+  ornn_current["missingSkills"] == [] && ornn_current["privateSkills"] == [] &&
+  ornn_current["versionMismatches"] == [] &&
+  ornn_current["uploadsPerformed"] == false &&
+  ornn_current["permissionsChanged"] == false && ornn_current["status"] == "passed"
 
 assistant = summary.fetch("assistantNaturalLanguage")
 fail_validation("/api/chat 案例数不是 5") unless assistant.fetch("cases") == 5
@@ -437,6 +652,41 @@ fail_validation("/api/chat 12/14 陈旧文案与 committed artifact 边界未保
   case12_assistant["totalSteps"] == 4 && case12_assistant["runIdHash"] == "317024f71039" &&
   case14_assistant["stateVersion"] == 28 && case14_assistant["completedSteps"] == 3 &&
   case14_assistant["totalSteps"] == 3 && case14_assistant["runIdHash"] == "7fdd2a0932c0"
+
+assistant_current = summary.fetch("assistantCurrentValidation")
+current_case01, current_case12 = assistant_current.fetch("results")
+fail_validation("/api/chat 当前代表对照证据不完整") unless
+  assistant_current["deploymentCommit"] == "6558db8db00bcc43d38d3c3e3781246d8079d5cc" &&
+  assistant_current["ingress"] == "nyxid proxy request aevatar /api/chat" &&
+  assistant_current["representativeCases"] == 2 &&
+  assistant_current["chatCompleted"] == 2 &&
+  assistant_current["ornnSearchConfirmed"] == 2 &&
+  assistant_current["exactSkillResolved"] == 2 &&
+  assistant_current["workflowStarted"] == 2 &&
+  assistant_current["workflowValidated"] == 2 &&
+  assistant_current["workflowTypedFailures"] == 0 &&
+  current_case01 == {
+    "case" => "01",
+    "runIdHash" => "535e9029486f",
+    "workflowValidationStatus" => "validated",
+    "terminalStatus" => "completed",
+    "stateVersion" => 80,
+    "completedSteps" => 13,
+    "totalSteps" => 13,
+    "artifactContractVerified" => true,
+    "assertion" => "ready_for_review=true、side_effects=false"
+  } &&
+  current_case12 == {
+    "case" => "12",
+    "runIdHash" => "6fa89cd62b15",
+    "workflowValidationStatus" => "validated",
+    "terminalStatus" => "completed",
+    "stateVersion" => 31,
+    "completedSteps" => 4,
+    "totalSteps" => 4,
+    "artifactContractVerified" => true,
+    "assertion" => "Ornn search、精确 skill mount、workflow start 与 committed artifact 全部通过；total_cents=16623、side_effects=false"
+  }
 
 case15_artifact = summary.fetch("case15ArtifactResolutionValidation")
 fail_validation("案例 15 artifact identity 修复镜像证据缺失") unless
@@ -469,20 +719,182 @@ fail_validation("案例 15 /api/chat 汇总未同步 artifact identity 回归") 
 
 current_deployment = summary.fetch("currentDeployment")
 fail_validation("当前部署证据不完整") unless
-  summary["updatedAtUtc"] == "2026-08-06T14:37:18Z" &&
-  summary["deployedCommit"] == "19b5906bbfa935c5f0674bb4483d69f9823469fb" &&
-  summary["deploymentImage"].to_s.end_with?("19b5906b") &&
-  current_deployment["observedAtUtc"] == "2026-08-06T14:37:18Z" &&
-  current_deployment["deployedCommit"] == "19b5906bbfa935c5f0674bb4483d69f9823469fb" &&
+  summary["updatedAtUtc"] == "2026-08-07T06:55:52Z" &&
+  summary["deployedCommit"] == "eead35c089758b26f7b0fd4c277dbbe71815b0cc" &&
+  summary["deploymentImage"].to_s.end_with?("eead35c0") &&
+  current_deployment["observedAtUtc"] == "2026-08-07T06:29:00Z" &&
+  current_deployment["deployedCommit"] == "eead35c089758b26f7b0fd4c277dbbe71815b0cc" &&
   current_deployment["healthyReplicas"] == "1/1" &&
   current_deployment["podRestarts"] == 0 &&
   current_deployment["containsFixCommits"] ==
-    %w[03389d0ae 71a38ff59 7ad633e6f e30fdd94a 53e20f9ba 748f98e7d f7f543c51 7a7781067 b010ba614 5a0b545d8 e1aedcae7 20d9ba410 19b5906bb] &&
+    %w[03389d0ae 71a38ff59 7ad633e6f e30fdd94a 53e20f9ba 748f98e7d f7f543c51 7a7781067 b010ba614 5a0b545d8 e1aedcae7 20d9ba410 19b5906bb 4c0596c76 a44f849e0 6a656d759 4389ecd31 e1a1d3f36 b8a9d6908 6558db8db 49cb76e4a 5f51f6d0e 61a1f8c6e eead35c08] &&
   current_deployment["productionVerificationWindowUtc"] == {
-    "startedAt" => "2026-08-06T14:26:50Z",
-    "completedAt" => "2026-08-06T14:37:18Z"
+    "startedAt" => "2026-08-06T21:49:00Z",
+    "completedAt" => "2026-08-07T06:36:00Z"
   } &&
-  current_deployment["postDeploymentLogCountersSampled"] == false
+  current_deployment["postDeploymentLogCountersSampled"] == false &&
+  current_deployment["targetedFailureLogsSampled"] == true
+
+fail_validation("当前 Durable schedule 生产目标与部署证据不完整") unless
+  current_schedule_summary["case"] == "15" &&
+  current_schedule_summary["feature"] == "durable schedule" &&
+  current_schedule_summary["result"] == "passed" &&
+  current_schedule_summary["ingress"] == "nyxid proxy request aevatar" &&
+  current_schedule_summary.dig("targetSource", "branch") == "origin/feature/integrate" &&
+  current_schedule_summary.dig("targetSource", "commit") == "4c0596c764b45abc36d00e27577cd5a949796f79" &&
+  current_schedule_summary.dig("productionDeployment", "image").to_s.end_with?("4c0596c7") &&
+  current_schedule_summary.dig("productionDeployment", "digest") ==
+    "sha256:7cdca8d5038e2593c5583eba28d77e8bc4398baad4f10e77cd4a814ab04494e6" &&
+  current_schedule_summary.dig("productionDeployment", "generation") == 2721 &&
+  current_schedule_summary.dig("productionDeployment", "observedGeneration") == 2721 &&
+  current_schedule_summary.dig("productionDeployment", "readyReplicas") == "1/1" &&
+  current_schedule_summary.dig("productionDeployment", "podRestarts") == 0
+
+current_schedule_round = current_schedule_summary.fetch("successfulRound")
+current_schedule_confirmation = current_schedule_round.fetch("confirmation")
+fail_validation("当前 Durable schedule confirmation 证据不完整") unless
+  current_schedule_round["startedAtUtc"] == "2026-08-06T19:34:33Z" &&
+  current_schedule_round["completedAtUtc"] == "2026-08-06T19:36:20Z" &&
+  current_schedule_round["endpoint"] == "/api/workflow/skills/{guid}/schedule" &&
+  current_schedule_confirmation == {
+    "status" => "confirmation_required",
+    "httpStatusByDeployedRouteContract" => 200,
+    "httpStatusObservedDirectly" => false,
+    "typedBodyObserved" => true,
+    "workflowCount" => 1,
+    "explicitRequestCount" => 6,
+    "allRequestsGet" => true,
+    "allRequestsReadOnly" => true,
+    "allRequestsAllowDurable" => true,
+    "runtimeApprovalRequired" => false,
+    "confirmationTokenPresent" => true,
+    "confirmationTokenPersisted" => false
+  }
+
+current_schedule_admission = current_schedule_round.fetch("admissionReceipt")
+fail_validation("当前 Durable schedule typed admission receipt 不完整") unless
+  current_schedule_admission["httpStatusByDeployedRouteContract"] == 202 &&
+  current_schedule_admission["httpStatusObservedDirectly"] == false &&
+  current_schedule_admission["typedBodyObserved"] == true &&
+  current_schedule_admission["bindingStatus"] == "accepted" &&
+  current_schedule_admission["scheduleProvisioningStatus"] == "pending_binding" &&
+  current_schedule_admission["scheduleIdPresent"] == false &&
+  current_schedule_admission.values_at("memberIdHash", "bindingRunIdHash", "scheduleProvisioningIdHash") ==
+    %w[973e89ab5a5d cc23d56d43b4 9df1921559a5]
+
+current_schedule_member = current_schedule_round.fetch("memberReadModel")
+fail_validation("当前 Durable schedule committed provisioning 证据不完整") unless
+  current_schedule_member == {
+    "bindingStatus" => "succeeded",
+    "bindingStateVersion" => 7,
+    "provisioningStatus" => "succeeded",
+    "provisioningStateVersion" => 11,
+    "attemptCount" => 2,
+    "scheduleIdPresent" => true,
+    "operationIdPresent" => true,
+    "scheduleIdHash" => "4265fedf27e5",
+    "operationIdHash" => "47e80cd8aa06"
+  }
+current_schedule_read = current_schedule_round.fetch("scheduleRead")
+fail_validation("当前 Durable schedule owner-scoped 回读证据不完整") unless
+  current_schedule_read == {
+    "readModel" => "owner-scoped detail",
+    "found" => true,
+    "enabled" => true,
+    "cronExpression" => "* * * * *",
+    "timezone" => "Asia/Singapore",
+    "deleted" => false
+  }
+current_schedule_fire = current_schedule_round.fetch("cronFire")
+fail_validation("当前 Durable schedule 真实 cron 证据不完整") unless
+  current_schedule_fire == {
+    "manual" => false,
+    "fireCountBeforeDelete" => 1,
+    "failureCount" => 0,
+    "observedRunCount" => 1,
+    "allObservedRunsCompleted" => true
+  }
+
+current_schedule_terminal = current_schedule_round.fetch("workflowTerminal")
+fail_validation("当前 Durable schedule workflow committed terminal 不完整") unless
+  current_schedule_terminal["runIdHash"] == "b9859494e2a9" &&
+  current_schedule_terminal["terminalStatus"] == "completed" &&
+  current_schedule_terminal["success"] == true &&
+  current_schedule_terminal["completedSteps"] == 11 &&
+  current_schedule_terminal["totalSteps"] == 11 &&
+  current_schedule_terminal["stateVersion"] == 73
+current_schedule_mismatch = RuntimeContracts.mismatch("15", current_schedule_terminal.fetch("finalArtifact"))
+fail_validation("当前 Durable schedule artifact 契约漂移：#{current_schedule_mismatch.inspect}") if
+  current_schedule_mismatch
+
+current_schedule_cleanup = current_schedule_round.fetch("cleanup")
+fail_validation("当前 Durable schedule typed DELETE 与静默窗口不完整") unless
+  current_schedule_cleanup["method"] == "DELETE" &&
+  current_schedule_cleanup["httpStatusByDeployedRouteContract"] == 202 &&
+  current_schedule_cleanup["httpStatusObservedDirectly"] == false &&
+  current_schedule_cleanup["typedBodyObserved"] == true &&
+  current_schedule_cleanup["typedReceiptAccepted"] == true &&
+  current_schedule_cleanup["receiptStatus"] == "pending" &&
+  current_schedule_cleanup["scheduleIdMatched"] == true &&
+  current_schedule_cleanup["operationIdHash"] == "36486344f818" &&
+  current_schedule_cleanup["commandIdHash"] == "fe5c1f31ec94" &&
+  current_schedule_cleanup["detailAbsentAfterDelete"] == true &&
+  current_schedule_cleanup["ownerListCountAfterDelete"] == 0 &&
+  current_schedule_cleanup["crossedNextMinute"] == true &&
+  current_schedule_cleanup["runCountBeforeDelete"] == 1 &&
+  current_schedule_cleanup["runCountAfterNextMinute"] == 1 &&
+  current_schedule_cleanup["runCountUnchanged"] == true
+
+current_schedule_diagnostics = current_schedule_summary.fetch("diagnosticAttempts")
+fail_validation("当前 Durable schedule 失败批次或清理证据遗失") unless
+  current_schedule_diagnostics.map { |attempt| attempt["attempt"] } == [1, 2, 3] &&
+  current_schedule_diagnostics.map { |attempt| attempt["result"] } == [
+    "acceptance-query-path-failed",
+    "acceptance-list-visibility-failed",
+    "acceptance-extra-assertion-failed"
+  ] &&
+  current_schedule_diagnostics.map { |attempt| attempt["scheduleIdHash"] } ==
+    %w[52207df9684e ac04dd243c51 9d6017f48fdc] &&
+  current_schedule_diagnostics.map { |attempt| attempt["runCountBeforeDelete"] } == [3, 2, 0] &&
+  current_schedule_diagnostics.map { |attempt| attempt["runCountAfterNextMinute"] } == [3, 2, 0] &&
+  current_schedule_diagnostics.all? { |attempt|
+    attempt["platformProvisioningSucceeded"] == true &&
+      attempt["typedCleanupAccepted"] == true &&
+      attempt["ownerListCountAfterDelete"] == 0 &&
+      attempt["runCountUnchanged"] == true
+  }
+
+current_schedule_safety = current_schedule_summary.fetch("safety")
+fail_validation("当前 Durable schedule 副作用与脱敏边界不完整") unless
+  current_schedule_safety == {
+    "confirmedMutationCountInSuccessfulRound" => 1,
+    "diagnosticScheduleCount" => 3,
+    "diagnosticCleanupCount" => 3,
+    "allCreatedSchedulesDeleted" => true,
+    "allCleanupWindowsCrossedNextMinute" => true,
+    "rawIdentifiersPersisted" => false,
+    "confirmationTokensPersisted" => false,
+    "responseHeadersCaptured" => false,
+    "businessPayloadsPersisted" => false
+  }
+
+current_schedule_keys = []
+current_schedule_stack = [current_schedule_summary]
+until current_schedule_stack.empty?
+  value = current_schedule_stack.pop
+  case value
+  when Hash
+    current_schedule_keys.concat(value.keys)
+    current_schedule_stack.concat(value.values)
+  when Array
+    current_schedule_stack.concat(value)
+  end
+end
+forbidden_current_schedule_keys = %w[memberId bindingRunId scheduleProvisioningId scheduleId operationId commandId]
+fail_validation("当前 Durable schedule 机器证据保存了原始身份字段") unless
+  (current_schedule_keys & forbidden_current_schedule_keys).empty?
+fail_validation("当前 Durable schedule 机器证据包含 UUID") if
+  JSON.generate(current_schedule_summary).match?(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i)
 
 schedule = summary.fetch("scheduleValidation")
 fail_validation("Durable schedule 最新生产复验摘要漂移") unless
@@ -757,13 +1169,63 @@ fail_validation("源 PDF attachment probe 未 committed 完成") unless
   pdf_probe["completedSteps"] == 2 && pdf_probe["totalSteps"] == 2 &&
   pdf_probe["extractOutputPresent"] == true && pdf_probe["finalOutputPresent"] == true &&
   pdf_probe["typedErrorClasses"] == []
+
+continuity = financial.fetch("currentContinuityIncident")
+fail_validation("#3290 源迁移连续性事件缺少可追溯边界") unless
+  continuity["evidenceSource"] == "https://github.com/aevatarAI/aevatar/issues/3290" &&
+  continuity["evidenceKind"] == "external_issue_report" &&
+  continuity["independentlyRerunByAcceptanceRepository"] == false &&
+  continuity["status"] == "regression-blocked" &&
+  continuity["historicalSuccessRetained"] == true &&
+  continuity["currentAvailabilityProven"] == false &&
+  continuity["sideEffectsPerformedByThisUpdate"] == false
+fail_validation("#3290 P2 成功后 runtime/admission 回归证据不完整") unless
+  continuity.dig("p2", "sameMemberBindingAndDefinition") == true &&
+  continuity.dig("p2", "businessReconciliationMatchedCurrentSystem") == true &&
+  continuity.dig("p2", "runSequence").map { |item| item.fetch("terminalStatus") } == %w[failed completed failed] &&
+  continuity.dig("p2", "runSequence", 1, "completedSteps") == 14 &&
+  continuity.dig("p2", "runSequence", 1, "totalSteps") == 14 &&
+  continuity.dig("p2", "runSequence", 2, "stableErrorCode") == "NYXID_PROXY_HTTP_502" &&
+  continuity.dig("p2", "admission", "identicalRequestBody") == true &&
+  continuity.dig("p2", "admission", "failedAttempts") == 5 &&
+  continuity.dig("p2", "admission", "stableErrorCode") == "NYXID_ADMISSION_SOURCE_CREDENTIAL_REQUIRED"
+fail_validation("#3290 P1 forwarding 与健康对照证据不完整") unless
+  continuity.dig("p1", "sourceWorkflowSteps") == 27 &&
+  continuity.dig("p1", "completedSteps") == 0 &&
+  continuity.dig("p1", "failedStepOrdinal") == 1 &&
+  continuity.dig("p1", "errorTextPrefix") == "Forwarding failed" &&
+  continuity.dig("p1", "workflowCodeExecuted") == false &&
+  continuity.dig("controls", "sandboxDirectViaNyxIdHttpStatus") == 200 &&
+  continuity.dig("controls", "nyxIdProxyHealthy") == true &&
+  continuity.dig("controls", "callerTokenValid") == true &&
+  continuity.dig("controls", "controlsProveWorkflowContinuity") == false
+fail_validation("当前 pod 证据被错误外推为 silo 稳定") unless
+  continuity.dig("currentClusterObservation", "deploymentImage") == "eead35c0" &&
+  continuity.dig("currentClusterObservation", "readyReplicas") == "1/1" &&
+  continuity.dig("currentClusterObservation", "podRestarts") == 0 &&
+  continuity.dig("currentClusterObservation", "boundedStdoutLines") == 10 &&
+  continuity.dig("currentClusterObservation", "matchingIncidentLogLines") == 0 &&
+  continuity.dig("currentClusterObservation", "coversIncidentWindow") == false &&
+  continuity.dig("currentClusterObservation", "siloStabilityProven") == false
+fail_validation("#3290 时间连续性 case gap 未记录") unless
+  continuity.dig("coverageGap", "existingRiskCasesCoverTemporalContinuity") == false &&
+  continuity.dig("coverageGap", "requiredFutureEvidence").is_a?(Array) &&
+  continuity.dig("coverageGap", "requiredFutureEvidence").length == 5
+
 fail_validation("财务源 workflow 未运行清单漂移") unless
   financial.fetch("notRun").map { |item| item.fetch("workflow") } == [
     "P2 send workflow", "P1 v6", "durable/weekly schedule", "P1 v2 legacy definition"
   ]
-fail_validation("Lark channel canary 不得伪报成功") unless
-  financial.dig("larkChannelCanary", "status") == "unproven" &&
-  financial.dig("larkChannelCanary", "issue") == "#3087"
+lark_channel_canary = financial.fetch("larkChannelCanary")
+fail_validation("Lark channel canary 摘要与 committed Case 19 证据不一致") unless
+  lark_channel_canary["status"] == "validated" &&
+  lark_channel_canary["issue"] == "#3087" &&
+  lark_channel_canary["runIdHash"] == case19_lark["runIdHash"] &&
+  lark_channel_canary["committedTerminalObserved"] == case19_lark["committedTerminalObserved"] &&
+  lark_channel_canary["terminalStatus"] == case19_lark["terminalStatus"] &&
+  lark_channel_canary["terminalSuccess"] == case19_lark["terminalSuccess"] &&
+  lark_channel_canary["larkBotIngressValidated"] == case19_lark["larkBotIngressValidated"] &&
+  lark_channel_canary["rawIdentifiersPersisted"] == case19_lark["rawIdentifiersPersisted"]
 
 lark_bot = summary.fetch("larkBotTransportValidation")
 fail_validation("Lark Bot 应记录 Aevatar 生产版本") unless
@@ -799,6 +1261,36 @@ fail_validation("Lark Bot 不得把 transport 成功外推为 workflow 成功") 
     "WorkflowExternalCapabilityAdmissionException"
   ] &&
   lark_bot["result"] == "transport 已验证，workflow typed failure"
+
+current_lark_case12 = lark_bot.fetch("currentCase12Canary")
+fail_validation("当前 Lark Case 12 canary 缺少严格 committed 证据") unless
+  current_lark_case12["deploymentImage"].to_s.end_with?("49cb76e4") &&
+  current_lark_case12["deployedCommit"] == "49cb76e4acea8c65b74922e1dcd0949712213903" &&
+  current_lark_case12["entryPoint"] == "Lark Aevatar Agent private chat" &&
+  current_lark_case12["case"] == "12" &&
+  current_lark_case12["workflow"] == "safe_code_execute_validation" &&
+  current_lark_case12["syntheticNoSideEffects"] == true &&
+  current_lark_case12["catalogBaselineCount"] == 10 &&
+  current_lark_case12["catalogDelta"] == 1 &&
+  current_lark_case12["ornnSearchObserved"] == true &&
+  current_lark_case12["exactSkillMounted"] == true &&
+  current_lark_case12["useSkillApprovalCount"] == 1 &&
+  current_lark_case12["destructiveApprovalCount"] == 0 &&
+  current_lark_case12["workflowStartCount"] == 1 &&
+  current_lark_case12["runIdHash"] == "ebe0e10241f0" &&
+  current_lark_case12["committedTerminalObserved"] == true &&
+  current_lark_case12["terminalStatus"] == "completed" &&
+  current_lark_case12["terminalSuccess"] == true &&
+  current_lark_case12["stateVersion"] == 33 &&
+  current_lark_case12["completedSteps"] == 4 &&
+  current_lark_case12["totalSteps"] == 4 &&
+  current_lark_case12["firstToolOutputPresent"] == true &&
+  RuntimeContracts.mismatch("12", current_lark_case12.fetch("finalArtifact")).nil? &&
+  current_lark_case12["botReplyRelayObserved"] == true &&
+  current_lark_case12["successJudgedFromCommittedDetail"] == true &&
+  current_lark_case12["rawIdentifiersPersisted"] == false &&
+  current_lark_case12["sideEffects"] == false &&
+  current_lark_case12["workflowValidationStatus"] == "validated"
 
 channel_e2e = summary.fetch("channelE2EAcceptance")
 fail_validation("Lark channel E2E 机器证据摘要漂移") unless
@@ -1002,6 +1494,28 @@ fail_validation("案例 14 fresh /init 后 channel receipt 缺陷未保留") unl
   ]
 
 readme = File.read(File.join(ROOT, "README.md"))
+current_status_report = File.read(File.join(ROOT, "report", "2026-08-07-current-status-report.md"))
+full_revalidation = JSON.parse(File.read(File.join(ROOT, "validation", "full-revalidation-2026-08-07.json")))
+continuity_observation = full_revalidation.dig("postSnapshotBoundary", "observations").find do |item|
+  item["surface"] == "source-migration-continuity"
+end
+fail_validation("full revalidation 缺少 #3290 窗口后连续性观测") unless
+  continuity_observation &&
+  continuity_observation["evidenceSource"] == continuity["evidenceSource"] &&
+  continuity_observation["evidenceKind"] == "external_issue_report" &&
+  continuity_observation["independentlyRerunByAcceptanceRepository"] == false &&
+  continuity_observation["status"] == "regression-blocked" &&
+  continuity_observation["p2CompletedSteps"] == 14 &&
+  continuity_observation["p2TotalSteps"] == 14 &&
+  continuity_observation["p2RuntimeStableErrorCode"] == "NYXID_PROXY_HTTP_502" &&
+  continuity_observation["identicalDefinitionAdmissionFailureCount"] == 5 &&
+  continuity_observation["admissionStableErrorCode"] == "NYXID_ADMISSION_SOURCE_CREDENTIAL_REQUIRED" &&
+  continuity_observation["p1CompletedSteps"] == 0 &&
+  continuity_observation["p1TotalSteps"] == 27 &&
+  continuity_observation["currentPodCoversIncidentWindow"] == false &&
+  continuity_observation["siloStabilityProven"] == false &&
+  continuity_observation["existingRiskCasesCoverTemporalContinuity"] == false &&
+  continuity_observation["changesFullSnapshotSummary"] == false
 EXPECTED_WORKFLOW_CASES.each do |case_id|
   workflow_path = Dir[File.join(ROOT, "workflows", "#{case_id}-*.workflow.yaml")].first
   fail_validation("缺少案例 #{case_id} 的 workflow") unless workflow_path
@@ -1035,12 +1549,13 @@ runtime.each do |item|
   fail_validation("分析页案例 #{item.fetch('case')} 步骤或 stateVersion 漂移") unless row.match?(evidence_pattern)
 end
 
+all_new_workflow_results = probe_results + composition_results + integration_results
 html_probe_rows = html.scan(/<tr data-risk-workflow-case="(\d{2})" data-risk-workflow-status="([^"]+)">/)
-fail_validation("分析页 21-25 可靠性 workflow 不完整") unless
-  html_probe_rows == probe_results.map do |item|
+fail_validation("分析页 21-29 可靠性 workflow 不完整") unless
+  html_probe_rows == all_new_workflow_results.map do |item|
     [item.fetch("case"), item.fetch("terminalStatus") == "completed" ? "passed" : "failed"]
   end
-probe_results.each do |item|
+all_new_workflow_results.each do |item|
   case_id = item.fetch("case")
   row = html.match(/<tr data-risk-workflow-case="#{case_id}"[^>]*>.*?<\/tr>/m)&.to_s
   if item["terminalStatus"] == "completed"
@@ -1075,7 +1590,7 @@ expected_html_counts = {
   "源版本族" => [/<tr data-source-family=/, 7],
   "能力矩阵" => [/<tr data-family=/, 19],
   "历史直接证据" => [/<tr data-result=/, 20],
-  "新增可靠性 workflow" => [/<tr data-risk-workflow-case=/, 5],
+  "新增可靠性 workflow" => [/<tr data-risk-workflow-case=/, 9],
   "风险案例" => [/<tr data-risk-case=/, 21],
   "自然语言证据" => [/<tr data-chat-case=/, 5],
   "Lark channel E2E 证据" => [/<tr data-channel-case=/, 3],
@@ -1088,8 +1603,8 @@ expected_html_counts.each do |label, (pattern, expected)|
 end
 
 report = File.read(File.join(ROOT, "report", "#{REPORT_DATE}-workflow-coverage-report.md"))
-fail_validation("README 缺少 25 workflows + 3 channel + 21 risk cases 口径") unless
-  readme.include?("25 个 workflow + 3 个 Lark channel E2E case + 21 个风险验收 case") &&
+fail_validation("README 缺少 29 workflows + 3 channel + 21 risk cases 口径") unless
+  readme.include?("29 个 workflow + 3 个 Lark channel E2E case + 21 个风险验收 case") &&
   readme.include?("3/3 个 Lark channel E2E case 已严格通过") &&
   readme.include?("`de801ca70`") && readme.include?("`InvalidWorkflowYaml`")
 fail_validation("文字报告缺少 #3210 的 mount 与 workflow 运行期审批 channel cases") unless
@@ -1115,15 +1630,24 @@ fail_validation("文字报告缺少案例 11 managed codex_exec 修复闭环") u
   report.include?("`NyxIdApiClientBoundedProxyTests` 3/3") &&
   report.include?("`NyxIdManagedCodexChronoTransportTests` 16/16") &&
   report.include?("run hash `fa77c0c49035`") && report.include?("state 179、30/30 步") &&
-  report.include?("`parallel_check_count=5`") && report.include?("`side_effects=false`")
+  report.include?("`parallel_check_count=5`") && report.include?("`side_effects=false`") &&
+  report.include?("`6558db8db`") && report.include?("`eead35c0`") &&
+  report.include?("`106ecf7b750a`") && report.include?("`39a374f8815a`") &&
+  report.include?("`705a69901de5`") &&
+  report.include?("`4caa726585f6`") && report.include?("`codex_execution_capacity_unavailable`") &&
+  report.include?("HTTP 502") && report.include?("Case 11 已验证阻塞")
 fail_validation("分析页缺少案例 11 managed codex_exec 修复闭环") unless
-  html.include?("Managed codex_exec 已恢复") &&
+  html.include?("Managed codex_exec 当前 capacity 阻塞") &&
   html.include?("两次 <code>codex_execution_admission_denied</code>") &&
-  html.include?("bounded <code>X-API-Key</code>") &&
+  html.include?("<code>f7f543c51</code>") &&
   html.include?("committed <code>completed</code>（state 179，30/30）") &&
   html.include?("<code>CODEX_EXEC_READY</code>") &&
-  html.include?("parallel=5") && html.include?("side-effects=false") &&
-  html.include?("19/19 聚焦测试通过")
+  html.include?("<code>6558db8db</code>") && html.include?("<code>eead35c0</code>") &&
+  html.include?("<code>106ecf7b750a</code>") && html.include?("<code>39a374f8815a</code>") &&
+  html.include?("<code>705a69901de5</code>") &&
+  html.include?("<code>4caa726585f6</code>") && html.include?("HTTP 502") &&
+  html.include?("<code>codex_execution_capacity_unavailable</code>") &&
+  html.include?("<span class=\"status status-blocked\">已验证阻塞</span>")
 fail_validation("文字报告缺少 41 个非 n8n 定义口径") unless report.include?("只比较其余 41 个定义")
 fail_validation("文字报告缺少 #3182 证据边界") unless report.include?("`#3182`")
 fail_validation("文字报告缺少 #3161 定向回归边界") unless report.include?("`#3161`")
@@ -1133,7 +1657,11 @@ fail_validation("README 缺少案例 15 artifact identity 回归证据") unless 
 fail_validation("文字报告缺少案例 15 artifact identity 回归证据") unless report.include?("`d7844b5e`")
 fail_validation("分析页缺少案例 15 artifact identity 回归证据") unless html.include?("d7844b5e")
 fail_validation("分析页缺少实际路径口径") unless html.include?("~/Code/workflows") && html.include?("~/workflows")
-fail_validation("分析页缺少 5/5 自然语言结论") unless html.include?("5 / 5")
+fail_validation("分析页缺少当前 2/2 与历史 5/5 自然语言边界") unless
+  html.include?('<span class="metric-value">2 / 2</span><span class="metric-label">当前 /api/chat 代表对照</span>') &&
+  html.include?("历史基线") && html.include?("5/5 validated") &&
+  html.scan(/<tr data-current-chat-case="(?:01|12)" data-current-chat-status="validated">/).length == 2 &&
+  html.include?("6fa89cd62b15") && html.include?("total_cents=16623")
 fail_validation("README 缺少财务源 workflow post-fix 验收") unless
   readme.include?("财务源工作流 post-fix 验收") && readme.include?("单步 `code_execute` probe") &&
   readme.include?("8/8 completed") &&
@@ -1142,33 +1670,54 @@ fail_validation("文字报告缺少财务源 workflow post-fix 验收") unless
   report.include?("财务源工作流 post-fix 验收") && report.include?("单步 `code_execute` probe") &&
   report.include?("8/8 completed") && report.include?("14/14 实际步骤 completed") &&
   report.include?("2/2 completed")
-fail_validation("分析页缺少四项财务源 workflow 成功证据") unless
+fail_validation("分析页缺少四项历史成功和一项当前连续性阻塞证据") unless
   html.scan(/<tr data-finance-result="passed">/).length == 4 &&
-  html.include?("data-source-financial-acceptance=\"validated\"")
+  html.scan(/<tr data-finance-result="blocked">/).length == 1 &&
+  html.include?("data-source-financial-acceptance=\"historical-validated-current-blocked\"")
 fail_validation("报告把安全限制未运行的财务分支伪报为成功") unless
   [readme, report, html].all? { |document| document.include?("P2 send") && document.include?("P1 v6") }
+fail_validation("README/Markdown/HTML 未同步 #3290 当前连续性阻塞") unless
+  [readme, report, html, current_status_report].all? do |document|
+    document.include?("#3290") &&
+      document.include?("NYXID_ADMISSION_SOURCE_CREDENTIAL_REQUIRED") &&
+      document.include?("NYXID_PROXY_HTTP_502") &&
+      document.include?("Forwarding failed") &&
+      document.include?("regression-blocked")
+  end
+fail_validation("报告未明确现有 case 的时间/silo 连续性缺口") unless
+  [readme, report, html, current_status_report].all? do |document|
+    document.include?("Risk 28") && document.include?("Risk 29") &&
+      document.include?("Risk 40") && document.include?("Risk 41")
+  end &&
+  current_status_report.include?("cluster silo stability 仍未证明")
 fail_validation("README 缺少 Durable schedule 生产闭环") unless
+  readme.include?("Durable schedule 已在 Ready `4c0596c7` fresh 重跑完整闭环") &&
+  readme.include?("run hash `b9859494e2a9`") &&
+  readme.include?("binding committed `succeeded`（state 7）") &&
+  readme.include?("provisioning committed `succeeded`（state 11，attempt 2）") &&
+  readme.include?("Typed DELETE 返回 `accepted/pending`") &&
+  readme.include?("owner list 为 0") && readme.include?("run count 保持 `1 -> 1`") &&
   readme.include?("相关修复提交 `748f98e7d`、`7a7781067` 和 `b010ba614`") &&
-  readme.include?("完整生产闭环证据来自历史镜像 `b010ba61`") &&
-  readme.include?("本轮未在当前镜像重跑该副作用链") &&
   readme.include?("HTTP 200 `confirmation_required`") &&
   readme.include?("HTTP 202 typed `pending_binding` receipt") &&
   readme.include?("`NyxIdOperationAuthorityContractUnavailable`") &&
-  readme.include?("schedule/operation ID 均非空") &&
   readme.include?("`fireCount=6`") && readme.include?("`failureCount=0`") &&
-  readme.include?("workflow 11/11 committed `completed`") &&
-  readme.include?("NyxID DELETE 返回 typed accepted receipt") && readme.include?("`6 -> 6`") &&
+  readme.include?("`6 -> 6`") &&
   readme.include?("编译修复提交 `b010ba614`") && readme.include?("真实 `linux/amd64` Docker build")
 fail_validation("文字报告缺少 Durable schedule 分阶段生产闭环") unless
   report.include?("## Durable schedule 修复进度") &&
+  report.include?("当前 Ready `4c0596c7` 上的 fresh NyxID 端到端复验") &&
+  report.include?("当前 Ready fresh 复验") &&
+  report.include?("run hash `b9859494e2a9`") &&
+  report.include?("Typed DELETE 后 detail 不存在、owner list 0") &&
+  report.include?("run `1 -> 1`") &&
   report.include?("schedule endpoint 返回 HTTP 502") &&
   report.include?("`748f98e7d` 已提交、推送并部署") &&
   report.include?("真实验收入口") &&
   report.include?("HTTP 200 `confirmation_required`") && report.include?("HTTP 202 typed receipt") &&
-  report.include?("binding/provisioning committed success") &&
+  report.include?("binding state 7、provisioning state 11 / attempt 2 committed `succeeded`") &&
   report.include?("`NyxIdOperationAuthorityContractUnavailable`") &&
   report.include?("`7a7781067` 已进入 `origin/feature/integrate`，并在历史 `b010ba614` / `b010ba61` 部署完成验证") &&
-  report.include?("当前生产已前滚到 `6df43b83`，本轮没有重跑该副作用链") &&
   report.include?("仅 binder-attested `READ_ONLY` GET/HEAD/OPTIONS") &&
   report.include?("schedule/operation ID 均非空") &&
   report.include?("`fireCount=6`") && report.include?("`failureCount=0`") &&
@@ -1179,18 +1728,19 @@ fail_validation("文字报告缺少 Durable schedule 分阶段生产闭环") unl
   report.include?("Capabilities 642/642") && report.include?("真实 `linux/amd64` Docker build") &&
   report.include?("排除 3 个本机 Redis 版本契约用例后的 solution tests")
 fail_validation("分析页缺少 Durable schedule 生产闭环") unless
-  html.include?("Durable schedule 历史闭环") &&
-  html.include?("生产端到端通过") &&
+  html.include?("data-current-schedule-proof=\"validated\"") &&
+  html.include?("data-current-schedule-validation=\"passed\"") &&
+  html.include?("Durable schedule 当前 fresh 闭环") &&
+  html.include?("Ready <code>4c0596c7</code>") &&
+  html.include?("run <code>b9859494e2a9</code>") &&
+  html.include?("run count 保持 1") &&
   html.include?("Durable schedule provisioning") &&
-  html.include?("历史 <code>b010ba614</code> / <code>b010ba61</code> 部署") &&
-  html.include?("本轮未重跑该副作用链") &&
-  html.include?("HTTP 200 <code>confirmation_required</code>") &&
-  html.include?("HTTP 202 typed <code>pending_binding</code> receipt") &&
+  html.include?("历史 <code>b010ba614</code> / <code>b010ba61</code>") &&
   html.include?("<code>NyxIdOperationAuthorityContractUnavailable</code>") &&
   html.include?("schedule/operation ID 均非空") &&
-  html.include?("真实 cron fire=6/failure=0") &&
+  html.include?("六次真实 cron fire=6/failure=0") &&
   html.include?("workflow 11/11 committed <code>completed</code>") &&
-  html.include?("DELETE typed accepted 后 list 归零") && html.include?("run count 保持 6") &&
+  html.include?("DELETE typed accepted 后 detail 消失、owner list 归零") &&
   html.include?("真实 linux/amd64 镜像构建")
 stale_schedule_claims = [
   "线上阻塞 / 源码待部署",
@@ -1202,27 +1752,33 @@ stale_schedule_claims.each do |claim|
   fail_validation("报告仍包含过期 Durable schedule 状态：#{claim}") if
     [readme, report, html].any? { |document| document.include?(claim) }
 end
-fail_validation("README 缺少当前 25-case 严格回归口径") unless
+fail_validation("README 缺少当前 29-case 严格回归口径") unless
   readme.include?("21/22/23 在用 `config.local.yaml` 重新物化后 fresh committed `completed`") &&
   readme.include?("共创建 4 条固定合成 Base 探针记录") &&
   readme.include?("连同 2 条同契约历史残留精确清理") && readme.include?("回读匹配数为 0") &&
-  readme.include?("25/25 个严格业务 artifact contract") &&
+  readme.include?("29/29 个严格业务 artifact contract") &&
+  readme.include?("当前直接 runtime 严格结果为 28/29") &&
+  readme.include?("a729912ee5d9") && readme.include?("skipped-expired") &&
   readme.include?("严格状态升级为 `validated`") &&
   readme.include?("`03c3f4ded68e`") && readme.include?("114 字节") && readme.include?("113 字节")
-fail_validation("文字报告缺少当前 25-case 严格回归口径") unless
-  report.include?("当前生产镜像 `19b5906b`") &&
-  report.include?("旧 01-20 保留既有 committed 基线") &&
+fail_validation("文字报告缺少当前 29-case 严格回归口径") unless
+  report.include?("当前 Ready 生产镜像 `eead35c0`") &&
+  report.include?("旧 01-10、13-20 保留既有 committed 基线") &&
+  report.include?("当前直接 runtime 严格结果为 28/29") &&
   report.include?("新增 21-25 当前最新结果为 5/5 completed") &&
-  report.include?("25/25 个 strict artifact contract") &&
+  report.include?("29/29 个 strict artifact contract") &&
   report.include?("0 pending-execution") &&
-  report.include?("25/25 format、精确名称、版本与 public readback") &&
+  report.include?("29/29 format、精确名称、版本与 public readback") &&
+  report.include?("a729912ee5d9") && report.include?("skipped-expired") &&
   report.include?("回读匹配数为 0") &&
   report.include?("`03c3f4ded68e`") && report.include?("114 字节") && report.include?("113 字节")
-fail_validation("分析页缺少当前 25-case 严格回归口径") unless
-  html.scan('<span class="metric-value">25 / 25</span>').length == 4 &&
-  html.include?("5/5 committed completed") &&
-  html.include?("<code>19b5906b</code>") &&
-  html.include?("25/25 个 typed artifact contract") &&
+fail_validation("分析页缺少当前 29-case 严格回归口径") unless
+  html.scan('<span class="metric-value">29 / 29</span>').length == 3 &&
+  html.include?('<span class="metric-value">28 / 29</span><span class="metric-label">直接 runtime 严格通过</span>') &&
+  html.include?("9/9 committed completed") &&
+  html.include?("<strong>当前部署：</strong><code>eead35c0</code>") &&
+  html.include?("29/29 个 typed artifact contract") &&
+  html.include?("a729912ee5d9") && html.include?("skipped-expired") &&
   html.include?("fresh 写探针共创建 4 条固定合成记录") && html.include?("回读匹配数为 0") &&
   html.include?("<code>03c3f4ded68e</code>") && html.include?("114 字节") && html.include?("113 字节")
 fail_validation("分析页阻塞状态未使用红色") unless
@@ -1231,9 +1787,12 @@ fail_validation("分析页仍把已验证失败或回归显示为蓝色") if
   html.match?(/<span class="status status-partial">[^<]*(?:契约回归|已验证阻塞)/)
 fail_validation("分析页不应再有审批契约回归状态") unless
   html.scan(/<span class="status status-blocked">契约回归<\/span>/).empty?
-fail_validation("分析页 Lark Bot 已验证阻塞未标红") unless
+fail_validation("分析页当前执行 blocker 未标红") unless
   html.include?("<span class=\"status status-blocked\">已验证阻塞</span>") &&
-  html.include?("<span class=\"status status-blocked\">P1 已验证阻塞</span>")
+  html.include?("普通 code_execute authority") &&
+  html.include?("三层严格成功") && html.include?("<span class=\"status status-covered\">已恢复</span>")
+fail_validation("分析页仍把历史 Lark sender 症状列为当前 blocker") if
+  html.include?("P1 已验证阻塞") || html.include?("Lark Bot sender service grant")
 %w[USE_SKILL_MOUNT_FAILED CAPABILITY_ADMISSION_REBIND_REQUIRED].each do |closed_blocker|
   fail_validation("分析页仍把已关闭症状列为当前阻塞：#{closed_blocker}") if html.include?(closed_blocker)
 end
@@ -1299,5 +1858,5 @@ fail_validation("定向报告仍把 #3161 authority 写成待复测") unless
   focused_report.include?("补齐了 #3161 的真实 published-operation authority 主链") &&
   focused_report.include?("只覆盖 no-send 只读执行")
 
-puts "通过 workflow=25 历史直接案例=20 新增探针=5 风险案例=21 财务源验收=4 " \
+puts "通过 workflow=#{EXPECTED_WORKFLOW_CASES.length} 历史直接案例=20 新增探针=5 风险案例=21 财务源验收=4 " \
      "源版本族=7 能力矩阵=19 自然语言=5 阻塞=3 修复记录=13"

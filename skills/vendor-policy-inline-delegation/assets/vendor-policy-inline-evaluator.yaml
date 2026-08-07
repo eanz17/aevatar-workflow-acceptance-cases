@@ -1,0 +1,11 @@
+name: vendor_policy_inline_evaluator
+description: Case 26 使用的合成供应商政策子工作流，只返回固定、可机器判断的无副作用结论。
+roles:
+  - id: policy_evaluator
+    name: 供应商政策评估员
+steps:
+  - id: return_policy_decision
+    type: assign
+    parameters:
+      target: policy_decision
+      value: INLINE_POLICY_APPROVED

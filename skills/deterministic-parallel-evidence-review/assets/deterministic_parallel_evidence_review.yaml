@@ -1,0 +1,100 @@
+name: deterministic_parallel_evidence_review
+description: 并行核对三份合成供应商证据，验证 deterministic sub-step、三路 receipt 与按 dispatch index 合并。
+roles:
+  - id: evidence_owner
+    name: 供应商证据负责人
+steps:
+  - id: fanout_evidence
+    type: parallel
+    parameters:
+      parallel_count: "3"
+      sub_step_type: assign
+      sub_param_target: "evidence_${index}"
+      sub_param_value: "evidence-${index}"
+      min_concurrent_workers: "3"
+      max_concurrent_workers: "3"
+    next: take_first_evidence
+
+  - id: take_first_evidence
+    type: transform
+    parameters:
+      op: take
+      n: "1"
+    next: verify_first_evidence
+
+  - id: verify_first_evidence
+    type: switch
+    parameters:
+      on: "${steps.take_first_evidence.output}"
+      branch.evidence-0: restore_merged_for_last
+      branch._default: parallel_failed
+    branches:
+      evidence-0: restore_merged_for_last
+      _default: parallel_failed
+
+  - id: restore_merged_for_last
+    type: assign
+    parameters:
+      target: merged_evidence
+      value: "${steps.fanout_evidence.output}"
+    next: take_last_evidence
+
+  - id: take_last_evidence
+    type: transform
+    parameters:
+      op: take_last
+      n: "1"
+    next: verify_last_evidence
+
+  - id: verify_last_evidence
+    type: switch
+    parameters:
+      on: "${steps.take_last_evidence.output}"
+      branch.evidence-2: restore_merged_for_count
+      branch._default: parallel_failed
+    branches:
+      evidence-2: restore_merged_for_count
+      _default: parallel_failed
+
+  - id: restore_merged_for_count
+    type: assign
+    parameters:
+      target: merged_evidence
+      value: "${steps.fanout_evidence.output}"
+    next: count_merged_lines
+
+  - id: count_merged_lines
+    type: transform
+    parameters:
+      op: count
+    next: verify_merged_shape
+
+  - id: verify_merged_shape
+    type: switch
+    parameters:
+      on: "${steps.count_merged_lines.output}"
+      branch.5: parallel_verified
+      branch._default: parallel_failed
+    branches:
+      "5": parallel_verified
+      _default: parallel_failed
+
+  - id: parallel_verified
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"deterministic_parallel_evidence_review","success":true,"worker_count":3,"all_worker_receipts_observed":true,"merged_output_order_verified":true,"side_effects":false}'
+    next: done
+
+  - id: parallel_failed
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"deterministic_parallel_evidence_review","success":false,"worker_count":3,"all_worker_receipts_observed":false,"merged_output_order_verified":false,"side_effects":false}'
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

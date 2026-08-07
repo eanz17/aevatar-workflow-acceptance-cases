@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAtUtc": "2026-08-06T18:02:08Z",
+  "purpose": "案例 26-28 在 Aevatar 组合原语修复部署上的 preview 与 committed runtime 脱敏证据",
+  "targetSource": {
+    "repository": "aevatarAI/aevatar",
+    "ref": "origin/feature/integrate",
+    "commit": "4c0596c764b45abc36d00e27577cd5a949796f79"
+  },
+  "productionDeployment": {
+    "image": "docker.io/aelfdevops/aevatar-console-backend:4c0596c7",
+    "digest": "sha256:7cdca8d5038e2593c5583eba28d77e8bc4398baad4f10e77cd4a814ab04494e6",
+    "commit": "4c0596c764b45abc36d00e27577cd5a949796f79",
+    "readyReplicas": "1/1",
+    "podRestarts": 0
+  },
+  "scopeHash": "237314c29964",
+  "summary": {
+    "total": 3,
+    "previewPassed": 3,
+    "directRuntimePassed": 3,
+    "sideEffectsPerformed": false
+  },
+  "results": [
+    {
+      "case": "26",
+      "name": "vendor_policy_inline_delegation",
+      "previewPassed": true,
+      "inlineWorkflowCount": 1,
+      "callSiteCount": 0,
+      "runHash": "07f1fc930866",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 44,
+      "completedSteps": 5,
+      "totalSteps": 5,
+      "finalArtifact": {
+        "case": "vendor_policy_inline_delegation",
+        "success": true,
+        "inline_definition_bound": true,
+        "child_definition_resolved": true,
+        "child_workflow_completed": true,
+        "side_effects": false
+      },
+      "sideEffectsPerformed": false
+    },
+    {
+      "case": "27",
+      "name": "deterministic_parallel_evidence_review",
+      "previewPassed": true,
+      "inlineWorkflowCount": 0,
+      "callSiteCount": 0,
+      "runHash": "5b0e99a928f5",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 86,
+      "completedSteps": 14,
+      "totalSteps": 14,
+      "finalArtifact": {
+        "case": "deterministic_parallel_evidence_review",
+        "success": true,
+        "worker_count": 3,
+        "all_worker_receipts_observed": true,
+        "merged_output_order_verified": true,
+        "side_effects": false
+      },
+      "sideEffectsPerformed": false
+    },
+    {
+      "case": "28",
+      "name": "deterministic_race_policy_review",
+      "previewPassed": true,
+      "inlineWorkflowCount": 0,
+      "callSiteCount": 0,
+      "runHash": "ebe447a8479b",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 38,
+      "completedSteps": 6,
+      "totalSteps": 6,
+      "finalArtifact": {
+        "case": "deterministic_race_policy_review",
+        "success": true,
+        "worker_count": 3,
+        "winner_in_candidate_set": true,
+        "first_success_selected": true,
+        "later_completions_ignored": true,
+        "side_effects": false
+      },
+      "sideEffectsPerformed": false
+    }
+  ],
+  "rawIdentifiersPersisted": false
+}

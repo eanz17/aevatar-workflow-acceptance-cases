@@ -4,6 +4,22 @@ roles:
   - id: risk_analyst
     name: 风险分析员
 steps:
+  # cache 模块状态挂在 workflow run actor 上，只在重新绑定时清空，因此固定 cache_key
+  # 会跨 run 存活到 TTL 到期。若 key 不随 run 变化，TTL 内的任何重跑都会让
+  # cache_probe_primary 也直接命中：miss -> 派发子步骤 -> 回填缓存这条路径根本不执行，
+  # 而 cache_hit_returned_first_value 依然为真，形成"绿灯但没验到"的假通过。
+  # 因此 key 必须带 run 维度，保证每轮都真实走一次 miss 与一次 hit。
+  - id: normalize_probe_context
+    type: transform
+    op: template
+    template: >-
+      {{~ probe_nonce = get(data, 'probe_nonce', '') ~}}
+      {{~ if probe_nonce.size < 8 || probe_nonce.size > 14; number('probe_nonce 必须是 8-14 位数字时间戳标记'); end ~}}
+      {{~ stamp = number(probe_nonce) ~}}
+      {{~ if stamp < 10000000; number('probe_nonce 必须是正整数时间戳标记'); end ~}}
+      {{ json({ probe_nonce: probe_nonce }) }}
+    next: seed_risk_tiers
+
   - id: seed_risk_tiers
     type: assign
     parameters:
@@ -40,7 +56,7 @@ steps:
   - id: cache_probe_primary
     type: cache
     parameters:
-      cache_key: supplier-risk-tier-aggregation-probe
+      cache_key: supplier-risk-tier-aggregation-probe-${steps.normalize_probe_context.json.probe_nonce}
       ttl_seconds: "600"
       child_step_type: transform
     next: reseed_cache_probe_input
@@ -55,7 +71,7 @@ steps:
   - id: cache_probe_repeat
     type: cache
     parameters:
-      cache_key: supplier-risk-tier-aggregation-probe
+      cache_key: supplier-risk-tier-aggregation-probe-${steps.normalize_probe_context.json.probe_nonce}
       ttl_seconds: "600"
       child_step_type: transform
     next: verify_cache_hit

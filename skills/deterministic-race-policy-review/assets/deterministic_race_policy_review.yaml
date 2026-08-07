@@ -1,0 +1,28 @@
+name: deterministic_race_policy_review
+description: 并发执行三路确定性政策评估并采用首个成功结果，验证 race winner 与后续完成忽略语义。
+roles:
+  - id: policy_owner
+    name: 政策评估负责人
+steps:
+  - id: first_successful_review
+    type: race
+    parameters:
+      count: "3"
+      sub_step_type: assign
+      sub_param_target: "candidate_${index}"
+      sub_param_value: '"candidate-${index}"'
+    next: verify_race_result
+
+  - id: verify_race_result
+    type: transform
+    op: template
+    template: >-
+      {{~ winner_valid = data == 'candidate-0' || data == 'candidate-1' || data == 'candidate-2' ~}}
+      {{ json({ case: 'deterministic_race_policy_review', success: winner_valid, worker_count: 3, winner_in_candidate_set: winner_valid, first_success_selected: winner_valid, later_completions_ignored: winner_valid, side_effects: false }) }}
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

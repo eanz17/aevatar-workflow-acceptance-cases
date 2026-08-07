@@ -1,0 +1,264 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "full_revalidation_snapshot",
+  "date": "2026-08-07",
+  "observedFromUtc": "2026-08-07T05:15:18Z",
+  "observedThroughUtc": "2026-08-07T05:49:59Z",
+  "policy": {
+    "mode": "observe_only",
+    "repairsPerformed": false,
+    "historicalEvidencePromotedToFresh": false,
+    "sideEffectRunsRequireExplicitAuthorization": true,
+    "rawIdentifiersPersisted": false
+  },
+  "staticValidation": {
+    "workflow": { "passed": 29, "total": 29 },
+    "skill": { "passed": 29, "total": 29 },
+    "channelCase": { "passed": 3, "total": 3 },
+    "riskCase": { "passed": 21, "total": 21 },
+    "regressionCase": { "passed": 1, "total": 1 },
+    "reportValidatorPassed": true,
+    "rubySyntaxPassed": true,
+    "diffCheckPassed": true,
+    "exampleMaterialization": { "parsed": 29, "total": 29 },
+    "localMaterialization": {
+      "parsed": 29,
+      "total": 29,
+      "replacementCount": 16,
+      "unresolvedPlaceholderCount": 0,
+      "ignoredByGit": true
+    }
+  },
+  "productionPreview": {
+    "observedAtUtc": "2026-08-07T05:15:18Z",
+    "passed": 29,
+    "total": 29,
+    "inlineWorkflowCountByCase": { "26": 1 },
+    "allOtherInlineWorkflowCounts": 0,
+    "scopeHash": "237314c29964",
+    "larkUserServiceHash": "a623c5a302b9",
+    "runsStarted": 0,
+    "sideEffectsPerformed": false
+  },
+  "directRuntime": {
+    "summary": {
+      "total": 29,
+      "passed": 25,
+      "platformBlocked": 1,
+      "skipped": 3,
+      "terminalCompleted": 25,
+      "terminalFailed": 1,
+      "notRun": 3
+    },
+    "results": [
+      { "case": "01", "name": "release_readiness_review", "status": "passed", "runHash": "50e9357ddb64", "terminalStatus": "completed", "stateVersion": 80, "completedSteps": 13, "totalSteps": 13 },
+      { "case": "02", "name": "candidate_document_compliance_preview", "status": "passed", "runHash": "240023738222", "terminalStatus": "completed", "stateVersion": 35, "completedSteps": 4, "totalSteps": 4 },
+      { "case": "03", "name": "email_access_approval_audit", "status": "passed", "runHash": "6e4597fbabce", "terminalStatus": "completed", "stateVersion": 42, "completedSteps": 6, "totalSteps": 6 },
+      { "case": "04", "name": "saas_license_utilization_review", "status": "passed", "runHash": "f89f4a4143bd", "terminalStatus": "completed", "stateVersion": 67, "completedSteps": 10, "totalSteps": 10 },
+      { "case": "05", "name": "asset_inventory_attestation", "status": "passed", "runHash": "553ed811299a", "terminalStatus": "completed", "stateVersion": 37, "completedSteps": 5, "totalSteps": 5, "branch": "preview", "sideEffectsPerformed": false },
+      { "case": "06", "name": "project_shared_mailbox_approval", "status": "skipped", "terminalStatus": null, "stateVersion": null, "reason": "未授权创建 Lark 审批" },
+      { "case": "07", "name": "quarterly_access_review_reminder", "status": "passed", "runHash": "4d05876f88f8", "terminalStatus": "completed", "stateVersion": 37, "completedSteps": 5, "totalSteps": 5 },
+      { "case": "08", "name": "saas_license_optimization_digest", "status": "passed", "runHash": "ea1a136e9f5a", "terminalStatus": "completed", "stateVersion": 91, "completedSteps": 14, "totalSteps": 14 },
+      { "case": "09", "name": "contractor_access_package_approval", "status": "passed", "runHash": "68a50767ae79", "terminalStatus": "completed", "stateVersion": 77, "completedSteps": 11, "totalSteps": 11 },
+      { "case": "10", "name": "monthly_access_certification", "status": "passed", "runHash": "aa034b36f115", "terminalStatus": "completed", "stateVersion": 67, "completedSteps": 10, "totalSteps": 10 },
+      { "case": "11", "name": "complex_codex_exec_validation", "status": "platform-blocked", "runHash": "22876437b5b1", "terminalStatus": "failed", "stateVersion": 31, "completedSteps": 4, "totalSteps": 4, "stableErrorCode": "codex_execution_capacity_unavailable", "finalArtifactPresent": false, "sideEffectsPerformed": false },
+      { "case": "12", "name": "safe_code_execute_validation", "status": "passed", "runHash": "5f0fbfd1642c", "terminalStatus": "completed", "stateVersion": 31, "completedSteps": 4, "totalSteps": 4, "totalCents": 16623, "sideEffectsPerformed": false },
+      { "case": "13", "name": "invoice_ocr_policy_review", "status": "passed", "runHash": "f0355340bad2", "terminalStatus": "completed", "stateVersion": 82, "completedSteps": 12, "totalSteps": 12 },
+      { "case": "14", "name": "lark_contact_batch_resolution", "status": "passed", "runHash": "f10aa7837a87", "terminalStatus": "completed", "stateVersion": 28, "completedSteps": 3, "totalSteps": 3, "approvalResumeCount": 1 },
+      { "case": "15", "name": "weekly_budget_variance_digest", "status": "passed", "runHash": "f5121b2da187", "terminalStatus": "completed", "stateVersion": 73, "completedSteps": 11, "totalSteps": 11 },
+      { "case": "16", "name": "nyxid_read_receipt_probe", "status": "passed", "runHash": "cb5b7aab6ad1", "terminalStatus": "completed", "stateVersion": 31, "completedSteps": 4, "totalSteps": 4 },
+      { "case": "17", "name": "lark_post_search_approval_probe", "status": "passed", "runHash": "92fd3ce658ea", "terminalStatus": "completed", "stateVersion": 34, "completedSteps": 4, "totalSteps": 4, "approvalResumeCount": 1 },
+      { "case": "18", "name": "supplier_control_attestation_review", "status": "passed", "runHash": "4cc2319f79f6", "terminalStatus": "completed", "stateVersion": 92, "completedSteps": 15, "totalSteps": 15 },
+      { "case": "19", "name": "lark_bot_file_upload_validation", "status": "passed", "runHash": "126cd282b52b", "terminalStatus": "completed", "stateVersion": 30, "completedSteps": 4, "totalSteps": 4, "larkBotIngressValidated": false },
+      { "case": "20", "name": "supplier_risk_tier_aggregation", "status": "passed", "runHash": "63495525483b", "terminalStatus": "completed", "stateVersion": 95, "completedSteps": 16, "totalSteps": 16 },
+      { "case": "21", "name": "approval_window_integrity_audit", "status": "passed", "runHash": "0cfe6cd226bc", "terminalStatus": "completed", "stateVersion": 49, "completedSteps": 7, "totalSteps": 7 },
+      { "case": "22", "name": "acceptance_fixture_drift_attestation", "status": "passed", "runHash": "1e22712eba01", "terminalStatus": "completed", "stateVersion": 55, "completedSteps": 8, "totalSteps": 8 },
+      { "case": "23", "name": "readonly_attested_post_probe", "status": "passed", "runHash": "cda372ca23b0", "terminalStatus": "completed", "stateVersion": 31, "completedSteps": 4, "totalSteps": 4 },
+      { "case": "24", "name": "runtime_tool_approval_write_probe", "status": "skipped", "terminalStatus": null, "stateVersion": null, "reason": "未授权 Base 写探针" },
+      { "case": "25", "name": "sequential_tool_approval_write_probe", "status": "skipped", "terminalStatus": null, "stateVersion": null, "reason": "未授权连续 Base 写探针" },
+      { "case": "26", "name": "vendor_policy_inline_delegation", "status": "passed", "runHash": "6784c0c294c2", "terminalStatus": "completed", "stateVersion": 44, "completedSteps": 5, "totalSteps": 5 },
+      { "case": "27", "name": "deterministic_parallel_evidence_review", "status": "passed", "runHash": "56fcd9c05d87", "terminalStatus": "completed", "stateVersion": 86, "completedSteps": 14, "totalSteps": 14 },
+      { "case": "28", "name": "deterministic_race_policy_review", "status": "passed", "runHash": "20772f753159", "terminalStatus": "completed", "stateVersion": 38, "completedSteps": 6, "totalSteps": 6 },
+      { "case": "29", "name": "invoice_approval_routing_preview", "status": "passed", "runHash": "6ab4599181cd", "terminalStatus": "completed", "stateVersion": 77, "completedSteps": 11, "totalSteps": 11 }
+    ]
+  },
+  "assistantValidation": {
+    "entrypoint": "nyxid proxy request aevatar /api/chat",
+    "summary": { "configured": 5, "validated": 4, "chatFailed": 1, "sideEffectCaseNotRun": 1 },
+    "results": [
+      { "case": "01", "status": "validated", "runHash": "e692057b4725", "terminalStatus": "completed", "stateVersion": 80, "completedSteps": 13, "totalSteps": 13 },
+      { "case": "12", "status": "validated", "runHash": "40f2a81b924d", "terminalStatus": "completed", "stateVersion": 31, "completedSteps": 4, "totalSteps": 4 },
+      { "case": "13", "status": "validated", "runHash": "407d91ac66c1", "terminalStatus": "completed", "stateVersion": 82, "completedSteps": 12, "totalSteps": 12 },
+      { "case": "14", "status": "validated", "runHash": "dc16b9bf8c5c", "terminalStatus": "completed", "stateVersion": 28, "completedSteps": 3, "totalSteps": 3 },
+      { "case": "15", "status": "chat-failed", "terminalStatus": null, "stateVersion": null, "stableErrorCode": "STREAM_FAILURE", "chatCompleted": false, "ornnSearchObserved": false, "skillMountObserved": false, "workflowStarted": false }
+    ],
+    "notRun": [
+      { "case": "06", "reason": "副作用路径未获授权" }
+    ],
+    "modelTextUsedAsSuccessEvidence": false
+  },
+  "admissionValidation": {
+    "observedAtUtc": "2026-08-07T05:36:14Z",
+    "sideEffectsPerformed": false,
+    "results": [
+      { "case": "33", "status": "fail-closed-confirmed", "stableErrorCode": "INVALID_PROVISION_WORKFLOW_REQUEST", "innerErrorCode": "NYXID_OPERATION_SELECTION_REQUIRED" },
+      { "case": "34", "status": "passed", "slotValuePositiveReachedProvider": true, "positiveStableErrorCode": "NYXID_PROXY_HTTP_400", "templatedSelectorRejected": true, "templatedSelectorErrorCode": "INVALID_USER_WORKFLOW_REQUEST", "slotEscapeRejected": true, "slotEscapeErrorCode": "NYXID_OPERATION_PATH_PARAMETER_INVALID" },
+      { "case": "35", "status": "fail-closed-confirmed", "stableErrorCode": "INVALID_USER_WORKFLOW_REQUEST" },
+      { "case": "36", "status": "fail-closed-confirmed", "stableErrorCode": "INVALID_USER_WORKFLOW_REQUEST", "innerErrorCode": "DURABLE_AUTHORIZATION_UNAVAILABLE" }
+    ]
+  },
+  "ornnValidation": {
+    "observedAtUtc": "2026-08-07T05:37:01Z",
+    "total": 29,
+    "exists": 29,
+    "public": 29,
+    "serverFormatValid": 29,
+    "exactNameMatched": 29,
+    "versionMatched": 28,
+    "versionMismatches": [
+      { "name": "supplier-risk-tier-aggregation", "localVersion": "1.1", "publicVersion": "1.0" }
+    ],
+    "verifyOnlyExitStatus": 1,
+    "publicCatalogExitStatus": 1,
+    "uploadsPerformed": 0,
+    "visibilityChangesPerformed": 0
+  },
+  "channelValidation": {
+    "summary": { "total": 3, "passed": 2, "failed": 1 },
+    "results": [
+      { "case": "20", "status": "passed", "runHash": "90c8950beb0b", "terminalStatus": "completed", "stateVersion": 30, "completedSteps": 3, "totalSteps": 3, "mountApprovalCount": 1, "workflowToolApprovalCount": 1, "workflowRunDelta": 1, "artifactVerified": true },
+      { "case": "21", "status": "passed", "typedDecision": "Denied", "mountDenialCount": 1, "workflowRunDelta": 0, "workflowStarted": false },
+      { "case": "22", "status": "start-blocked", "stableErrorCode": "InvalidWorkflowYaml", "workflowRunDelta": 0, "workflowStarted": false }
+    ],
+    "assistantApiChatResultsUsedAsChannelEvidence": false
+  },
+  "larkFileCanary": {
+    "workflowCase": "19",
+    "fixturePath": "fixtures/lark-bot-upload-manifest.json",
+    "fixtureSizeBytes": 114,
+    "fixtureSha256": "5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb",
+    "baselineWorkflowRunCount": 2,
+    "workflowRunDelta": 1,
+    "runHash": "73e35855ed43",
+    "terminalStatus": "completed",
+    "stateVersion": 32,
+    "completedSteps": 4,
+    "totalSteps": 4,
+    "mountApprovalCount": 1,
+    "artifact": {
+      "success": true,
+      "larkBotIngressValidated": true,
+      "observedExtractedChars": 113,
+      "observedSizeBytes": 113,
+      "fileNameMatched": true,
+      "bodyMatched": true,
+      "sha256Matched": true,
+      "identifiersRedacted": true,
+      "sideEffects": false
+    },
+    "replyRelayObserved": true
+  },
+  "regressionR01": {
+    "status": "passed",
+    "larkInitMessagesSent": 1,
+    "authorizationUpdateRepliesObserved": 1,
+    "duplicateRepliesObserved": 0,
+    "oauthLinkOpened": false,
+    "readyDeploymentHash": "a087e5097a68",
+    "readyReplicas": "1/1",
+    "podRestarts": 0,
+    "boundedLogLines": 10,
+    "warningOrErrorLines": 0,
+    "activationAccessViolationCount": 0,
+    "committedStatePublicationExceptionCount": 0,
+    "logLevelInboundCorrelationProven": false
+  },
+  "riskStatusDerivedFromFreshObservations": {
+    "total": 21,
+    "passed": 15,
+    "failed": 1,
+    "notConfigured": 4,
+    "skippedExpired": 1,
+    "failedCases": [
+      { "case": "27", "reason": "Ornn public version differs from local version" }
+    ]
+  },
+  "scheduleValidation": {
+    "freshRunPerformed": false,
+    "reason": "本轮未获授权创建 schedule",
+    "historicalEvidenceRetained": "production-validation-2026-08-07-schedule.json",
+    "historicalEvidencePromotedToFresh": false
+  },
+  "postSnapshotBoundary": {
+    "note": "本文件冻结本次全量复验窗口；窗口之后的部署或单案例复验作为后续证据单独记录，不能反向改写本快照。",
+    "observations": [
+      {
+        "observedAtUtc": "2026-08-07T05:56:00Z",
+        "case": "11",
+        "readyDeploymentHash": "5f51f6d0ea2b",
+        "previewPassed": true,
+        "runHash": "72b16525a3d8",
+        "terminalStatus": "failed",
+        "stateVersion": 31,
+        "completedSteps": 4,
+        "totalSteps": 4,
+        "stableErrorCode": "codex_execution_capacity_unavailable",
+        "finalArtifactPresent": false,
+        "sideEffectsPerformed": false,
+        "changesFullSnapshotSummary": false
+      },
+      {
+        "observedAtUtc": "2026-08-07T06:34:31Z",
+        "case": "11",
+        "readyDeploymentHash": "eead35c08975",
+        "previewPassed": true,
+        "runHash": "106ecf7b750a",
+        "terminalStatus": "failed",
+        "stateVersion": 31,
+        "completedSteps": 4,
+        "totalSteps": 4,
+        "stableErrorCode": "codex_execution_capacity_unavailable",
+        "finalArtifactPresent": false,
+        "approvalPendingObserved": false,
+        "approvalResumeCount": 0,
+        "sideEffectsPerformed": false,
+        "allowlistedUpstreamCodeObserved": false,
+        "changesFullSnapshotSummary": false
+      },
+      {
+        "observedAtUtc": "2026-08-07T06:42:00Z",
+        "surface": "source-migration-continuity",
+        "evidenceSource": "https://github.com/aevatarAI/aevatar/issues/3290",
+        "evidenceKind": "external_issue_report",
+        "independentlyRerunByAcceptanceRepository": false,
+        "status": "regression-blocked",
+        "historicalSuccessRetained": true,
+        "p2CompletedAtSgt": "2026-08-07 14:09:19",
+        "p2CompletedSteps": 14,
+        "p2TotalSteps": 14,
+        "p2BusinessReconciliationMatchedCurrentSystem": true,
+        "p2RuntimeRegressionAtSgt": "2026-08-07 14:18:27",
+        "p2RuntimeStableErrorCode": "NYXID_PROXY_HTTP_502",
+        "identicalDefinitionAdmissionFailureCount": 5,
+        "admissionStableErrorCode": "NYXID_ADMISSION_SOURCE_CREDENTIAL_REQUIRED",
+        "p1CompletedSteps": 0,
+        "p1TotalSteps": 27,
+        "p1FailureTextPrefix": "Forwarding failed",
+        "sandboxDirectViaNyxIdHttpStatus": 200,
+        "nyxIdProxyHealthy": true,
+        "callerTokenValid": true,
+        "currentPodObservedAtUtc": "2026-08-07T06:55:52Z",
+        "currentDeploymentHash": "eead35c0",
+        "currentReadyReplicas": "1/1",
+        "currentPodRestarts": 0,
+        "currentBoundedStdoutLines": 10,
+        "currentIncidentLogMatches": 0,
+        "currentPodCoversIncidentWindow": false,
+        "siloStabilityProven": false,
+        "existingRiskCasesCoverTemporalContinuity": false,
+        "sideEffectsPerformed": false,
+        "changesFullSnapshotSummary": false
+      }
+    ]
+  }
+}

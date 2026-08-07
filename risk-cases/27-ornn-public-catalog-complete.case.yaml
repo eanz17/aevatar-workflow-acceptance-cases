@@ -6,18 +6,18 @@ status: passed
 surface: ornn_public_catalog
 target:
   source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
-  expected_skill_count: 25
+  expected_skill_count: 29
 safety:
   read_only_verification: true
   uploads_performed: false
   permissions_changed: false
   raw_identifiers_persisted: false
 required_evidence:
-  local_skill_count: 25
-  server_format_validated: 25
-  exact_name_readback: 25
-  public_skill_count: 25
-  version_matches: 25
+  local_skill_count: 29
+  server_format_validated: 29
+  exact_name_readback: 29
+  public_skill_count: 29
+  version_matches: 29
   missing_skills: []
   private_skills: []
   version_mismatches: []

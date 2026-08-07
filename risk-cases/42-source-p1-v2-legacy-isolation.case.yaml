@@ -1,8 +1,8 @@
 schema_version: "1.0"
 case: "42"
 name: source_p1_v2_legacy_isolation
-title: 源 P1 v2 旧定义必须隔离硬编码集成语义后再执行
-status: not-configured
+title: 源 P1 v2 旧定义已由安全 no-submit 发票路由契约替代
+status: skipped-expired
 surface: workflow_direct_source_definition
 target:
   source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
@@ -14,11 +14,30 @@ safety:
   legacy_integration_isolation_required: true
   external_writes: false
   raw_identifiers_persisted: false
-required_evidence:
+retirement:
+  retired_on: "2026-08-07"
+  reason: 旧定义把 OCR、审批历史、contact 和提交编排封装在四个无 capability 的 code_execute 中，并硬编码 provider URL、审批 code、个人邮箱和表单枚举；该集成方式不再代表当前 Aevatar workflow 安全契约。
+  superseded_by_contract: 原生 document_extract/llm_call/transform + 完整 capability.nyxid_request + attested read-only contact + typed no-submit artifact
+  replacement_workflow_case: "29"
+  replacement_workflow: invoice_approval_routing_preview
+historical_required_evidence:
   exact_source_previewed: true
   legacy_integration_semantics_isolated: true
   hard_coded_targets_absent: true
   synthetic_attachment_verified: true
   terminal_status: completed
+  external_writes: false
+  raw_identifiers_persisted: false
+required_evidence:
+  source_definition_present: true
+  source_sha256_verified: true
+  legacy_code_execute_integration_preserved_for_traceability: true
+  superseded_contract_documented: true
+  replacement_workflow_case: "29"
+  replacement_static_validation_passed: true
+  replacement_preview_passed: true
+  replacement_terminal_status: completed
+  replacement_artifact_verified: true
+  replacement_ornn_public: true
   external_writes: false
   raw_identifiers_persisted: false

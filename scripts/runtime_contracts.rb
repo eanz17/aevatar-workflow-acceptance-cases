@@ -286,6 +286,60 @@ module RuntimeContracts
         "sequential_mutations" => 2,
         "side_effects" => true
       }
+    },
+    "26" => {
+      probe_step: "delegate_policy_check",
+      expected: {
+        "case" => "vendor_policy_inline_delegation",
+        "success" => true,
+        "inline_definition_bound" => true,
+        "child_definition_resolved" => true,
+        "child_workflow_completed" => true,
+        "side_effects" => false
+      }
+    },
+    "27" => {
+      probe_step: "fanout_evidence",
+      expected: {
+        "case" => "deterministic_parallel_evidence_review",
+        "success" => true,
+        "worker_count" => 3,
+        "all_worker_receipts_observed" => true,
+        "merged_output_order_verified" => true,
+        "side_effects" => false
+      }
+    },
+    "28" => {
+      probe_step: "first_successful_review",
+      expected: {
+        "case" => "deterministic_race_policy_review",
+        "success" => true,
+        "worker_count" => 3,
+        "winner_in_candidate_set" => true,
+        "first_success_selected" => true,
+        "later_completions_ignored" => true,
+        "side_effects" => false
+      }
+    },
+    "29" => {
+      probe_step: "extract_document",
+      expected: {
+        "case" => "invoice_approval_routing_preview",
+        "success" => true,
+        "execution_mode" => "preview",
+        "attachment_extracted" => true,
+        "invoice_normalized" => true,
+        "history_api_reachable" => true,
+        "history_window_checked" => true,
+        "exact_duplicate_found" => true,
+        "same_vendor_history_verified" => true,
+        "approval_route_resolved" => true,
+        "identifiers_redacted" => true,
+        "approval_created" => false,
+        "message_sent" => false,
+        "external_writes" => false,
+        "side_effects" => false
+      }
     }
   }.freeze
 

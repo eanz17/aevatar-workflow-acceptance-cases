@@ -1,0 +1,49 @@
+name: vendor_policy_inline_delegation
+description: 通过 inline 子工作流执行合成供应商政策评估，验证 workflow_call 的定义绑定、子运行和结果回传。
+roles:
+  - id: policy_owner
+    name: 供应商政策负责人
+steps:
+  - id: seed_policy_review
+    type: assign
+    parameters:
+      target: policy_review
+      value: SYNTHETIC_VENDOR_POLICY_REVIEW
+    next: delegate_policy_check
+
+  - id: delegate_policy_check
+    type: workflow_call
+    parameters:
+      workflow: vendor_policy_inline_evaluator
+      lifecycle: transient
+    next: verify_delegated_result
+
+  - id: verify_delegated_result
+    type: switch
+    parameters:
+      on: "${steps.delegate_policy_check.output}"
+      branch.INLINE_POLICY_APPROVED: delegated
+      branch._default: delegation_failed
+    branches:
+      INLINE_POLICY_APPROVED: delegated
+      _default: delegation_failed
+
+  - id: delegated
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"vendor_policy_inline_delegation","success":true,"inline_definition_bound":true,"child_definition_resolved":true,"child_workflow_completed":true,"side_effects":false}'
+    next: done
+
+  - id: delegation_failed
+    type: assign
+    parameters:
+      target: final
+      value: '{"case":"vendor_policy_inline_delegation","success":false,"inline_definition_bound":true,"child_definition_resolved":false,"child_workflow_completed":false,"side_effects":false}'
+    next: done
+
+  - id: done
+    type: assign
+    parameters:
+      target: final
+      value: "$input"

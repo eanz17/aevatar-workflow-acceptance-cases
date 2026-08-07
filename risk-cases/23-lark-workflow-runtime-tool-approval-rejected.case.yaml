@@ -2,7 +2,7 @@ schema_version: "1.0"
 case: "23"
 name: lark_workflow_runtime_tool_approval_rejected
 title: Lark workflow 运行期工具拒绝后终止同一 run
-status: failed
+status: passed
 surface: lark_private_bot
 target:
   source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff

@@ -1,14 +1,14 @@
 {
   "date": "2026-08-05",
-  "updatedAtUtc": "2026-08-06T14:37:18Z",
-  "deployedCommit": "19b5906bbfa935c5f0674bb4483d69f9823469fb",
-  "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:19b5906b",
+  "updatedAtUtc": "2026-08-07T06:55:52Z",
+  "deployedCommit": "eead35c089758b26f7b0fd4c277dbbe71815b0cc",
+  "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:eead35c0",
   "ingress": "nyxid proxy request aevatar",
   "scope": "已脱敏",
   "larkUserServiceHash": "a623c5a302b9",
   "currentDeployment": {
-    "observedAtUtc": "2026-08-06T14:37:18Z",
-    "deployedCommit": "19b5906bbfa935c5f0674bb4483d69f9823469fb",
+    "observedAtUtc": "2026-08-07T06:29:00Z",
+    "deployedCommit": "eead35c089758b26f7b0fd4c277dbbe71815b0cc",
     "healthyReplicas": "1/1",
     "podRestarts": 0,
     "containsFixCommits": [
@@ -24,13 +24,25 @@
       "5a0b545d8",
       "e1aedcae7",
       "20d9ba410",
-      "19b5906bb"
+      "19b5906bb",
+      "4c0596c76",
+      "a44f849e0",
+      "6a656d759",
+      "4389ecd31",
+      "e1a1d3f36",
+      "b8a9d6908",
+      "6558db8db",
+      "49cb76e4a",
+      "5f51f6d0e",
+      "61a1f8c6e",
+      "eead35c08"
     ],
     "productionVerificationWindowUtc": {
-      "startedAt": "2026-08-06T14:26:50Z",
-      "completedAt": "2026-08-06T14:37:18Z"
+      "startedAt": "2026-08-06T21:49:00Z",
+      "completedAt": "2026-08-07T06:36:00Z"
     },
-    "postDeploymentLogCountersSampled": false
+    "postDeploymentLogCountersSampled": false,
+    "targetedFailureLogsSampled": true
   },
   "staticValidation": {
     "workflowCount": 20,
@@ -46,11 +58,11 @@
     "executionMode": "interactive"
   },
   "directRuntimeSummary": {
-    "passed": 20,
-    "platformBlocked": 0,
+    "passed": 19,
+    "platformBlocked": 1,
     "contractRegressions": 0,
-    "terminalCompleted": 20,
-    "terminalFailed": 0,
+    "terminalCompleted": 19,
+    "terminalFailed": 1,
     "unverified": 0,
     "scriptEnforcedArtifactContracts": [
       "14",
@@ -159,6 +171,61 @@
     "parallelCheckCount": 5,
     "sideEffects": false
   },
+  "case11CurrentValidation": {
+    "observedAtUtc": "2026-08-07T06:34:31Z",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:eead35c0",
+    "deployedCommit": "eead35c089758b26f7b0fd4c277dbbe71815b0cc",
+    "entryPoint": "scripts/production_validate.rb",
+    "transport": "nyxid proxy request aevatar",
+    "previewPassed": true,
+    "canonicalManagedPayloadMatched": true,
+    "delegationPolicy": {
+      "forwardAccessToken": true,
+      "injectDelegationToken": true,
+      "delegationTokenScope": "proxy:*"
+    },
+    "attempts": [
+      {
+        "runIdHash": "106ecf7b750a",
+        "terminalStatus": "failed",
+        "terminalSuccess": false,
+        "stateVersion": 31,
+        "completedSteps": 4,
+        "totalSteps": 4
+      }
+    ],
+    "failedStep": "execute_probe",
+    "stableErrorCode": "codex_execution_capacity_unavailable",
+    "currentDiagnosticBoundary": {
+      "allowlistedUpstreamCodeObserved": false,
+      "targetedStdoutLogMatches": 0,
+      "tenMinuteStdoutLineCount": 10,
+      "healthCheck": {
+        "status": "healthy",
+        "opensandboxConnected": true,
+        "executeCapacityProven": false
+      }
+    },
+    "lastCapacityBoundary": {
+      "observedAtUtc": "2026-08-06T22:00:31Z",
+      "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:6a656d75",
+      "runIdHashes": [
+        "705a69901de5",
+        "4caa726585f6"
+      ],
+      "transportErrorCode": "managed_proxy_unavailable",
+      "downstreamHttpStatus": 502,
+      "healthCheck": {
+        "status": "healthy",
+        "opensandboxConnected": true,
+        "executeCapacityProven": false
+      }
+    },
+    "finalArtifactPresent": false,
+    "approvalPendingObserved": false,
+    "sideEffects": false,
+    "status": "blocked"
+  },
   "case12RecoveryValidation": {
     "validatedAt": "2026-08-05T14:57:41Z",
     "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:0c4ff023",
@@ -178,6 +245,56 @@
       "total_cents": 16623,
       "side_effects": false
     }
+  },
+  "case12CurrentValidation": {
+    "observedAtUtc": "2026-08-07T04:35:51Z",
+    "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:6558db8d",
+    "deployedCommit": "6558db8db00bcc43d38d3c3e3781246d8079d5cc",
+    "entryPoint": "scripts/production_validate.rb",
+    "transport": "nyxid proxy request aevatar",
+    "previewPassed": true,
+    "directRun": {
+      "runIdHash": "6659aabee079",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 31,
+      "completedSteps": 4,
+      "totalSteps": 4,
+      "finalArtifact": {
+        "case": "safe_code_execute_validation",
+        "success": true,
+        "structured_receipt": true,
+        "total_cents": 16623,
+        "side_effects": false
+      },
+      "finalArtifactPresent": true,
+      "sideEffects": false
+    },
+    "transientAttempt": {
+      "runIdHash": "c257460dc47a",
+      "terminalStatus": "failed",
+      "stateVersion": 12,
+      "completedSteps": 1,
+      "totalSteps": 1,
+      "stableErrorCode": "NYXID_PROXY_HTTP_524",
+      "sideEffects": false
+    },
+    "sandboxUserServiceProbe": {
+      "userServiceIdHash": "872833a52fc1",
+      "forwardAccessToken": true,
+      "injectDelegationToken": true,
+      "delegationTokenScope": "proxy:*",
+      "healthStatus": "healthy",
+      "opensandboxConnected": true,
+      "executeSuccess": true,
+      "executeExitCode": 0,
+      "executeOutputVerified": true,
+      "elapsedSeconds": 6
+    },
+    "rootCauseBoundary": "Aevatar managed readiness 曾过度要求 forward_access_token=false；6558db8db 允许共享 UserService 使用 bearer forwarding，同时继续强制 delegation injection 和 proxy:* scope。策略恢复为 true/true/proxy:* 后，NyxID /execute 最小探针与 direct committed artifact 均严格通过；首次 524 保留为瞬时 capacity 对照",
+    "approvalPendingObserved": false,
+    "sideEffects": false,
+    "status": "passed"
   },
   "case14Validation": {
     "validatedAt": "2026-08-05T14:31:49Z",
@@ -323,7 +440,7 @@
     "typedFailureCodes": []
   },
   "sourceFinancialAcceptance": {
-    "evidenceScope": "源财务 workflow 的 post-fix 脱敏生产验收，不计入公开 17-case runtime 统计",
+    "evidenceScope": "源财务 workflow 的历史 post-fix 脱敏生产验收与当前连续性事件，不计入公开 runtime 统计",
     "p2NoSend": {
       "sourceDefinition": "P2-budget-monitor/budget_monitor_weekly.shared-base.nosend.yaml",
       "preview": {
@@ -411,6 +528,88 @@
       "finalOutputPresent": true,
       "typedErrorClasses": []
     },
+    "currentContinuityIncident": {
+      "evidenceSource": "https://github.com/aevatarAI/aevatar/issues/3290",
+      "evidenceKind": "external_issue_report",
+      "independentlyRerunByAcceptanceRepository": false,
+      "observedWindowSgt": "2026-08-07 14:03-14:42",
+      "status": "regression-blocked",
+      "historicalSuccessRetained": true,
+      "currentAvailabilityProven": false,
+      "p2": {
+        "sameMemberBindingAndDefinition": true,
+        "businessReconciliationMatchedCurrentSystem": true,
+        "runSequence": [
+          {
+            "startedAtSgt": "2026-08-07 14:04:06",
+            "terminalStatus": "failed",
+            "completedSteps": 6,
+            "totalSteps": 10,
+            "errorText": "workflow run is already active",
+            "activeRunObserved": false
+          },
+          {
+            "startedAtSgt": "2026-08-07 14:09:19",
+            "terminalStatus": "completed",
+            "completedSteps": 14,
+            "totalSteps": 14
+          },
+          {
+            "startedAtSgt": "2026-08-07 14:18:27",
+            "terminalStatus": "failed",
+            "completedSteps": 7,
+            "totalSteps": 8,
+            "failingTool": "code_execute",
+            "stableErrorCode": "NYXID_PROXY_HTTP_502"
+          }
+        ],
+        "admission": {
+          "identicalRequestBody": true,
+          "acceptedAtSgt": "2026-08-07 14:03",
+          "failedAttempts": 5,
+          "failedFromSgt": "2026-08-07 14:20",
+          "failedThroughSgt": "2026-08-07 14:42",
+          "stableErrorCode": "NYXID_ADMISSION_SOURCE_CREDENTIAL_REQUIRED"
+        }
+      },
+      "p1": {
+        "sourceWorkflowSteps": 27,
+        "completedSteps": 0,
+        "failedStepOrdinal": 1,
+        "errorTextPrefix": "Forwarding failed",
+        "workflowCodeExecuted": false
+      },
+      "controls": {
+        "sandboxDirectViaNyxIdHttpStatus": 200,
+        "nyxIdProxyHealthy": true,
+        "callerIdentityResolved": true,
+        "callerTokenValid": true,
+        "aevatarReadPlaneHealthy": true,
+        "controlsProveWorkflowContinuity": false
+      },
+      "currentClusterObservation": {
+        "observedAtUtc": "2026-08-07T06:55:52Z",
+        "deploymentImage": "eead35c0",
+        "readyReplicas": "1/1",
+        "podRestarts": 0,
+        "currentPodStartedAtUtc": "2026-08-07T06:28:33Z",
+        "boundedStdoutLines": 10,
+        "matchingIncidentLogLines": 0,
+        "coversIncidentWindow": false,
+        "siloStabilityProven": false
+      },
+      "coverageGap": {
+        "existingRiskCasesCoverTemporalContinuity": false,
+        "requiredFutureEvidence": [
+          "same exact source definition succeeds before and after rebind or member change",
+          "source-readable caller credential and delegation credential remain separately resolvable",
+          "P2 completes 14/14 with reconciled values",
+          "P1 passes first-step forwarding and can proceed through 27 steps",
+          "evidence records deployment and silo transition without persisting raw identifiers"
+        ]
+      },
+      "sideEffectsPerformedByThisUpdate": false
+    },
     "notRun": [
       {
         "workflow": "P2 send workflow",
@@ -430,9 +629,15 @@
       }
     ],
     "larkChannelCanary": {
-      "status": "unproven",
+      "status": "validated",
       "issue": "#3087",
-      "reason": "修复后未发送真实 Lark attachment/skill lookup canary"
+      "runIdHash": "03c3f4ded68e",
+      "committedTerminalObserved": true,
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "larkBotIngressValidated": true,
+      "rawIdentifiersPersisted": false,
+      "reason": "fresh Lark attachment canary 已由唯一新增 committed run 与 typed artifact 严格验证"
     }
   },
   "runtime": [
@@ -584,16 +789,17 @@
     },
     {
       "case": "11",
-      "result": "通过",
-      "terminalStatus": "completed",
-      "terminalSuccess": true,
-      "stateVersion": 179,
-      "completedSteps": 30,
-      "totalSteps": 30,
-      "runIdHash": "22111c344c15",
-      "evidenceImage": "20d9ba41",
-      "scriptEnforcedArtifactContract": false,
-      "assertion": "固定 managed probe 返回 CODEX_EXEC_READY；status/target/output/exit_code 四项 gate 命中、diagnostic_id 非空、parallel_check_count=5、side_effects=false",
+      "result": "平台阻塞",
+      "terminalStatus": "failed",
+      "terminalSuccess": false,
+      "stateVersion": 31,
+      "completedSteps": 4,
+      "totalSteps": 4,
+      "runIdHash": "106ecf7b750a",
+      "evidenceImage": "eead35c0",
+      "scriptEnforcedArtifactContract": true,
+      "blockerCode": "codex_execution_capacity_unavailable",
+      "assertion": "Ready eead35c0 上 fresh run 在 execute_probe 以 codex_execution_capacity_unavailable committed failed，无 final artifact、approval 或副作用；本次未观察到 allowlisted upstream code，Ready 6a656d75 的 HTTP 502 / managed_proxy_unavailable 诊断与历史 f7f543c5 成功证据保留",
       "sideEffects": false
     },
     {
@@ -604,10 +810,10 @@
       "stateVersion": 31,
       "completedSteps": 4,
       "totalSteps": 4,
-      "runIdHash": "2182fdcd153b",
-      "evidenceImage": "20d9ba41",
-      "scriptEnforcedArtifactContract": false,
-      "assertion": "success=true、structured_receipt=true、total_cents=16623、side_effects=false",
+      "runIdHash": "6659aabee079",
+      "evidenceImage": "6558db8d",
+      "scriptEnforcedArtifactContract": true,
+      "assertion": "Ready 6558db8d 上 fresh direct run committed completed、state 31、4/4；typed artifact 精确命中 structured_receipt=true、total_cents=16623、side_effects=false。此前同部署首次 524 保留为瞬时 capacity 对照",
       "sideEffects": false
     },
     {
@@ -865,6 +1071,58 @@
       }
     ]
   },
+  "ornnCurrentValidation": {
+    "verifiedAtUtc": "2026-08-07T02:58:08Z",
+    "service": "ornn-api",
+    "verificationMode": "verify-only",
+    "localPackages": 29,
+    "serverFormatValidated": 29,
+    "exactNameReadback": 29,
+    "publicSkills": 29,
+    "missingSkills": [],
+    "privateSkills": [],
+    "versionMismatches": [],
+    "uploadsPerformed": false,
+    "permissionsChanged": false,
+    "status": "passed"
+  },
+  "assistantCurrentValidation": {
+    "observedAtUtc": "2026-08-07T04:38:32Z",
+    "deploymentCommit": "6558db8db00bcc43d38d3c3e3781246d8079d5cc",
+    "ingress": "nyxid proxy request aevatar /api/chat",
+    "representativeCases": 2,
+    "chatCompleted": 2,
+    "ornnSearchConfirmed": 2,
+    "exactSkillResolved": 2,
+    "workflowStarted": 2,
+    "workflowValidated": 2,
+    "workflowTypedFailures": 0,
+    "results": [
+      {
+        "case": "01",
+        "runIdHash": "535e9029486f",
+        "workflowValidationStatus": "validated",
+        "terminalStatus": "completed",
+        "stateVersion": 80,
+        "completedSteps": 13,
+        "totalSteps": 13,
+        "artifactContractVerified": true,
+        "assertion": "ready_for_review=true、side_effects=false"
+      },
+      {
+        "case": "12",
+        "runIdHash": "6fa89cd62b15",
+        "workflowValidationStatus": "validated",
+        "terminalStatus": "completed",
+        "stateVersion": 31,
+        "completedSteps": 4,
+        "totalSteps": 4,
+        "artifactContractVerified": true,
+        "assertion": "Ornn search、精确 skill mount、workflow start 与 committed artifact 全部通过；total_cents=16623、side_effects=false"
+      }
+    ],
+    "conclusion": "Ornn、/api/chat 与普通 code_execute 当前严格通过；Case 12 用户可见阻塞已关闭"
+  },
   "channelE2EAcceptance": {
     "schemaVersion": "1.0",
     "requiredDeploymentCommit": "de801ca70a37db624b27155c1870d0c99ad93b7c",
@@ -1084,7 +1342,43 @@
       "AgentNotFound",
       "WorkflowExternalCapabilityAdmissionException"
     ],
-    "result": "transport 已验证，workflow typed failure"
+    "result": "transport 已验证，workflow typed failure",
+    "currentCase12Canary": {
+      "observedAtUtc": "2026-08-07T05:09:00Z",
+      "deploymentImage": "docker.io/aelfdevops/aevatar-console-backend:49cb76e4",
+      "deployedCommit": "49cb76e4acea8c65b74922e1dcd0949712213903",
+      "entryPoint": "Lark Aevatar Agent private chat",
+      "case": "12",
+      "workflow": "safe_code_execute_validation",
+      "syntheticNoSideEffects": true,
+      "catalogBaselineCount": 10,
+      "catalogDelta": 1,
+      "ornnSearchObserved": true,
+      "exactSkillMounted": true,
+      "useSkillApprovalCount": 1,
+      "destructiveApprovalCount": 0,
+      "workflowStartCount": 1,
+      "runIdHash": "ebe0e10241f0",
+      "committedTerminalObserved": true,
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 33,
+      "completedSteps": 4,
+      "totalSteps": 4,
+      "firstToolOutputPresent": true,
+      "finalArtifact": {
+        "case": "safe_code_execute_validation",
+        "success": true,
+        "structured_receipt": true,
+        "total_cents": 16623,
+        "side_effects": false
+      },
+      "botReplyRelayObserved": true,
+      "successJudgedFromCommittedDetail": true,
+      "rawIdentifiersPersisted": false,
+      "sideEffects": false,
+      "workflowValidationStatus": "validated"
+    }
   },
   "case19Validation": {
     "validatedAt": "2026-08-06T14:37:18Z",
@@ -1545,23 +1839,23 @@
   "surfaceBoundary": {
     "apiChat": "验证 Assistant、Ornn、tool 与 workflow 核心链",
     "larkBotAdditional": "已验证 Lark webhook、NyxID channel relay、Bot 注册、会话映射、发送者解析与 Lark 回传",
-    "conclusion": "transport 已验证不等于 workflow 成功；Developer App 默认项补 api-lark-bot 后的 fresh /init 已创建 allow-all consent 与新 binding，但新 run 仍以 NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN committed failed；Aevatar 显式 core resource 请求使 NyxID 在授权码阶段缩窄 binding，默认项只影响 consent 提示，平台修复前重复 /init 无法关闭 blocker"
+    "conclusion": "transport 已验证不等于 workflow 成功；早期 sender resource narrowing 失败保留为历史诊断，当前 Cases 20/21/22 已分别严格通过 mount 批准、mount 拒绝与 workflow tool approval channel 契约"
   },
   "knownBoundaries": [
     {
       "capability": "通用 code_execute",
       "status": "已恢复",
-      "reason": "镜像 0c4ff023 上 Case 12 连续两次 committed completed，total_cents=16623"
+      "reason": "Ready 6558db8d 上 UserService 已独立回读为 true/true/proxy:*；NyxID /execute 最小探针 6 秒成功，direct run 6659aabee079 与 /api/chat run 6fa89cd62b15 均 committed completed、state 31、4/4，并精确命中 total_cents=16623、side_effects=false"
     },
     {
       "capability": "managed codex_exec",
-      "status": "已恢复",
-      "reason": "镜像 f7f543c5 上 Case 11 committed completed，30/30 步，固定输出 CODEX_EXEC_READY、五项 typed gate 与 parallel_check_count=5 全部命中；历史 0c4ff023 admission denied 证据保留"
+      "status": "已验证阻塞",
+      "reason": "镜像 f7f543c5 上有历史 30/30 恢复证据；当前 Ready 6558db8d 的 fresh run 39a374f8815a 仍以 codex_execution_capacity_unavailable committed failed，Ready 6a656d75 的两次失败已将最近 transport 边界定位为 managed_proxy_unavailable / HTTP 502"
     },
     {
       "capability": "per-run typed tool approval",
-      "status": "契约回归",
-      "reason": "Cases 14 和 17 的 preview 仍为 approvalRequired=true，但本轮运行未出现 typed pending/resume 即 committed completed"
+      "status": "已恢复",
+      "reason": "当前 fresh Cases 14 和 17 均观察到完整 typed pending identity，各 resume 一次后 committed completed；历史缺失身份链只保留为回归背景"
     },
     {
       "capability": "durable schedule",
@@ -1570,8 +1864,8 @@
     },
     {
       "capability": "Lark Bot 自然语言 workflow",
-      "status": "已验证阻塞",
-      "reason": "默认项修复后的 fresh /init 已创建 allow-all consent 与新 binding；镜像 e30fdd94 的新 run 仍在 resolve_contact 以 NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN committed failed。Aevatar authorize 的显式 core resource 不含 Lark，NyxID 因而在授权码阶段缩窄 binding；重复 /init 无法修复"
+      "status": "已恢复",
+      "reason": "早期三次 sender scope 失败保留为 resource-narrowing 诊断；当前 Cases 20/21/22 已证明同 sender 的精确 skill、mount 决策、workflow start、tool approval resume 与 committed artifact"
     },
     {
       "capability": "源财务 workflow 写入与排程分支",
@@ -1580,8 +1874,8 @@
     },
     {
       "capability": "#3184 typed tool approval resume",
-      "status": "回归",
-      "reason": "历史 run 8d6fc129f831 曾用 nested toolApproval 完成批准恢复；镜像 0c4ff023 的新 run 未观察到 per-run typed identity 即完成，拒绝路径因此不可达，durable preview 仍未验证"
+      "status": "已恢复",
+      "reason": "当前 fresh Cases 14 和 17 均用 nested toolApproval identity 完成批准恢复；Risk 23 又以稳定 approval_denied 关闭真实拒绝路径，durable authority 仍由独立 schedule 证据约束"
     }
   ],
   "whileIterationDispatchFix": {

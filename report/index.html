@@ -84,6 +84,17 @@
     .path-line { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #b9c2c8; font-size: 13px; }
     .path-line strong { color: #ffffff; }
 
+    .latest-band { border-bottom: 1px solid var(--strong-border); background: var(--amber-soft); }
+    .latest-inner { padding: 16px 0 15px; }
+    .latest-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; margin-bottom: 10px; }
+    .latest-heading h2 { margin: 0; font-size: 16px; }
+    .latest-heading p { margin: 0; color: var(--muted); font-size: 12px; }
+    .latest-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px 18px; }
+    .latest-item { min-width: 0; border-left: 2px solid var(--amber); padding-left: 9px; }
+    .latest-item strong { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+    .latest-item span { display: block; color: var(--muted); font-size: 12px; }
+    .latest-links { margin: 10px 0 0; font-size: 12px; }
+
     .metrics-band { border-bottom: 1px solid var(--border); background: var(--surface); }
     .metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .metric { min-width: 0; padding: 18px 20px; border-right: 1px solid var(--border); }
@@ -170,6 +181,7 @@
     .footer-links { display: flex; flex-wrap: wrap; gap: 14px; }
 
     @media (max-width: 860px) {
+      .latest-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .metric { border-bottom: 1px solid var(--border); }
       .metric:nth-child(odd) { padding-left: 0; }
@@ -185,6 +197,7 @@
       .container { width: min(100% - 24px, 1260px); }
       .masthead-inner { padding-top: 22px; }
       h1 { font-size: 25px; }
+      .latest-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .metric { padding: 14px 10px; }
       .metric-value { font-size: 21px; }
       .family-bar { min-height: 34px; }
@@ -203,20 +216,35 @@
   <div id="workflow-analysis">
     <header class="masthead">
       <div class="container masthead-inner">
-        <p class="eyebrow">基线 2026-08-05 · 状态更新 2026-08-06</p>
+        <p class="eyebrow">基线 2026-08-05 · 状态更新 2026-08-07</p>
         <h1>Aevatar 工作流验收分析</h1>
-        <p class="subtitle">25 个公开 workflow、25 个本地 Ornn skill、3 个 Lark channel E2E case，以及 21 个可靠性风险 case。页面严格区分 direct workflow、public catalog、Assistant、Lark transport 与准入结果。</p>
+        <p class="subtitle">29 个公开 workflow、29 个本地 Ornn skill、3 个 Lark channel E2E case，以及 21 个可靠性风险 case。页面严格区分 direct workflow、public catalog、Assistant、Lark transport 与准入结果。</p>
         <div class="path-line"><strong>实际源目录：<code>~/workflows</code></strong><span><code>~/Code/workflows</code> 当前不存在</span><span>两个 n8n JSON 已排除</span></div>
       </div>
     </header>
 
+    <section class="latest-band" aria-label="2026-08-07 最新全量观测">
+      <div class="container latest-inner">
+        <div class="latest-heading"><h2>最新全量 fresh 快照</h2><p>2026-08-07 13:15-13:49 SGT · 只观测，不修复</p></div>
+        <div class="latest-grid">
+          <div class="latest-item"><strong>29 / 29</strong><span>production preview</span></div>
+          <div class="latest-item"><strong>25 / 29</strong><span>direct passed；1 blocked、3 skipped</span></div>
+          <div class="latest-item"><strong>28 / 29</strong><span>Ornn 版本一致</span></div>
+          <div class="latest-item"><strong>4 / 5</strong><span>Assistant validated</span></div>
+          <div class="latest-item"><strong>2 / 3</strong><span>Lark channel passed</span></div>
+          <div class="latest-item"><strong>Passed</strong><span>Case 19 Lark 文件 canary</span></div>
+        </div>
+        <p class="latest-links"><a href="./2026-08-07-current-status-report.md">查看当前状态报告</a> · <a href="../validation/full-revalidation-2026-08-07.json">查看脱敏机器快照</a>。窗口后 14:34，Case 11 在当前 Ready <code>eead35c0</code> 的 fresh run <code>106ecf7b750a</code> 仍 committed failed / <code>codex_execution_capacity_unavailable</code>。<a href="https://github.com/aevatarAI/aevatar/issues/3290">#3290</a> 又记录源 P2 14/14 成功后同定义转为 runtime 502 与连续 5 次准入拒绝，P1 为 0/27 / <code>Forwarding failed</code>；两条迁移主链当前均为 <code>regression-blocked</code>。下方指标保留各自时间点，不把历史成功解释为当前连续可用。</p>
+      </div>
+    </section>
+
     <section class="metrics-band" aria-label="验证摘要">
       <div class="container metrics">
-        <div class="metric"><span class="metric-value">25 / 25</span><span class="metric-label">本地静态校验</span></div>
-        <div class="metric"><span class="metric-value">25 / 25</span><span class="metric-label">production preview</span></div>
-        <div class="metric"><span class="metric-value">25 / 25</span><span class="metric-label">直接 runtime 严格通过</span></div>
-        <div class="metric"><span class="metric-value">25 / 25</span><span class="metric-label">Ornn skill public 发布并回读</span></div>
-        <div class="metric"><span class="metric-value">5 / 5</span><span class="metric-label">/api/chat 严格 workflow validated</span></div>
+        <div class="metric"><span class="metric-value">29 / 29</span><span class="metric-label">本地静态校验</span></div>
+        <div class="metric"><span class="metric-value">29 / 29</span><span class="metric-label">production preview</span></div>
+        <div class="metric"><span class="metric-value">28 / 29</span><span class="metric-label">直接 runtime 严格通过</span></div>
+        <div class="metric"><span class="metric-value">29 / 29</span><span class="metric-label">Ornn skill public 发布并回读</span></div>
+        <div class="metric"><span class="metric-value">2 / 2</span><span class="metric-label">当前 /api/chat 代表对照</span></div>
         <div class="metric"><span class="metric-value">3 / 3</span><span class="metric-label">Lark channel E2E 严格通过</span></div>
       </div>
     </section>
@@ -254,9 +282,9 @@
           </div>
         </div>
 
-        <div class="section" data-source-financial-acceptance="validated">
-          <div class="section-heading"><h2>财务源工作流 post-fix 验收</h2><p class="caption">当前生产的 scope 特定认证修复证据，不并入公开案例统计</p></div>
-          <div class="note"><p><strong>结论：</strong>财务 scope 的 Base 读取成功而后续 <code>code_execute</code> 401，根因是 sandbox UserService 未转发 caller bearer。配置对齐后，单步 probe、P2 no-send 同结构链和 exact P1 v5 <code>submit=false</code> 均取得 committed 成功终态；既有 PDF probe 继续有效。发送、审批、排程、P1 v6 与 Lark channel canary 未运行，不能外推。</p></div>
+        <div class="section" data-source-financial-acceptance="historical-validated-current-blocked">
+          <div class="section-heading"><h2>财务源工作流 post-fix 验收</h2><p class="caption">历史成功与当前连续性回归分层记录，不并入公开案例统计</p></div>
+          <div class="note"><p><strong>结论：</strong>财务 scope 的历史 Base 读取成功而后续 <code>code_execute</code> 401，根因曾定位为 sandbox UserService 未转发 caller bearer。配置对齐后，单步 probe、P2 no-send 同结构链和 exact P1 v5 <code>submit=false</code> 均取得过 committed 成功终态；既有 PDF probe 继续有效。但 <a href="https://github.com/aevatarAI/aevatar/issues/3290">#3290</a> 已观察到同一 P2 定义从 14/14 成功转为 runtime 502 和 admission credential failure，P1 又在第 1/27 步 forwarding 失败。因此历史成功保留，当前 availability 与 silo continuity 均未证明。</p></div>
           <div class="table-wrap">
             <table aria-label="财务源工作流生产验收">
               <thead><tr><th>源定义 / 探针</th><th>Preview 与输入边界</th><th>真实终态</th><th>副作用边界</th><th>结果</th></tr></thead>
@@ -265,6 +293,7 @@
                 <tr data-finance-result="passed"><td>P2 shared-base no-send 同结构运行定义</td><td>刷新 live selector；非当前文件逐字副本；6 个唯一 GET；全部 read-only；0 approval</td><td>单次 invoke；8/8 completed；<code>lastSuccess=true</code>；首个 Base 与 final output 非空</td><td>未发送消息；未创建 schedule；不外推到当前文件或旧 Base</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-finance-result="passed"><td>P1 v5 sanitized image</td><td>exact source；5 个唯一 call site；sanitized PNG；<code>submit=false</code></td><td>只 invoke 一次；14/14 实际步骤 completed；final output 非空</td><td>完整提交分支未执行；无 approval；无 Lark 写入</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-finance-result="passed"><td>PDF attachment probe</td><td>无副作用 PDF 输入</td><td>2/2 completed；<code>lastSuccess=true</code>；extract 与 final output 非空</td><td>只验证附件接收与抽取</td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-finance-result="blocked"><td>#3290 时间连续性对照</td><td>同一 P2 member/binding/definition 与 byte-identical preview；另一个已绑定 P1</td><td>P2 14:09 为 14/14 且复算一致，14:18 为 <code>NYXID_PROXY_HTTP_502</code>；随后同一 preview 连续 5 次 <code>NYXID_ADMISSION_SOURCE_CREDENTIAL_REQUIRED</code>；P1 0/27 / <code>Forwarding failed</code></td><td>issue/同事证据，不冒充本仓库独立复验；历史成功不证明当前连续性</td><td><span class="status status-blocked">regression-blocked</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -277,12 +306,12 @@
               <thead><tr><th>源版本族</th><th class="number">定义</th><th>新案例</th><th>已覆盖语义</th><th>剩余边界</th><th>判断</th></tr></thead>
               <tbody>
                 <tr data-source-family="base"><td class="family-name">Base 探针</td><td class="number">3</td><td>04、05、15-17</td><td>记录 GET、多源读取、受保护 POST、provider receipt、bind-time 批准契约</td><td>16、17 均通过；批准在 bind 时兑现</td><td><span class="status status-passed">覆盖</span></td></tr>
-                <tr data-source-family="primitives"><td class="family-name">原语与执行探针</td><td class="number">5</td><td>01、03、11、12</td><td>转换、分支、foreach、managed codex、固定 code</td><td>11 在 <code>f7f543c5</code> 上恢复；12 的连续成功证据保留</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-source-family="primitives"><td class="family-name">原语与执行探针</td><td class="number">5</td><td>01、03、11、12</td><td>转换、分支、foreach、managed codex、固定 code</td><td>11 在当前 <code>eead35c0</code> 为 managed execute capacity blocker；12 direct 已在 <code>6558db8d</code> 恢复，并在祖先 <code>49cb76e4</code> 完成 fresh Lark committed canary；历史成功均单独保留</td><td><span class="status status-blocked">部分当前阻塞</span></td></tr>
                 <tr data-source-family="onboarding"><td class="family-name">Lark Onboarding</td><td class="number">1</td><td>06</td><td>Base 申请、审批创建和实例回读</td><td>无新增缺口</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-source-family="invoice"><td class="family-name">发票审批</td><td class="number">7</td><td>02、03、09、13、14 + 源 P1 v5</td><td>媒体提取、财务规则、历史、去重、审批、contact</td><td>v5 submit=false 主链通过；审批提交、v6、旧 v2 未运行</td><td><span class="status status-partial">主链覆盖 / 写入未运行</span></td></tr>
-                <tr data-source-family="budget"><td class="family-name">预算监控</td><td class="number">5</td><td>04、08、15 + 源 P2 no-send</td><td>六路 Base、差异公式、阈值、周/月摘要、消息、Durable schedule</td><td>no-send 8/8；案例 15 schedule 在 <code>b010ba61</code> 上已创建、回读、真实 cron 触发并删除；源 send/schedule 未运行</td><td><span class="status status-partial">公开主链覆盖 / 源分支未运行</span></td></tr>
+                <tr data-source-family="invoice"><td class="family-name">发票审批</td><td class="number">7</td><td>02、03、09、13、14、29 + 源 P1 v5</td><td>媒体提取、财务规则、历史、去重、审批、contact</td><td>v5 submit=false 与 Case 29 no-submit 有历史成功；#3290 中 P1 当前第 1/27 步 <code>Forwarding failed</code>；审批提交、v6 未运行</td><td><span class="status status-blocked">历史覆盖 / 当前连续性阻塞</span></td></tr>
+                <tr data-source-family="budget"><td class="family-name">预算监控</td><td class="number">5</td><td>04、08、15 + 源 P2 no-send</td><td>六路 Base、差异公式、阈值、周/月摘要、消息、Durable schedule</td><td>no-send 与案例 15 schedule 有历史/fresh 独立证据；#3290 中 exact P2 14/14 后同定义转为 runtime 502 与准入拒绝</td><td><span class="status status-blocked">历史覆盖 / 当前连续性阻塞</span></td></tr>
                 <tr data-source-family="legacy"><td class="family-name">旧验收案例副本</td><td class="number">10</td><td>01-10</td><td>修复并取得 committed evidence 的权威版本</td><td>源副本保留旧契约</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-source-family="ornn"><td class="family-name">Ornn 资产副本</td><td class="number">10</td><td>01-25</td><td>25/25 本地 asset、服务端格式、名称、版本与 public 状态一致</td><td>Lark channel mount/get/list receipt 仍需独立实测</td><td><span class="status status-covered">catalog 覆盖</span></td></tr>
+                <tr data-source-family="ornn"><td class="family-name">Ornn 资产副本</td><td class="number">10</td><td>01-29</td><td>29/29 本地 asset、服务端格式、名称、版本与 public 状态一致</td><td>channel transport 由独立 Cases 20-22 验证</td><td><span class="status status-covered">catalog 覆盖</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -308,15 +337,15 @@
                 <tr data-family="Base" data-status="passed"><td>Base</td><td>POST search bind-time 批准契约</td><td>preview <code>approvalEnforcement=bind_time_confirmation</code>；committed completed</td><td>17 / #3184</td><td><span class="status status-passed">覆盖</span></td></tr>
                 <tr data-family="Lark" data-status="covered"><td>Lark</td><td>审批列表、详情、创建、回读和幂等</td><td>创建、回读与复跑 committed</td><td>03、06、09、10、13</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="Lark" data-status="covered"><td>Lark</td><td>文本私信与 interactive card</td><td>typed receipt 成功</td><td>07、08、10</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="执行与调度" data-status="covered"><td>执行与调度</td><td>固定 managed codex_exec</td><td><code>f7f543c5</code>；30/30；<code>CODEX_EXEC_READY</code>；五项 gate</td><td>11</td><td><span class="status status-covered">已恢复</span></td></tr>
-                <tr data-family="执行与调度" data-status="covered"><td>执行与调度</td><td>通用 code_execute</td><td>两次 committed；<code>total_cents=16623</code></td><td>12</td><td><span class="status status-covered">已恢复</span></td></tr>
-                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>发票 OCR 与财务归一化规则</td><td>PDF 提取、SGD、金额和去重命中</td><td>13</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="执行与调度" data-status="blocked"><td>执行与调度</td><td>固定 managed codex_exec</td><td>当前 <code>eead35c0</code> fresh 4/4 committed failed；capacity；本次无 allowlisted upstream code，最近 HTTP 502 诊断与历史 30/30 均保留</td><td>11</td><td><span class="status status-blocked">已验证阻塞</span></td></tr>
+                <tr data-family="执行与调度" data-status="covered"><td>执行与调度</td><td>通用 code_execute</td><td>direct 与 <code>/api/chat</code> 均 committed completed；祖先 <code>49cb76e4</code> fresh Lark run 也 4/4 completed；<code>total_cents=16623</code>、<code>side_effects=false</code></td><td>12</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="基础原语" data-status="covered"><td>基础原语</td><td>发票 OCR 与财务归一化规则</td><td>PDF 提取、SGD、金额、历史去重和 no-submit 路由命中</td><td>13、29</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="Lark" data-status="passed"><td>Lark</td><td>contact batch_get_id</td><td>业务结果正确；批准在 bind 时兑现</td><td>14</td><td><span class="status status-passed">覆盖</span></td></tr>
                 <tr data-family="Base" data-status="covered"><td>Base</td><td>预算周报/月报与差异公式</td><td>六路读取与六项数值断言</td><td>15</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="执行与调度" data-status="covered"><td>执行与调度</td><td>durable weekly/monthly schedule</td><td><code>b010ba61</code>：200 confirmation、202 typed receipt、binding/provisioning succeeded、schedule 回读；真实 cron fire=6/failure=0，workflow 11/11 completed；DELETE 后 list 归零且 run count 保持 6</td><td>15</td><td><span class="status status-covered">生产端到端通过</span></td></tr>
-                <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>skill 校验、发布、public 权限与回读</td><td>25/25 服务端格式、名称、版本、public 精确一致</td><td>01-25</td><td><span class="status status-covered">覆盖</span></td></tr>
-                <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>/api/chat 自然语言选择和 workflow 终态</td><td>fresh 5/5 validated；committed artifact 优先于模型文案</td><td>01、12-15</td><td><span class="status status-covered">核心链覆盖</span></td></tr>
-                <tr data-family="Ornn 与聊天" data-status="blocked"><td>Ornn 与聊天</td><td>Lark Bot webhook/relay/回传</td><td>transport 与 typed approval resume 已验证；fresh /init 仍受 resource narrowing 阻塞</td><td>14</td><td><span class="status status-blocked">已验证阻塞</span></td></tr>
+                <tr data-family="执行与调度" data-status="covered" data-current-schedule-validation="passed"><td>执行与调度</td><td>durable weekly/monthly schedule</td><td><code>4c0596c7</code> fresh：6 个 read-only GET、typed pending receipt、binding/provisioning succeeded、owner-scoped detail；1 次自然 cron 的 workflow 11/11 completed（state 73）；DELETE 后 detail 消失、list 0、run count 1 → 1。历史 <code>b010ba61</code> 六次触发证据保留</td><td>15</td><td><span class="status status-covered">当前生产端到端通过</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>skill 校验、发布、public 权限与回读</td><td>29/29 服务端格式、名称、版本、public 精确一致</td><td>01-29</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>/api/chat 自然语言选择和 workflow 终态</td><td>当前代表 2/2 validated；Case 12 fresh 完成 Ornn/mount/start 与 committed artifact</td><td>01、12；历史 01、12-15</td><td><span class="status status-covered">覆盖</span></td></tr>
+                <tr data-family="Ornn 与聊天" data-status="covered"><td>Ornn 与聊天</td><td>Lark Bot webhook/relay/回传</td><td>Cases 20/21/22 已覆盖 transport、mount 决策与 typed approval resume；早期 sender scope 仅为历史诊断</td><td>20-22</td><td><span class="status status-covered">覆盖</span></td></tr>
                 <tr data-family="Lark" data-status="covered"><td>Lark</td><td>Bot 入站文件与 workflow 启动</td><td>public skill 1.1；114 字节文件卡片；113 字节 committed extraction；唯一 fresh run 4/4</td><td>19</td><td><span class="status status-covered">覆盖</span></td></tr>
               </tbody>
             </table>
@@ -326,8 +355,8 @@
 
       <section class="view" id="view-runtime" role="tabpanel" aria-labelledby="tab-runtime" hidden>
         <div class="section">
-          <div class="section-heading"><h2>直接 workflow 历史基线（01-20）</h2><p class="caption">旧机器摘要保留 20/20 committed 基线，不冒充本轮重跑</p></div>
-          <div class="note"><p><strong>当前部署：</strong><code>19b5906bb</code> / <code>19b5906b</code>，pod <code>1/1</code> 健康且零重启；部分 fresh 批次运行于其祖先镜像 <code>ee031038</code>。<code>production_validate.rb</code> 与 <code>assistant_validate.rb</code> 共用 25/25 个 typed artifact contract；共享目录的无效物化结果不覆盖 clean isolated materialization 的最新运行。案例 19 已补 fresh Lark committed 4/4 证据。</p></div>
+          <div class="section-heading"><h2>直接 workflow 当前状态（01-20）</h2><p class="caption">19 passed · 1 blocked；历史成功按案例保留，不覆盖当前失败</p></div>
+          <div class="note"><p><strong>当前部署：</strong><code>eead35c0</code>，pod <code>1/1</code> 健康且零重启，提交为 <code>eead35c089758b26f7b0fd4c277dbbe71815b0cc</code>；历史 fresh 批次所在祖先镜像按证据单独标注。<code>production_validate.rb</code> 与 <code>assistant_validate.rb</code> 共用 29/29 个 typed artifact contract；共享目录的无效物化结果不覆盖 clean isolated materialization 的最新运行。案例 19 已补 fresh Lark committed 4/4 证据，26-28 在祖先 Ready <code>4c0596c7</code> 上严格通过，29 在祖先 Ready <code>6a656d75</code> 上 11/11 严格通过；Case 11 已在当前部署复验且仍为 capacity blocker，Case 12 在祖先 <code>49cb76e4</code> 完成 fresh Lark 4/4 committed canary。</p></div>
           <div class="controls">
             <div class="field"><label for="runtime-search">案例或证据</label><input id="runtime-search" type="search" placeholder="例如：审批、Base、NYXID"></div>
             <div class="field"><label for="runtime-filter">运行结果</label><select id="runtime-filter"><option value="all">全部结果</option><option value="passed">通过</option><option value="blocked">平台阻塞</option><option value="regression">契约回归</option><option value="unverified">待验证</option></select></div>
@@ -347,8 +376,8 @@
                 <tr data-result="passed" data-effect="write"><td class="case-id">08</td><td><code>saas_license_optimization_digest</code></td><td class="number">17</td><td class="number">112</td><td class="assertion">submit；六源汇总卡片已发送、<code>downstream_code=0</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="write"><td class="case-id">09</td><td><code>contractor_access_package_approval</code></td><td class="number">23</td><td class="number">136</td><td class="assertion">submit；<code>identity_resolved</code>/<code>history_checked</code>=true，幂等跳过</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="write"><td class="case-id">10</td><td><code>monthly_access_certification</code></td><td class="number">17</td><td class="number">115</td><td class="assertion">submit；审批 <code>PENDING</code> 且 <code>message_sent=true</code></td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="none"><td class="case-id">11</td><td><code>complex_codex_exec_validation</code></td><td class="number">30</td><td class="number">179</td><td class="assertion"><code>CODEX_EXEC_READY</code>；五项 gate；parallel=5</td><td><span class="status status-passed">通过</span></td></tr>
-                <tr data-result="passed" data-effect="none"><td class="case-id">12</td><td><code>safe_code_execute_validation</code></td><td class="number">4</td><td class="number">31</td><td class="assertion"><code>structured_receipt=true</code>、<code>total_cents=16623</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-result="blocked" data-effect="none"><td class="case-id">11</td><td><code>complex_codex_exec_validation</code></td><td class="number">4</td><td class="number">31</td><td class="assertion"><code>eead35c0</code> fresh run <code>106ecf7b750a</code> committed failed；<code>codex_execution_capacity_unavailable</code>；无 artifact；本次无 allowlisted upstream code，最近 HTTP 502 transport 诊断保留</td><td><span class="status status-blocked">已验证阻塞</span></td></tr>
+                <tr data-result="passed" data-effect="none"><td class="case-id">12</td><td><code>safe_code_execute_validation</code></td><td class="number">4</td><td class="number">31</td><td class="assertion">direct <code>6659aabee079</code> state 31 与 current Lark <code>ebe0e10241f0</code> state 33 均 committed completed；<code>total_cents=16623</code>；<code>side_effects=false</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">13</td><td><code>invoice_ocr_policy_review</code></td><td class="number">12</td><td class="number">82</td><td class="assertion">PDF、SGD、金额、供应商与去重命中</td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">14</td><td><code>lark_contact_batch_resolution</code></td><td class="number">3</td><td class="number">25</td><td class="assertion"><code>resolved_count=1</code>；preview <code>approvalEnforcement=bind_time_confirmation</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-result="passed" data-effect="none"><td class="case-id">15</td><td><code>weekly_budget_variance_digest</code></td><td class="number">11</td><td class="number">73</td><td class="assertion">六路 Base、周/月差异、over=1、watch=1</td><td><span class="status status-passed">通过</span></td></tr>
@@ -363,7 +392,7 @@
         </div>
 
         <div class="section">
-          <div class="section-heading"><h2>当前部署可靠性探针（21-25）</h2><p class="caption"><code>6df43b83</code> · 5/5 committed completed · strict artifact 全部命中</p></div>
+          <div class="section-heading"><h2>可靠性与替代 workflow（21-29）</h2><p class="caption">跨部署 · 9/9 committed completed · strict artifact 全部命中</p></div>
           <div class="note"><p><strong>副作用披露：</strong>21-23 从 clean isolated <code>config.local.yaml</code> materialization 运行，均 completed 且无副作用；共享输出目录被示例配置覆盖时的 <code>NYXID_PROXY_HTTP_400</code> 只保留为无效物化负面对照。Cases 05/24/25 fresh 写探针共创建 4 条固定合成记录，随后连同 2 条同契约历史残留精确清理；回读匹配数为 0，未匹配记录未触碰。</p></div>
           <div class="table-wrap">
             <table aria-label="当前部署可靠性 workflow 证据">
@@ -374,6 +403,10 @@
                 <tr data-risk-workflow-case="23" data-risk-workflow-status="passed"><td class="case-id">23</td><td><code>readonly_attested_post_probe</code></td><td>POST；attested read-only；0 approval</td><td>4/4 completed；state 31</td><td><code>attested_readonly_executed=true</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-risk-workflow-case="24" data-risk-workflow-status="passed"><td class="case-id">24</td><td><code>runtime_tool_approval_write_probe</code></td><td>write；bind + runtime approval</td><td>5/5 completed；resume 1</td><td><code>record_created=true</code></td><td><span class="status status-passed">通过</span></td></tr>
                 <tr data-risk-workflow-case="25" data-risk-workflow-status="passed"><td class="case-id">25</td><td><code>sequential_tool_approval_write_probe</code></td><td>2 writes；bind + runtime approval</td><td>8/8 completed；resume 2</td><td><code>sequential_mutations=2</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-risk-workflow-case="26" data-risk-workflow-status="passed"><td class="case-id">26</td><td><code>vendor_policy_inline_delegation</code></td><td>1 inline definition；0 external calls</td><td>5/5 completed；state 44</td><td>child resolved/completed；<code>07f1fc930866</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-risk-workflow-case="27" data-risk-workflow-status="passed"><td class="case-id">27</td><td><code>deterministic_parallel_evidence_review</code></td><td>3 deterministic workers；0 external calls</td><td>14/14 completed；state 86</td><td>3 receipts + merge order；<code>5b0e99a928f5</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-risk-workflow-case="28" data-risk-workflow-status="passed"><td class="case-id">28</td><td><code>deterministic_race_policy_review</code></td><td>3 deterministic candidates；0 external calls</td><td>6/6 completed；state 38</td><td>first success + later ignored；<code>ebe447a8479b</code></td><td><span class="status status-passed">通过</span></td></tr>
+                <tr data-risk-workflow-case="29" data-risk-workflow-status="passed"><td class="case-id">29</td><td><code>invoice_approval_routing_preview</code></td><td>审批历史 GET + attested read-only contact POST；0 approval</td><td>11/11 completed；state 77</td><td>no-submit artifact；<code>a729912ee5d9</code></td><td><span class="status status-passed">通过</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -383,7 +416,17 @@
       <section class="view" id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
         <div class="section">
           <div class="section-heading"><h2>自然语言调用结果</h2><p class="caption">入口：<code>nyxid proxy request aevatar /api/chat</code></p></div>
-          <div class="note"><p><strong>核心结论：</strong>Ready 镜像 <code>ee031038</code> 上五个 Assistant 回合都完成并到达 workflow committed <code>completed</code>，严格状态为 5/5 validated。12/14 的最终模型文案陈旧，不覆盖 committed artifact。</p></div>
+          <div class="note"><p><strong>最近结论：</strong>代表对照为 2/2 validated。Case 01 run <code>535e9029486f</code> 保留 13/13 committed completed；Ready <code>6558db8d</code> 上 Case 12 run <code>6fa89cd62b15</code> fresh 完成 Ornn search、精确 mount、workflow start 与 committed artifact，state 31、4/4。Ornn、聊天与普通 sandbox execution authority 当前均可用。</p></div>
+          <div class="table-wrap">
+            <table aria-label="当前自然语言调用对照">
+              <thead><tr><th>案例</th><th>Ornn / mount / start</th><th>Committed 终态</th><th>严格判定</th></tr></thead>
+              <tbody>
+                <tr data-current-chat-case="01" data-current-chat-status="validated"><td class="case-id">01</td><td>全部成功</td><td>13/13 completed，state 80</td><td><span class="status status-passed">validated</span></td></tr>
+                <tr data-current-chat-case="12" data-current-chat-status="validated"><td class="case-id">12</td><td>全部成功</td><td>4/4 completed，state 31</td><td><span class="status status-passed">validated</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="note"><p><strong>历史基线：</strong>Ready <code>ee031038</code> 上五个 Assistant 回合为 5/5 validated；当前 Case 12 已有更新的 fresh 成功证据。12/14 的历史最终模型文案陈旧，判定始终以 committed artifact 为准。</p></div>
           <div class="table-wrap">
             <table aria-label="自然语言调用证据">
               <thead><tr><th>案例</th><th>Chat</th><th>Ornn / skill</th><th>Workflow</th><th>严格判定</th><th>证据</th></tr></thead>
@@ -415,6 +458,7 @@
 
         <div class="section">
           <div class="section-heading"><h2>/api/chat 与 Lark Bot 的边界</h2><p class="caption">共享核心能力，不共享完整 transport</p></div>
+          <div class="note" data-current-lark-case12="validated"><p><strong>最近 Lark Case 12：</strong>祖先 Ready <code>49cb76e4</code> 上，catalog 基线 10，只批准 1 次非 destructive <code>use_skill</code>，精确新增 1 个 <code>safe_code_execute_validation</code> run。run <code>ebe0e10241f0</code> committed <code>completed</code>、state 33、4/4；首个工具输出存在，artifact 精确命中 <code>structured_receipt=true</code>、<code>total_cents=16623</code>、<code>side_effects=false</code>。Bot reply relay 可见，但成功判定只采用 committed detail。</p></div>
           <div class="surface-grid">
             <article class="surface"><h3>/api/chat 已覆盖</h3><ul><li>NyxID 用户身份和 scope</li><li>Assistant / AgentRun 与工具目录</li><li>Ornn 搜索和 skill 加载</li><li>workflow 启动与 artifact 查询工具</li><li>SSE 直接返回调用方</li></ul></article>
             <article class="surface"><h3>Lark Bot 已覆盖</h3><ul><li>Lark webhook 与事件转换</li><li>NyxID channel relay 和 active Bot</li><li>conversation 到 agent 的映射</li><li>发送者身份解析</li><li>文件卡片、附件解析与 reply relay</li></ul></article>
@@ -426,32 +470,32 @@
 
       <section class="view" id="view-blockers" role="tabpanel" aria-labelledby="tab-blockers" hidden>
         <div class="section">
-          <div class="section-heading"><h2>可靠性风险验收（23-43）</h2><p class="caption"><code>ee031038</code> / <code>19b5906b</code> · passed 12 · blocked 2 · failed 2 · pending 0 · not configured 5</p></div>
-          <div class="note"><p><strong>严格结论：</strong>21 个风险 case 中 12 个通过。Risk 25 已由同 sender 的 fresh Lark Case 22 精确 grant、批准恢复和 committed contact artifact 关闭；Risk 26 已由原 <code>/api/chat</code> 入口 fresh Case 12 的 4/4 结算 artifact 关闭。无法安全执行不再等于没有 case，也不会被伪造成 direct workflow 通过。</p></div>
+          <div class="section-heading"><h2>可靠性风险验收（23-43）</h2><p class="caption">passed 16 · blocked 0 · failed 0 · pending 0 · not configured 4 · skipped-expired 1</p></div>
+          <div class="note"><p><strong>严格结论：</strong>21 个风险 case 中 16 个通过、0 个当前阻塞、1 个经 replacement 严格闭环后退休。Risk 26 已由 Case 12 的 <code>/api/chat</code>、direct run 与 UserService <code>/execute</code> 三层严格成功关闭；Risk 23、37、38、39 已由 fresh committed evidence 关闭；Risk 42 由 Case 29 当前 no-submit 契约替代。其余 4 项仍是安全目标或外部配置缺口。</p></div>
           <div class="table-wrap">
             <table aria-label="可靠性风险案例证据">
               <thead><tr><th>Case</th><th>验证点</th><th>状态</th><th>严格证据</th></tr></thead>
               <tbody>
-                <tr data-risk-case="23" data-risk-status="failed"><td class="case-id">23</td><td>Lark runtime tool approval 拒绝</td><td><span class="status status-blocked">failed</span></td><td>committed failed；下游未执行，但缺 typed <code>approval_denied</code>，Bot 泄露 Run ID，卡片按钮仍有效</td></tr>
+                <tr data-risk-case="23" data-risk-status="passed"><td class="case-id">23</td><td>Lark runtime tool approval 拒绝</td><td><span class="status status-passed">passed</span></td><td>Ready <code>4c0596c7</code>；唯一 run 从 awaiting 进入 committed failed；decision=1；稳定 <code>approval_denied</code>；下游未执行；无 raw ID</td></tr>
                 <tr data-risk-case="24" data-risk-status="passed"><td class="case-id">24</td><td>Lark 附件 catalog 启动</td><td><span class="status status-passed">passed</span></td><td>skill 1.1；run 基线 6 -> 7；<code>03c3f4ded68e</code> state 32、4/4；114 字节卡片归一化为 113 字节 extraction</td></tr>
                 <tr data-risk-case="25" data-risk-status="passed"><td class="case-id">25</td><td>Lark sender service scope</td><td><span class="status status-passed">passed</span></td><td>同 sender Case 22：精确 skill/workflow、typed approval resume、3/3 committed contact artifact；精确 grant 已由真实调用证明</td></tr>
-                <tr data-risk-case="26" data-risk-status="passed"><td class="case-id">26</td><td>Assistant safe code_execute</td><td><span class="status status-passed">passed</span></td><td>原 <code>/api/chat</code> 入口 fresh Case 12：search-first、4/4 committed、<code>total_cents=16623</code>、无副作用</td></tr>
-                <tr data-risk-case="27" data-risk-status="passed"><td class="case-id">27</td><td>Ornn public catalog 完整性</td><td><span class="status status-passed">passed</span></td><td>25/25 format、精确名称、版本与 public readback；verify-only 无写入</td></tr>
-                <tr data-risk-case="28" data-risk-status="passed"><td class="case-id">28</td><td>当前镜像 P1 v5 submit=false</td><td><span class="status status-passed">passed</span></td><td>exact source + sanitized PNG；单次 invoke；14/14 completed；写入/审批分支未执行</td></tr>
+                <tr data-risk-case="26" data-risk-status="passed"><td class="case-id">26</td><td>Assistant safe code_execute</td><td><span class="status status-passed">passed</span></td><td>Ready <code>6558db8d</code>：<code>/api/chat</code>、direct Case 12 与同一 UserService <code>/execute</code> 三层严格通过；Ornn/mount/start/artifact 完整</td></tr>
+                <tr data-risk-case="27" data-risk-status="passed"><td class="case-id">27</td><td>Ornn public catalog 完整性</td><td><span class="status status-passed">passed</span></td><td>29/29 format、精确名称、版本与 public readback；verify-only 无写入</td></tr>
+                <tr data-risk-case="28" data-risk-status="passed"><td class="case-id">28</td><td>当前镜像 P1 v5 submit=false</td><td><span class="status status-passed">passed</span></td><td>历史 exact source + sanitized PNG；单次 invoke；14/14 completed；不覆盖 rebind、deployment 或 silo continuity</td></tr>
                 <tr data-risk-case="29" data-risk-status="not-configured"><td class="case-id">29</td><td>P2 四表 schema-preserving no-send</td><td><span class="status status-pending">not configured</span></td><td><code>SYNTHETIC_FINANCE_TABLES_NOT_CONFIGURED</code>；不接受 shared Base 替代</td></tr>
                 <tr data-risk-case="30" data-risk-status="not-configured"><td class="case-id">30</td><td>源 no-send durable schedule cleanup</td><td><span class="status status-pending">not configured</span></td><td><code>SOURCE_SCHEDULE_TARGET_NOT_CONFIGURED</code></td></tr>
-                <tr data-risk-case="31" data-risk-status="passed"><td class="case-id">31</td><td>direct runtime artifact contract</td><td><span class="status status-passed">passed</span></td><td>25/25 strict contracts；Assistant 复用同一契约；terminal completed 不能单独判绿</td></tr>
-                <tr data-risk-case="32" data-risk-status="passed"><td class="case-id">32</td><td>报告与机器证据一致性</td><td><span class="status status-passed">passed</span></td><td>25 workflow、25 skill、25 contract；不持久化原始身份</td></tr>
+                <tr data-risk-case="31" data-risk-status="passed"><td class="case-id">31</td><td>direct runtime artifact contract</td><td><span class="status status-passed">passed</span></td><td>29/29 strict contracts；Assistant 复用同一契约；terminal completed 不能单独判绿</td></tr>
+                <tr data-risk-case="32" data-risk-status="passed"><td class="case-id">32</td><td>报告与机器证据一致性</td><td><span class="status status-passed">passed</span></td><td>29 workflow、29 skill、29 contract；不持久化原始身份</td></tr>
                 <tr data-risk-case="33" data-risk-status="passed"><td class="case-id">33</td><td>缺 capability 的 provision</td><td><span class="status status-passed">passed</span></td><td><code>NYXID_OPERATION_SELECTION_REQUIRED</code>；准入 fail-closed；0 external writes</td></tr>
                 <tr data-risk-case="34" data-risk-status="passed"><td class="case-id">34</td><td>path 槽位契约（路由由 template 固定）</td><td><span class="status status-passed">passed</span></td><td>三条子探针均已实测：正例槽位取值经准入放行、仅 provider 侧 <code>NYXID_PROXY_HTTP_400</code>；内联表达式 <code>path_template</code> 在 preview 被 <code>NYXID_OPERATION_SELECTION_REQUIRED</code> 拒绝；含分隔符与 dot segment 的槽位值在调用 provider 前被 <code>NYXID_OPERATION_PATH_PARAMETER_INVALID</code> 拦下；0 external writes</td></tr>
                 <tr data-risk-case="35" data-risk-status="passed"><td class="case-id">35</td><td>n8n export preview 拒绝</td><td><span class="status status-passed">passed</span></td><td>unsupported root field <code>nodes</code>；0 external writes</td></tr>
                 <tr data-risk-case="36" data-risk-status="passed"><td class="case-id">36</td><td>durable write fail-closed</td><td><span class="status status-passed">passed</span></td><td><code>DURABLE_AUTHORIZATION_UNAVAILABLE</code>；interactive 对照可准入；0 external writes</td></tr>
-                <tr data-risk-case="37" data-risk-status="failed"><td class="case-id">37</td><td><code>workflow_call</code> inline definition</td><td><span class="status status-blocked">failed</span></td><td>真实 run 30 秒 definition resolution 超时；child 未启动</td></tr>
-                <tr data-risk-case="38" data-risk-status="blocked"><td class="case-id">38</td><td><code>parallel_fanout</code> 确定性 runtime</td><td><span class="status status-blocked">blocked</span></td><td>worker step 硬编码 <code>llm_call</code>，无法排除模型随机性</td></tr>
-                <tr data-risk-case="39" data-risk-status="blocked"><td class="case-id">39</td><td><code>race</code> 确定性 runtime</td><td><span class="status status-blocked">blocked</span></td><td>分支硬编码 <code>llm_call</code>，无法稳定断言首成功和迟到完成</td></tr>
+                <tr data-risk-case="37" data-risk-status="passed"><td class="case-id">37</td><td><code>workflow_call</code> inline definition</td><td><span class="status status-passed">passed</span></td><td>Case 26 <code>07f1fc930866</code>；state 44、5/5；inline bound、child resolved/completed、artifact 命中</td></tr>
+                <tr data-risk-case="38" data-risk-status="passed"><td class="case-id">38</td><td><code>parallel_fanout</code> 确定性 runtime</td><td><span class="status status-passed">passed</span></td><td>Case 27 <code>5b0e99a928f5</code>；state 86、14/14；3 receipts 与 merge order 命中</td></tr>
+                <tr data-risk-case="39" data-risk-status="passed"><td class="case-id">39</td><td><code>race</code> 确定性 runtime</td><td><span class="status status-passed">passed</span></td><td>Case 28 <code>ebe447a8479b</code>；state 38、6/6；first success 与 later ignored 命中</td></tr>
                 <tr data-risk-case="40" data-risk-status="not-configured"><td class="case-id">40</td><td>源 P2 send</td><td><span class="status status-pending">not configured</span></td><td>缺一次性接收目标与显式发送授权；exact source/hash 已核对</td></tr>
                 <tr data-risk-case="41" data-risk-status="not-configured"><td class="case-id">41</td><td>源 P1 v6 submit</td><td><span class="status status-pending">not configured</span></td><td>缺安全合成审批目标与清理方案；exact source/hash 已核对</td></tr>
-                <tr data-risk-case="42" data-risk-status="not-configured"><td class="case-id">42</td><td>源 P1 v2 legacy</td><td><span class="status status-pending">not configured</span></td><td>旧 <code>code_execute</code> 集成语义与硬编码目标尚未隔离</td></tr>
+                <tr data-risk-case="42" data-risk-status="skipped-expired"><td class="case-id">42</td><td>源 P1 v2 legacy</td><td><span class="status status-partial">skipped-expired</span></td><td>保留源定义/SHA/旧要求；由 Case 29 原生 no-submit 链替代，<code>a729912ee5d9</code> 11/11 + Ornn public</td></tr>
                 <tr data-risk-case="43" data-risk-status="passed"><td class="case-id">43</td><td>materialized workflow 输出隔离</td><td><span class="status status-passed">passed</span></td><td>example/local 独立目录；清理 stale 输出；源/产物集合一致；isolated local 目录 21-23 preview 通过</td></tr>
               </tbody>
             </table>
@@ -460,25 +504,25 @@
 
         <div class="section">
           <div class="section-heading"><h2>当前阻塞与待复测项</h2><p class="caption">生产证据与 issue 状态分开陈述</p></div>
-          <div class="note"><p><strong>Managed codex_exec 已恢复：</strong>历史镜像 <code>0c4ff023</code> 上的两次 <code>codex_execution_admission_denied</code> 已定位为 managed Agent Key 经 <code>Authorization: Bearer</code> 进入 NyxID 后又被转发给 chrono-sandbox。提交 <code>f7f543c51</code> 改用 bounded <code>X-API-Key</code> 入口并保持 Authorization 缺失，已随 <code>f7f543c5</code> 部署。案例 11 随后经 NyxID 真实运行取得 committed <code>completed</code>（state 179，30/30）；输出精确为 <code>CODEX_EXEC_READY</code>，五项 typed gate、脱敏 diagnostic ID、parallel=5 与 side-effects=false 全部命中。两组聚焦测试共 19/19 通过。</p></div>
-          <div class="note"><p><strong>Durable schedule 历史闭环：</strong>提交 <code>748f98e7d</code> 与 <code>7a7781067</code> 在历史 <code>b010ba614</code> / <code>b010ba61</code> 部署中完成验证，且已包含在当前 <code>6df43b83</code> 的提交历史中；本轮未重跑该副作用链。历史 fresh NyxID 请求先完成六个只读 GET 的 interactive 11/11 committed <code>completed</code>，再取得 HTTP 200 <code>confirmation_required</code> 和 HTTP 202 typed <code>pending_binding</code> receipt；binding state 7、provisioning state 11 均 committed <code>succeeded</code>，schedule/operation ID 均非空。每分钟 schedule 回读为 enabled；六次真实 cron fire 均成功，抽查 workflow 11/11 committed <code>completed</code>（state 73）。DELETE typed accepted 后 list 归零，跨下一分钟 run count 保持 6。<code>f7f543c5</code> 上的 <code>NyxIdOperationAuthorityContractUnavailable</code> 仅保留为历史回归背景。</p></div>
+          <div class="note"><p><strong>Managed codex_exec 当前 capacity 阻塞：</strong>历史镜像 <code>0c4ff023</code> 上的两次 <code>codex_execution_admission_denied</code> 已由 <code>f7f543c51</code> 修复，并在 <code>f7f543c5</code> 取得 committed <code>completed</code>（state 179，30/30）、<code>CODEX_EXEC_READY</code> 和五项 gate，作为历史恢复证据保留。提交 <code>6558db8db</code> 允许 UserService 使用 forward=true，同时保持 inject=true、scope=<code>proxy:*</code>；普通 <code>/execute</code> 已恢复。当前 Ready <code>eead35c0</code> 包含两轮安全诊断修复，但 fresh run <code>106ecf7b750a</code> 仍以 <code>codex_execution_capacity_unavailable</code> committed failed（state 31，4/4），无 final artifact、approval 或副作用，且本次未观察到 allowlisted upstream code。祖先 Ready <code>6558db8d</code> 的 run <code>39a374f8815a</code> 与 <code>6a656d75</code> 的 runs <code>705a69901de5</code>、<code>4caa726585f6</code> 及 HTTP 502 / <code>managed_proxy_unavailable</code> 诊断保留；health、普通 execute 和祖先 Ready 的 fresh Lark Case 12 绿色都不能证明 managed execute capacity。</p></div>
+          <div class="note" data-current-schedule-proof="validated"><p><strong>Durable schedule 当前 fresh 闭环：</strong>Ready <code>4c0596c7</code> 上的 fresh NyxID 请求取得 1 workflow / 6 GET 的 read-only Durable confirmation 与 typed <code>accepted/pending_binding</code> receipt；binding state 7、provisioning state 11 / attempt 2 均 committed <code>succeeded</code>，schedule/operation ID 均非空。Owner-scoped detail 回读 enabled、<code>* * * * *</code>、<code>Asia/Singapore</code>；1 次自然 cron 的 run <code>b9859494e2a9</code> 为 workflow 11/11 committed <code>completed</code>（state 73），周度 2340/2400、月度 9360/9600、over/watch 1/1 与无副作用全部命中。DELETE typed accepted 后 detail 消失、owner list 归零，跨下一分钟 run count 保持 1。历史 <code>b010ba614</code> / <code>b010ba61</code> 六次真实 cron fire=6/failure=0 的工程修复证据继续保留；<code>f7f543c5</code> 上的 <code>NyxIdOperationAuthorityContractUnavailable</code> 仅作为回归背景。</p></div>
           <div class="gap-list">
             <div class="gap-row"><h3>步骤数据可在同一 template 内改选资源</h3><div><span class="status status-partial">待平台确认</span></div><p>Risk 34 的 fail-open 判定已撤回：<code>path_params</code> 槽位取值模板化是契约允许形态（#2984 方案 C、PR #2996、#3071），路由由静态 <code>path_template</code> 固定并进入 <code>request_contract_digest</code>。残留风险是槽位值不受绑定期约束——受上游数据影响的步骤输出可在同一 template 下改选目标资源（例如任意 Base <code>app_token</code>），边界仅剩 NyxID 的 exact UserService 凭证范围。是否需要绑定期 pin 或槽位值白名单，尚无对应 issue。</p></div>
-            <div class="gap-row"><h3>Lark Bot sender service grant</h3><div><span class="status status-blocked">P1 已验证阻塞</span></div><p>镜像 <code>8cf280e2</code> 的直接 run 与 <code>/api/chat</code> 均 committed 通过；前两次 Bot 重试在批准后以 <code>NYXID_PROXY_SERVICE_SCOPE_FORBIDDEN</code> failed。默认项补 <code>api-lark-bot</code> 后的 fresh <code>/init</code> 已创建 allow-all consent 与新 binding，但镜像 <code>e30fdd94</code> 的第三次 run <code>93ece1c36951</code> 仍以同一错误 failed。根因是 Aevatar authorize 的显式 core resource 不含 Lark，NyxID 在授权码阶段据此缩窄 binding；重复 <code>/init</code> 无效。channel-only 的 skill mount、workflow get/list 与 invalid-YAML receipt 缺陷仍保留。</p></div>
-            <div class="gap-row"><h3>财务源定义安全边界</h3><div><span class="status status-partial">未运行</span></div><p>P2 send、P1 v6、源 durable/weekly schedule 和 P1 v2 旧定义仍未运行。公开验收案例 15 的 schedule 成功、P2 no-send 与 P1 v5 <code>submit=false</code> 的成功都不能替代这些分支。</p></div>
+            <div class="gap-row"><h3>普通 code_execute authority</h3><div><span class="status status-covered">已恢复</span></div><p>当前唯一 personal <code>chrono-sandbox</code> UserService 为 forward=true、inject=true、scope=<code>proxy:*</code>。提交 <code>6558db8db</code> 允许该共享配置通过 managed readiness，而 managed transport 仍使用 <code>X-API-Key</code> 且不发送 <code>Authorization</code>。Case 12 direct、<code>/api/chat</code> 与 <code>--via-service /execute</code> 三层严格成功。</p></div>
+            <div class="gap-row"><h3>财务源定义安全与连续性边界</h3><div><span class="status status-blocked">当前回归阻塞</span></div><p>P2 send、P1 v6 与源 durable/weekly schedule 仍未运行；Risk 28、Risk 29、Risk 40 与 Risk 41 又都没有覆盖成功后的 rebind、member/部署变化或 silo relocation。#3290 已记录 P2 14/14 后同定义转为 runtime 502 与 admission credential failure，P1 0/27 forwarding failure。下一条 continuity case 必须验证 same exact source 切换前后两次 preview + run、双 credential 分离、P2 复算、P1 27 步进展和脱敏 deployment/silo transition。</p></div>
           </div>
         </div>
 
         <div class="section">
           <div class="section-heading"><h2>本轮新增与修复</h2><p class="caption">定义、工具、证据与报告同步更新</p></div>
           <div class="repair-grid">
-            <div class="repair-item"><h3>Managed codex_exec 恢复</h3><p>提交 <code>f7f543c51</code> 将 managed Agent Key 改为 NyxID bounded <code>X-API-Key</code> 入口认证并保持 Authorization 缺失；19/19 聚焦测试通过，案例 11 在部署后 committed 30/30 严格通过。</p></div>
-            <div class="repair-item"><h3>安全 code_execute 恢复</h3><p>固定无副作用结算探针在 <code>0c4ff023</code> 上连续两次通过，精确命中结构化 receipt 与 <code>total_cents=16623</code>。</p></div>
+            <div class="repair-item"><h3>Managed codex_exec 认证修正与容量边界</h3><p><code>f7f543c51</code> 的历史 30/30 恢复证据保留；<code>6558db8db</code> 已兼容共享 UserService 的 bearer forwarding 与 managed delegation。当前 <code>eead35c0</code> 的 fresh run 仍被 managed execute capacity 阻塞，本次无 allowlisted upstream code，最近 HTTP 502 transport 诊断保留，当前不标绿。</p></div>
+            <div class="repair-item"><h3>安全 code_execute 当前边界</h3><p><code>6558db8d</code> 上 direct、<code>/api/chat</code> 与 UserService 最小探针均严格成功；祖先 <code>49cb76e4</code> 又取得 fresh Lark 4/4 committed artifact，普通执行当前保持绿色。</p></div>
             <div class="repair-item"><h3>合成发票媒体</h3><p>新增 PDF/PNG fixture、OCR 输入和发票财务规则。</p></div>
             <div class="repair-item"><h3>Contact 精确调用</h3><p>新增 batch_get_id 契约与联系人标识脱敏输出。</p></div>
             <div class="repair-item"><h3>预算周报/月报</h3><p>新增六路 Base、差异公式和 weekly/monthly schedule 示例。</p></div>
-            <div class="repair-item"><h3>Durable schedule provisioning</h3><p>Actor-owned intent、revision 等待、durable timeout、token 重签、member read model 和异步 receipt 已部署；<code>b010ba614</code> 上已完成 schedule 创建、读取、六次真实 cron、workflow 终态和 DELETE 清理验证。该提交还通过 Release publish、真实 linux/amd64 镜像构建、架构/稳定性门禁和 solution tests。写入型 Durable 仍需要正式 operation authority provider。</p></div>
-            <div class="repair-item"><h3>25 个 Ornn skills</h3><p>missing-only 只创建并公开原缺失 6 个，19 个既有项精确跳过；Case 19 skill 已升级为 1.1；发布后的两套 verify-only 均确认 25/25 格式、名称、版本与 public 状态一致。</p></div>
+            <div class="repair-item"><h3>Durable schedule provisioning</h3><p>Actor-owned intent、revision 等待、durable timeout、token 重签、member read model 和异步 receipt 已部署；当前 <code>4c0596c7</code> fresh 完成 schedule 创建、owner-scoped 读取、1 次自然 cron、11/11 committed artifact 与 DELETE 静默窗口。历史 <code>b010ba614</code> 上的六次 cron、Release publish、真实 linux/amd64 镜像构建、架构/稳定性门禁和 solution tests 证据继续保留。写入型 Durable 仍需要正式 operation authority provider。</p></div>
+            <div class="repair-item"><h3>29 个 Ornn skills</h3><p>本轮 missing-only 精确跳过既有 28 项，只创建并公开 Case 29；Case 19 skill 保持 1.1；发布后的两套 verify-only 均确认 29/29 格式、名称、版本与 public 状态一致。</p></div>
             <div class="repair-item"><h3>自然语言验证器</h3><p>新增 typed approval continuation、ID 脱敏和 committed current-state 判定。</p></div>
             <div class="repair-item"><h3>Artifact actor identity</h3><p>读取工具同时接受 start receipt 的 run ID 与 actor ID；案例 15 在 <code>d7844b5e</code> 上不再以最终 pending 结束。</p></div>
             <div class="repair-item"><h3>确定性 skill recovery</h3><p>固定 search-first 顺序，并在 workflow 启动后停止无效二次搜索。</p></div>
@@ -488,12 +532,12 @@
           </div>
         </div>
 
-        <div class="boundary"><h2>#3182 证据边界</h2><p>本轮没有从 direct runtime 外推，而是在 Ready 镜像 <code>ee031038</code> 上逐个 fresh 重跑五个 <code>/api/chat</code> 案例，5/5 严格 validated；12/14 的模型文案陈旧但 committed artifact 正确。Lark Bot transport、Case 19 文件链和 Case 22 workflow tool approval 又分别取得独立 committed 证据。</p></div>
+        <div class="boundary"><h2>#3182 证据边界</h2><p>Ready <code>ee031038</code> 的历史五案例为 5/5 validated；最近代表对照为 2/2 validated：Case 01 保留 13/13 committed success，Case 12 在 <code>6558db8d</code> 完成 Ornn search、精确 mount、workflow start 与 committed artifact。祖先 <code>49cb76e4</code> 的 fresh Lark Case 12 又独立证明 webhook、relay、mount callback、workflow start、committed 4/4 与 Bot reply。Lark Bot transport、Case 19 文件链和 Case 22 workflow tool approval 仍分别由独立 committed 证据证明。</p></div>
       </section>
     </main>
 
     <footer>
-      <div class="container footer-inner"><span>基线：2026-08-05 · 状态更新：2026-08-06 · 生产标识和业务 payload 已脱敏</span><span class="footer-links"><a href="./2026-08-05-workflow-coverage-report.md">文字报告</a><a href="../validation/production-validation-2026-08-05.json">历史摘要</a><a href="../validation/production-validation-2026-08-06-cases-21-25.json">21-25 证据</a><a href="../validation/risk-validation-2026-08-06.json">风险摘要</a><a href="../README.md">仓库说明</a></span></div>
+      <div class="container footer-inner"><span>基线：2026-08-05 · 状态更新：2026-08-07 · 生产标识和业务 payload 已脱敏</span><span class="footer-links"><a href="./2026-08-07-current-status-report.md">当前状态报告</a><a href="../validation/full-revalidation-2026-08-07.json">当前机器快照</a><a href="./2026-08-05-workflow-coverage-report.md">历史文字报告</a><a href="../validation/production-validation-2026-08-05.json">历史摘要</a><a href="../validation/production-validation-2026-08-06-cases-21-25.json">21-25 证据</a><a href="../validation/production-validation-2026-08-07-cases-26-28.json">26-28 证据</a><a href="../validation/production-validation-2026-08-07-case-29.json">Case 29 证据</a><a href="../validation/risk-validation-2026-08-06.json">风险摘要</a><a href="../README.md">仓库说明</a></span></div>
     </footer>
   </div>
 

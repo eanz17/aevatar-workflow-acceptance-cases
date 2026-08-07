@@ -3,7 +3,7 @@ case: R01
 name: lark_init_actor_activation_recovery
 title: Lark /init 在 checkpoint 恢复后仍由 Actor activation 串行推进
 issue: "#3210"
-status: pending-deployment
+status: passed
 surfaces:
   - orleans_integration
   - lark_private_bot
@@ -46,11 +46,11 @@ required_evidence:
   workflow_binding_guard_passed: true
   test_stability_guard_passed: true
   solution_split_guards_passed: true
-  ready_production_workload_traceable:
-  lark_init_inbound_observed:
-  lark_init_reply_relay_observed:
-  visible_reply_count:
-  duplicate_reply_count:
-  activation_access_violation_observed:
-  committed_state_publication_exception_observed:
+  ready_production_workload_traceable: true
+  lark_init_inbound_observed: true
+  lark_init_reply_relay_observed: true
+  visible_reply_count: 1
+  duplicate_reply_count: 0
+  activation_access_violation_observed: false
+  committed_state_publication_exception_observed: false
   raw_identifiers_persisted: false

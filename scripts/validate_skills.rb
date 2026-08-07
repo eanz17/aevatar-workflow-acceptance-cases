@@ -3,6 +3,12 @@
 require "yaml"
 
 ROOT = File.expand_path("..", __dir__)
+INLINE_WORKFLOW_ASSETS = {
+  "vendor-policy-inline-delegation" => {
+    "vendor-policy-inline-evaluator.yaml" =>
+      "fixtures/inline-workflows/vendor-policy-inline-evaluator.workflow.yaml"
+  }
+}.freeze
 workflow_names = Dir[File.join(ROOT, "workflows", "*.workflow.yaml")].sort.map do |path|
   YAML.safe_load(File.read(path), aliases: false).fetch("name")
 end
@@ -31,15 +37,27 @@ skill_directories.each do |directory|
   abort "#{slug} 不得包含 Ornn validator 禁止的根目录 workflows/" if File.directory?(
     File.join(directory, "workflows")
   )
-  workflow_files = Dir[File.join(directory, "assets", "*.yaml")]
-  abort "#{slug} 必须恰好包含一个 assets/*.yaml workflow" unless workflow_files.length == 1
-  workflow = YAML.safe_load(File.read(workflow_files.first), aliases: false)
+  workflow_files = Dir[File.join(directory, "assets", "*.yaml")].sort
+  inline_assets = INLINE_WORKFLOW_ASSETS.fetch(slug, {})
+  expected_asset_count = 1 + inline_assets.length
+  abort "#{slug} 的 assets/*.yaml 数量必须为 #{expected_asset_count}" unless workflow_files.length == expected_asset_count
+  main_asset = workflow_files.find do |path|
+    YAML.safe_load(File.read(path), aliases: false).fetch("name") == slug.tr("-", "_")
+  end
+  abort "#{slug} 缺少与公开 workflow 同名的主 asset" unless main_asset
+  workflow = YAML.safe_load(File.read(main_asset), aliases: false)
   asset_names << workflow.fetch("name")
-  abort "#{slug} 的内嵌 workflow 与公开 workflow 不一致" unless File.read(workflow_files.first) == File.read(
+  abort "#{slug} 的内嵌 workflow 与公开 workflow 不一致" unless File.read(main_asset) == File.read(
     Dir[File.join(ROOT, "workflows", "*.workflow.yaml")].find do |path|
       YAML.safe_load(File.read(path), aliases: false).fetch("name") == workflow.fetch("name")
     end
   )
+  inline_assets.each do |asset_name, fixture_path|
+    asset_path = File.join(directory, "assets", asset_name)
+    fixture = File.join(ROOT, fixture_path)
+    abort "#{slug} 缺少 inline workflow asset #{asset_name}" unless File.file?(asset_path)
+    abort "#{slug} 的 inline workflow asset 与 fixture 不一致" unless File.read(asset_path) == File.read(fixture)
+  end
   puts "通过 #{slug} workflow=#{workflow.fetch('name')}"
 end
 

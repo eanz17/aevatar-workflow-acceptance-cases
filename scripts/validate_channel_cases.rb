@@ -8,9 +8,10 @@ ROOT = File.expand_path("..", __dir__)
 CASE_DIR = File.join(ROOT, "channel-cases")
 EVIDENCE_PATH = File.join(ROOT, "validation", "production-validation-2026-08-05.json")
 EVIDENCE_BASELINE_COMMIT = "de801ca70a37db624b27155c1870d0c99ad93b7c"
+SKILL_MOUNT_INTENT_FIX_COMMIT = EVIDENCE_BASELINE_COMMIT
 REQUIRED_DEPLOYMENT_COMMITS = {
-  "20" => EVIDENCE_BASELINE_COMMIT,
-  "21" => EVIDENCE_BASELINE_COMMIT,
+  "20" => SKILL_MOUNT_INTENT_FIX_COMMIT,
+  "21" => SKILL_MOUNT_INTENT_FIX_COMMIT,
   "22" => "3f62ff62bcb32f7fb7c97aea8a7920aadd29d398"
 }.freeze
 REQUIRED_ANCESTOR_COMMITS = {
@@ -38,6 +39,11 @@ EXPECTED_NAMES = {
   "22" => "lark_workflow_runtime_tool_approval_approved"
 }.freeze
 EXPECTED_DECISIONS = { "20" => "approved", "21" => "rejected", "22" => "approved" }.freeze
+EXPECTED_PROMPTS = {
+  "20" => "请挂载 lark-contact-batch-resolution skill，解析 1 个合成联系人标识，并只返回脱敏结果。",
+  "21" => "请挂载 lark-contact-batch-resolution skill，解析 1 个合成联系人标识，并只返回脱敏结果。",
+  "22" => "请使用已挂载的 lark-contact-batch-resolution 解析 1 个合成联系人标识，并只返回脱敏结果。"
+}.freeze
 AGENT_RUN_IDENTITY_FIELDS = %w[
   agent_run_id approval_request_id tool_request_id tool_call_id tool_name arguments_sha256
   sender_id registration_scope_id conversation_key
@@ -159,6 +165,8 @@ cases.each do |path, spec|
     target["required_ancestor_commits"] == REQUIRED_ANCESTOR_COMMITS.fetch(case_id)
   fail_validation("案例 #{case_id} 决策漂移") unless
     spec.dig("trigger", "decision") == EXPECTED_DECISIONS.fetch(case_id)
+  fail_validation("案例 #{case_id} 触发提示漂移") unless
+    spec.dig("trigger", "prompt") == EXPECTED_PROMPTS.fetch(case_id)
   fail_validation("案例 #{case_id} 必须使用合成输入") unless
     spec.dig("safety", "synthetic_input_only") == true &&
     spec.dig("safety", "side_effects") == false &&

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAtUtc": "2026-08-06T22:28:16Z",
+  "purpose": "案例 29 安全替代源 P1 v2 legacy 集成语义的 preview、committed runtime 与 Ornn public readback 脱敏证据",
+  "targetSource": {
+    "repository": "aevatarAI/aevatar",
+    "ref": "origin/feature/integrate",
+    "commit": "6a656d7593c655ba565565824431802c85e2de46"
+  },
+  "productionDeployment": {
+    "image": "docker.io/aelfdevops/aevatar-console-backend:6a656d75",
+    "digest": "sha256:8242e62bb9cff35cd447383e9b0017f76005381d7e439b1edb8058e9c54ae523",
+    "commit": "6a656d7593c655ba565565824431802c85e2de46",
+    "generation": 2725,
+    "observedGeneration": 2725,
+    "readyReplicas": "1/1",
+    "podRestarts": 0
+  },
+  "scopeHash": "237314c29964",
+  "larkServiceHash": "a623c5a302b9",
+  "summary": {
+    "total": 1,
+    "previewPassed": 1,
+    "directRuntimePassed": 1,
+    "ornnPublicReadbackPassed": 1,
+    "sideEffectsPerformed": false
+  },
+  "results": [
+    {
+      "case": "29",
+      "name": "invoice_approval_routing_preview",
+      "previewPassed": true,
+      "callSiteCount": 2,
+      "callSites": [
+        {
+          "method": "get",
+          "pathTemplate": "/open-apis/approval/v4/instances",
+          "effectiveRisk": "read_only",
+          "approvalRequired": false,
+          "approvalEnforcement": "none",
+          "allowedExecutionModes": ["interactive"]
+        },
+        {
+          "method": "post",
+          "pathTemplate": "/open-apis/contact/v3/users/batch_get_id",
+          "effectiveRisk": "read_only",
+          "approvalRequired": false,
+          "approvalEnforcement": "none",
+          "allowedExecutionModes": ["interactive"]
+        }
+      ],
+      "runHash": "a729912ee5d9",
+      "terminalStatus": "completed",
+      "terminalSuccess": true,
+      "stateVersion": 77,
+      "completedSteps": 11,
+      "totalSteps": 11,
+      "approvalPendingObserved": false,
+      "approvalResumeCount": 0,
+      "finalArtifact": {
+        "case": "invoice_approval_routing_preview",
+        "success": true,
+        "execution_mode": "preview",
+        "attachment_extracted": true,
+        "invoice_normalized": true,
+        "history_api_reachable": true,
+        "history_window_checked": true,
+        "exact_duplicate_found": true,
+        "same_vendor_history_verified": true,
+        "approval_route_resolved": true,
+        "identifiers_redacted": true,
+        "approval_created": false,
+        "message_sent": false,
+        "external_writes": false,
+        "side_effects": false
+      },
+      "ornnSkill": {
+        "name": "invoice-approval-routing-preview",
+        "version": "1.0",
+        "serverFormatValid": true,
+        "public": true,
+        "exactNameReadback": true
+      },
+      "sideEffectsPerformed": false
+    }
+  ],
+  "retiredRiskCase": {
+    "case": "42",
+    "status": "skipped-expired",
+    "sourceDefinitionPreserved": true,
+    "sourceSha256Verified": true,
+    "replacementCase": "29"
+  },
+  "rawIdentifiersPersisted": false
+}

@@ -7,6 +7,7 @@ require "open3"
 require "optparse"
 require "time"
 require "uri"
+require "yaml"
 
 require_relative "runtime_contracts"
 
@@ -147,7 +148,9 @@ CASES = {
   },
   "20" => {
     file: "20-supplier-risk-tier-aggregation.workflow.yaml",
-    prompt: "运行无副作用的供应商风险分档汇总。"
+    # 每轮传入新的 nonce，使 cache_key 随 run 变化；固定 key 会让 TTL 内的重跑
+    # 直接命中缓存而跳过 miss 分支，形成"绿灯但没验到"的假通过。
+    prompt: -> { JSON.generate({ "probe_nonce" => Time.now.utc.strftime("%Y%m%d%H%M%S") }) }
   },
   "19" => {
     file: "19-lark-bot-file-upload-validation.workflow.yaml",
@@ -195,6 +198,41 @@ CASES = {
       effectiveRisk: "write",
       approvalRequired: true
     }
+  },
+  "26" => {
+    file: "26-vendor-policy-inline-delegation.workflow.yaml",
+    prompt: "运行合成供应商政策 inline 委派审查，不执行任何外部写入。",
+    inline_workflow_files: {
+      "vendor_policy_inline_evaluator" =>
+        "fixtures/inline-workflows/vendor-policy-inline-evaluator.workflow.yaml"
+    }
+  },
+  "27" => {
+    file: "27-deterministic-parallel-evidence-review.workflow.yaml",
+    prompt: "并行核对三份合成供应商证据，不执行任何外部写入。"
+  },
+  "28" => {
+    file: "28-deterministic-race-policy-review.workflow.yaml",
+    prompt: "运行三路合成政策评估并采用首个成功结果，不执行任何外部写入。"
+  },
+  "29" => {
+    file: "29-invoice-approval-routing-preview.workflow.yaml",
+    prompt: "提取合成发票，检查历史重复并解析审批路由；只生成预览，不创建审批或发送消息。",
+    attachment: "synthetic-invoice.pdf",
+    preview_contracts: [
+      {
+        method: "get",
+        pathTemplate: "/open-apis/approval/v4/instances",
+        effectiveRisk: "read_only",
+        approvalRequired: false
+      },
+      {
+        method: "post",
+        pathTemplate: "/open-apis/contact/v3/users/batch_get_id",
+        effectiveRisk: "read_only",
+        approvalRequired: false
+      }
+    ]
   }
 }.freeze
 
@@ -335,12 +373,14 @@ class ProductionValidator
       /user_service_id:\s*\S+/,
       "user_service_id: #{lark_service_id}"
     )
-    if @options.fetch(:run) && case_id == "14" &&
+    inline_workflow_yamls = load_inline_workflow_yamls(config, lark_service_id)
+    if @options.fetch(:run) && %w[14 29].include?(case_id) &&
         yaml.include?(%q{"emails":["acceptance-user@example.com"]})
-      raise ValidationError, "案例 14 真实运行拒绝 config.example.yaml 的示例邮箱；请先使用 config.local.yaml 物化"
+      raise ValidationError, "案例 #{case_id} 真实运行拒绝 config.example.yaml 的示例邮箱；请先使用 config.local.yaml 物化"
     end
 
-    display_name = "公开验收案例 #{case_id}-#{Digest::SHA256.hexdigest(yaml)[0, 10]}"
+    definition_bundle = [yaml, *inline_workflow_yamls.sort.flat_map { |key, value| [key, value] }]
+    display_name = "公开验收案例 #{case_id}-#{Digest::SHA256.hexdigest(definition_bundle.join("\n"))[0, 10]}"
     preview = with_stage("preview") { preview_workflow(yaml, display_name) }
     if config[:preview_contract]
       items = preview.fetch("items")
@@ -359,10 +399,33 @@ class ProductionValidator
               "实际 #{items.length} 个：#{actuals.inspect}"
       end
     end
+    if config[:preview_contracts]
+      items = preview.fetch("items")
+      unmatched_items = items.dup
+      expected_contracts = config.fetch(:preview_contracts)
+      expected_contracts.each do |expected|
+        matched_index = unmatched_items.index do |item|
+          expected.all? do |key, value|
+            observed = item.fetch(key.to_s, nil)
+            value.is_a?(AcceptedValues) ? value.satisfied_by?(observed) : observed == value
+          end
+        end
+        unmatched_items.delete_at(matched_index) if matched_index
+      end
+      unless unmatched_items.empty? && items.length == expected_contracts.length
+        actuals = items.map do |item|
+          keys = expected_contracts.flat_map(&:keys).uniq
+          keys.to_h { |key| [key, item.fetch(key.to_s, nil)] }
+        end
+        raise ValidationError,
+              "定向 preview 契约集合不匹配：预期 #{expected_contracts.inspect}，实际 #{actuals.inspect}"
+      end
+    end
     base_result = {
       case: case_id,
       workflow: config.fetch(:file),
       preview: "通过",
+      inlineWorkflowCount: inline_workflow_yamls.length,
       callSiteCount: preview.fetch("items").length,
       callSites: preview.fetch("items").map do |item|
         {
@@ -384,7 +447,7 @@ class ProductionValidator
     end
 
     member_id, revision_id, binding_reused = with_stage("prepare_binding") do
-      prepare_binding(yaml, preview, display_name)
+      prepare_binding(yaml, inline_workflow_yamls, preview, display_name)
     end
     with_stage("wait_for_endpoint") { wait_for_endpoint(member_id, revision_id) }
     run_result = with_stage("invoke_workflow") do
@@ -419,6 +482,25 @@ class ProductionValidator
     selected.fetch("id")
   end
 
+  def load_inline_workflow_yamls(config, lark_service_id)
+    config.fetch(:inline_workflow_files, {}).to_h do |workflow_name, relative_path|
+      path = File.join(ROOT, relative_path)
+      raise ValidationError, "缺少 inline 子工作流：#{relative_path}" unless File.file?(path)
+
+      yaml = File.read(path).gsub(
+        /user_service_id:\s*\S+/,
+        "user_service_id: #{lark_service_id}"
+      )
+      parsed_name = YAML.safe_load(yaml, aliases: false).fetch("name")
+      unless parsed_name == workflow_name
+        raise ValidationError, "inline 子工作流名称不匹配：#{workflow_name} != #{parsed_name}"
+      end
+      [workflow_name, yaml]
+    rescue Psych::Exception, KeyError => e
+      raise ValidationError, "inline 子工作流无效：#{relative_path}：#{e.message}"
+    end
+  end
+
   def preview_workflow(yaml, display_name)
     provision_key = build_provision_key(display_name)
     body = {
@@ -436,7 +518,7 @@ class ProductionValidator
     response
   end
 
-  def prepare_binding(yaml, preview, display_name)
+  def prepare_binding(yaml, inline_workflow_yamls, preview, display_name)
     provision_key = build_provision_key(display_name)
     expected_member_id = "wf-#{provision_key}"
     existing_revision_id = with_stage("binding_lookup") do
@@ -447,7 +529,7 @@ class ProductionValidator
     end
 
     provision = with_stage("provision_workflow") do
-      provision_workflow(yaml, preview, display_name)
+      provision_workflow(yaml, inline_workflow_yamls, preview, display_name)
     end
     binding = with_stage("wait_for_binding") do
       wait_for_binding(provision.fetch("memberId"), provision.fetch("bindingRunId"))
@@ -484,7 +566,7 @@ class ProductionValidator
     )[0, 32]
   end
 
-  def provision_workflow(yaml, preview, display_name)
+  def provision_workflow(yaml, inline_workflow_yamls, preview, display_name)
     confirmations = preview.fetch("items").map do |item|
       {
         callSiteId: item.fetch("callSiteId"),
@@ -506,6 +588,7 @@ class ProductionValidator
       },
       explicitRequestConfirmations: confirmations
     }
+    body[:inlineWorkflowYamls] = inline_workflow_yamls unless inline_workflow_yamls.empty?
     response = @client.request_json(
       @client.scope_path("/provision-workflow"),
       method: "POST",
@@ -774,10 +857,43 @@ class ProductionValidator
       contractProbeStepOutputPresent: true,
       finalArtifactVerified: true
     }
+    contract_evidence.merge!(validate_composition_runtime(case_id, detail))
     contract_evidence[:typedApprovalIdentityPresent] = true if evidence[:typed_approval_identity_present] == true
     contract_evidence
   rescue JSON::ParserError => e
     raise ValidationError, "案例 #{case_id} 最终 artifact 不是有效 JSON：#{e.message}"
+  end
+
+  def validate_composition_runtime(case_id, detail)
+    steps = Array(detail["steps"])
+    case case_id
+    when "26"
+      call = steps.find { |step| step["stepId"] == "delegate_policy_check" }
+      unless call && call["success"] == true && call["outputPreview"].to_s.strip == "INLINE_POLICY_APPROVED"
+        raise ValidationError, "案例 26 缺少 inline child completed output"
+      end
+      { inlineChildOutputVerified: true }
+    when "27"
+      expected = (0..2).to_h { |index| ["fanout_evidence_sub_#{index}", "evidence-#{index}"] }
+      workers = steps.select { |step| expected.key?(step["stepId"]) }
+      valid = workers.length == 3 && workers.all? do |step|
+        step["success"] == true && step["outputPreview"].to_s.strip == expected.fetch(step["stepId"])
+      end
+      raise ValidationError, "案例 27 缺少三路 deterministic worker committed receipt" unless valid
+
+      { deterministicWorkerCount: 3, workerReceiptsVerified: true }
+    when "28"
+      expected_ids = (0..2).map { |index| "first_successful_review_race_#{index}" }
+      workers = steps.select { |step| expected_ids.include?(step["stepId"]) }
+      parent_steps = steps.select { |step| step["stepId"] == "first_successful_review" }
+      unless workers.length == 3 && workers.any? { |step| step["success"] == true } &&
+             parent_steps.length == 1 && parent_steps.first["success"] == true
+        raise ValidationError, "案例 28 缺少三路 deterministic race dispatch 或单一成功父终态"
+      end
+      { deterministicWorkerCount: 3, singleRaceParentTerminalVerified: true }
+    else
+      {}
+    end
   end
 
   def terminal_failure(detail)
@@ -849,7 +965,7 @@ OptionParser.new do |parser|
   parser.on("--workflow-dir DIR", "已物化 workflow 目录，也可使用 AEVATAR_WORKFLOW_DIR") do |value|
     options[:workflow_dir] = File.expand_path(value)
   end
-  parser.on("--cases LIST", "案例编号，逗号分隔；默认 01-25") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
+  parser.on("--cases LIST", "案例编号，逗号分隔；默认执行动态 registry 中全部案例") { |value| options[:cases] = value.split(",").map { |item| item.strip.rjust(2, "0") } }
   parser.on("--run", "在 preview 后执行工作流；默认只 preview") { options[:run] = true }
   parser.on("--allow-side-effects LIST", "允许执行副作用的案例编号，逗号分隔") do |value|
     options[:side_effect_cases] = value.split(",").map { |item| item.strip.rjust(2, "0") }

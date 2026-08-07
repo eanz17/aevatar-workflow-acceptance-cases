@@ -43,8 +43,7 @@ spec = YAML.safe_load(File.read(CASE_PATH), aliases: false)
 fail_validation("schema or identity drift") unless
   spec["schema_version"] == "1.0" && spec["case"] == "R01" &&
   spec["name"] == "lark_init_actor_activation_recovery" && spec["issue"] == "#3210"
-fail_validation("status must remain pending-deployment before production proof") unless
-  spec["status"] == "pending-deployment"
+fail_validation("status must be passed after production proof") unless spec["status"] == "passed"
 fail_validation("surface contract drift") unless
   spec["surfaces"] == %w[orleans_integration lark_private_bot]
 fail_validation("deployment ancestry drift") unless
@@ -81,16 +80,16 @@ expected_evidence = {
   "workflow_binding_guard_passed" => true,
   "test_stability_guard_passed" => true,
   "solution_split_guards_passed" => true,
-  "ready_production_workload_traceable" => nil,
-  "lark_init_inbound_observed" => nil,
-  "lark_init_reply_relay_observed" => nil,
-  "visible_reply_count" => nil,
-  "duplicate_reply_count" => nil,
-  "activation_access_violation_observed" => nil,
-  "committed_state_publication_exception_observed" => nil,
+  "ready_production_workload_traceable" => true,
+  "lark_init_inbound_observed" => true,
+  "lark_init_reply_relay_observed" => true,
+  "visible_reply_count" => 1,
+  "duplicate_reply_count" => 0,
+  "activation_access_violation_observed" => false,
+  "committed_state_publication_exception_observed" => false,
   "raw_identifiers_persisted" => false
 }
-fail_validation("case evidence must not claim undeployed production proof") unless
+fail_validation("case evidence does not match production proof") unless
   spec["required_evidence"] == expected_evidence
 
 evidence = JSON.parse(File.read(EVIDENCE_PATH))
@@ -99,28 +98,28 @@ fail_validation("evidence summary drift") unless evidence == {
   "summary" => {
     "total" => 1,
     "localPassed" => 1,
-    "productionPassed" => 0,
-    "pendingDeployment" => 1
+    "productionPassed" => 1,
+    "pendingDeployment" => 0
   },
   "results" => [
     {
       "case" => "R01",
       "name" => "lark_init_actor_activation_recovery",
-      "status" => "pending-deployment",
+      "status" => "passed",
       "requiredDeploymentCommit" => EXPECTED_COMMIT,
       "localRegressionPassed" => true,
-      "readyProductionWorkloadTraceable" => false,
-      "observedAtUtc" => nil,
-      "deploymentImage" => nil,
-      "deploymentDigest" => nil,
-      "larkInitInboundObserved" => nil,
-      "larkInitReplyRelayObserved" => nil,
-      "visibleReplyCount" => nil,
-      "duplicateReplyCount" => nil,
-      "activationAccessViolationObserved" => nil,
-      "committedStatePublicationExceptionObserved" => nil,
+      "readyProductionWorkloadTraceable" => true,
+      "observedAtUtc" => "2026-08-06T19:02:20Z",
+      "deploymentImage" => "docker.io/aelfdevops/aevatar-console-backend:4c0596c7",
+      "deploymentDigest" => "sha256:7cdca8d5038e2593c5583eba28d77e8bc4398baad4f10e77cd4a814ab04494e6",
+      "larkInitInboundObserved" => true,
+      "larkInitReplyRelayObserved" => true,
+      "visibleReplyCount" => 1,
+      "duplicateReplyCount" => 0,
+      "activationAccessViolationObserved" => false,
+      "committedStatePublicationExceptionObserved" => false,
       "rawIdentifiersPersisted" => false,
-      "result" => "Local fault-injection regression passed; awaiting traceable Ready deployment and fresh Lark /init proof"
+      "result" => "Local fault-injection and fresh production Lark /init recovery proof passed"
     }
   ]
 }
@@ -131,4 +130,4 @@ raw_text = File.read(CASE_PATH) + File.read(EVIDENCE_PATH)
 fail_validation("UUID found in public regression evidence") if
   raw_text.match?(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i)
 
-puts "Regression cases passed: total=1 local=1 production=0 pending-deployment=1"
+puts "Regression cases passed: total=1 local=1 production=1 pending-deployment=0"

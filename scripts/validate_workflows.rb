@@ -28,12 +28,16 @@ EXPECTED = {
   "17-lark-post-search-approval-probe.workflow.yaml" => [4, 1, 0, 1],
   "18-supplier-control-attestation-review.workflow.yaml" => [15, 0, 0, 0],
   "19-lark-bot-file-upload-validation.workflow.yaml" => [3, 0, 0, 0],
-  "20-supplier-risk-tier-aggregation.workflow.yaml" => [12, 0, 0, 0],
+  "20-supplier-risk-tier-aggregation.workflow.yaml" => [13, 0, 0, 0],
   "21-approval-window-integrity-audit.workflow.yaml" => [7, 2, 2, 0],
   "22-acceptance-fixture-drift-attestation.workflow.yaml" => [8, 4, 4, 0],
   "23-readonly-attested-post-probe.workflow.yaml" => [4, 1, 0, 1],
   "24-runtime-tool-approval-write-probe.workflow.yaml" => [5, 1, 0, 1],
-  "25-sequential-tool-approval-write-probe.workflow.yaml" => [8, 2, 0, 2]
+  "25-sequential-tool-approval-write-probe.workflow.yaml" => [8, 2, 0, 2],
+  "26-vendor-policy-inline-delegation.workflow.yaml" => [6, 0, 0, 0],
+  "27-deterministic-parallel-evidence-review.workflow.yaml" => [12, 0, 0, 0],
+  "28-deterministic-race-policy-review.workflow.yaml" => [3, 0, 0, 0],
+  "29-invoice-approval-routing-preview.workflow.yaml" => [10, 2, 1, 1]
 }.freeze
 
 CODEX_EXEC_WORKFLOW = "11-complex-codex-exec-validation.workflow.yaml"
@@ -58,6 +62,16 @@ LARK_BOT_FILE_WORKFLOW = "19-lark-bot-file-upload-validation.workflow.yaml"
 LARK_BOT_FILE_NAME = "lark-bot-upload-manifest.json"
 LARK_BOT_FILE_BYTES = 114
 LARK_BOT_FILE_SHA256 = "5a3cdce7117c7ef1e07ad02d9621b701d300974806da142e579415fb70cb61fb"
+INLINE_DELEGATION_WORKFLOW = "26-vendor-policy-inline-delegation.workflow.yaml"
+INLINE_DELEGATION_CHILD = File.join(
+  ROOT,
+  "fixtures",
+  "inline-workflows",
+  "vendor-policy-inline-evaluator.workflow.yaml"
+)
+DETERMINISTIC_PARALLEL_WORKFLOW = "27-deterministic-parallel-evidence-review.workflow.yaml"
+DETERMINISTIC_RACE_WORKFLOW = "28-deterministic-race-policy-review.workflow.yaml"
+INVOICE_ROUTING_PREVIEW_WORKFLOW = "29-invoice-approval-routing-preview.workflow.yaml"
 
 ALLOWED_PLACEHOLDERS = Set.new(
   YAML.safe_load(File.read(File.join(ROOT, "config.example.yaml")), aliases: false)
@@ -277,6 +291,24 @@ files.each do |file|
                  receipt_template.include?("side_effects: false")
     fail_validation("#{name}：文件内容、Lark ingress 或脱敏断言不完整") unless receipt_ok
   end
+  if name == "20-supplier-risk-tier-aggregation.workflow.yaml"
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    cache_keys = %w[cache_probe_primary cache_probe_repeat].map do |step_id|
+      steps_by_id.fetch(step_id).dig("parameters", "cache_key").to_s
+    end
+    # cache 模块状态跨 run 存活到重新绑定；固定 key 会让 TTL 内的重跑连 primary 也命中，
+    # miss -> 派发子步骤 -> 回填这条路径不执行，断言却仍为真（假通过）。
+    unless cache_keys.uniq.length == 1 &&
+           cache_keys.first.include?("${steps.normalize_probe_context.json.probe_nonce}")
+      fail_validation("#{name}：两个 cache 步骤必须共用同一个带 run 级 nonce 的 cache_key，否则 miss 分支会被 TTL 内的重跑跳过")
+    end
+
+    guard_template = steps_by_id.fetch("normalize_probe_context").fetch("template").to_s
+    unless guard_template.match?(/probe_nonce\.size < 8 \|\| probe_nonce\.size > 14/) &&
+           guard_template.include?("stamp = number(probe_nonce)")
+      fail_validation("#{name}：probe_nonce 必须做 number() 数值守卫与长度校验")
+    end
+  end
   if name == "21-approval-window-integrity-audit.workflow.yaml"
     steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
     legacy_arguments = JSON.parse(steps_by_id.fetch("list_legacy_window").dig("parameters", "arguments"))
@@ -361,6 +393,161 @@ files.each do |file|
            guard_template.include?("stamp < 10000000")
       fail_validation("#{name}：probe_note 必须做 number() 数值守卫与长度、下界校验，防止注入 tool arguments")
     end
+  end
+  if name == INLINE_DELEGATION_WORKFLOW
+    call = steps.find { |step| step["id"] == "delegate_policy_check" }
+    unless call&.fetch("type", nil) == "workflow_call" && call.fetch("parameters") == {
+      "workflow" => "vendor_policy_inline_evaluator",
+      "lifecycle" => "transient"
+    }
+      fail_validation("#{name}：必须通过 transient workflow_call 调用固定 inline 子定义")
+    end
+
+    fail_validation("#{name}：缺少 inline 子工作流 fixture") unless File.file?(INLINE_DELEGATION_CHILD)
+    child = YAML.safe_load(File.read(INLINE_DELEGATION_CHILD), aliases: false)
+    child_steps = child.fetch("steps")
+    child_contract_ok = child["name"] == "vendor_policy_inline_evaluator" &&
+                        child_steps.length == 1 &&
+                        child_steps.first == {
+                          "id" => "return_policy_decision",
+                          "type" => "assign",
+                          "parameters" => {
+                            "target" => "policy_decision",
+                            "value" => "INLINE_POLICY_APPROVED"
+                          }
+                        }
+    fail_validation("#{name}：inline 子工作流必须保持固定、无副作用、可机器判断") unless child_contract_ok
+
+    success_result = JSON.parse(steps.find { |step| step["id"] == "delegated" }.dig("parameters", "value"))
+    unless success_result == {
+      "case" => "vendor_policy_inline_delegation",
+      "success" => true,
+      "inline_definition_bound" => true,
+      "child_definition_resolved" => true,
+      "child_workflow_completed" => true,
+      "side_effects" => false
+    }
+      fail_validation("#{name}：inline delegation 成功 artifact 漂移")
+    end
+  end
+  if name == DETERMINISTIC_PARALLEL_WORKFLOW
+    fanout = steps.find { |step| step["id"] == "fanout_evidence" }
+    expected_parameters = {
+      "parallel_count" => "3",
+      "sub_step_type" => "assign",
+      "sub_param_target" => "evidence_${index}",
+      "sub_param_value" => "evidence-${index}",
+      "min_concurrent_workers" => "3",
+      "max_concurrent_workers" => "3"
+    }
+    unless fanout&.fetch("type", nil) == "parallel" && fanout.fetch("parameters") == expected_parameters
+      fail_validation("#{name}：parallel 必须固定为三路 deterministic assign worker")
+    end
+
+    first_gate = steps.find { |step| step["id"] == "verify_first_evidence" }
+    last_gate = steps.find { |step| step["id"] == "verify_last_evidence" }
+    count_gate = steps.find { |step| step["id"] == "verify_merged_shape" }
+    order_contract_ok = first_gate&.fetch("branches", nil) == {
+      "evidence-0" => "restore_merged_for_last",
+      "_default" => "parallel_failed"
+    } && last_gate&.fetch("branches", nil) == {
+      "evidence-2" => "restore_merged_for_count",
+      "_default" => "parallel_failed"
+    } && count_gate&.fetch("branches", nil) == {
+      "5" => "parallel_verified",
+      "_default" => "parallel_failed"
+    }
+    fail_validation("#{name}：缺少 dispatch index 顺序和三路合并形状断言") unless order_contract_ok
+  end
+  if name == DETERMINISTIC_RACE_WORKFLOW
+    race = steps.find { |step| step["id"] == "first_successful_review" }
+    unless race&.fetch("type", nil) == "race" && race.fetch("parameters") == {
+      "count" => "3",
+      "sub_step_type" => "assign",
+      "sub_param_target" => "candidate_${index}",
+      "sub_param_value" => '"candidate-${index}"'
+    }
+      fail_validation("#{name}：race 必须固定为三路 deterministic assign worker")
+    end
+
+    verification = steps.find { |step| step["id"] == "verify_race_result" }&.fetch("template", nil).to_s
+    unless %w[candidate-0 candidate-1 candidate-2 first_success_selected later_completions_ignored].all? do |token|
+      verification.include?(token)
+    end
+      fail_validation("#{name}：race 缺少 winner 集合、首成功与后续完成忽略断言")
+    end
+  end
+  if name == INVOICE_ROUTING_PREVIEW_WORKFLOW
+    steps_by_id = steps.to_h { |step| [step.fetch("id"), step] }
+    extraction = steps_by_id.fetch("extract_document").fetch("parameters")
+    unless extraction == {
+      "items_source" => "input_file_refs",
+      "sub_step_type" => "tool_call",
+      "sub_param_tool" => "document_extract",
+      "sub_param_arguments" => '{"maxChars":6000}',
+      "min_concurrent_workers" => "1",
+      "max_concurrent_workers" => "1"
+    }
+      fail_validation("#{name}：必须从单个类型化 file ref 调用固定 document_extract")
+    end
+
+    history = steps_by_id.fetch("list_approval_history")
+    history_capability = history.dig("capability", "nyxid_request")
+    history_arguments = JSON.parse(history.dig("parameters", "arguments"))
+    history_contract_ok = history_capability == {
+      "user_service_id" => "__LARK_USER_SERVICE_ID__",
+      "method" => "GET",
+      "path_template" => "/open-apis/approval/v4/instances",
+      "query_parameters" => %w[approval_code page_size start_time end_time],
+      "header_parameters" => [],
+      "body_mode" => "none",
+      "body_required" => false,
+      "response_mode" => "text"
+    } && history_arguments == {
+      "query" => {
+        "approval_code" => "__LARK_APPROVAL_CODE__",
+        "page_size" => "100",
+        "start_time" => "1785772800000",
+        "end_time" => "1785859199000"
+      }
+    }
+    fail_validation("#{name}：审批历史必须保持固定百条只读窗口") unless history_contract_ok
+
+    contact = steps_by_id.fetch("resolve_approval_route")
+    contact_capability = contact.dig("capability", "nyxid_request")
+    contact_arguments = JSON.parse(contact.dig("parameters", "arguments"))
+    contact_contract_ok = contact_capability == {
+      "user_service_id" => "__LARK_USER_SERVICE_ID__",
+      "method" => "POST",
+      "path_template" => "/open-apis/contact/v3/users/batch_get_id",
+      "query_parameters" => ["user_id_type"],
+      "header_parameters" => [],
+      "body_mode" => "json",
+      "body_required" => true,
+      "response_mode" => "text",
+      "risk" => "read_only"
+    } && contact_arguments == {
+      "query" => { "user_id_type" => "user_id" },
+      "body" => { "emails" => ["__LARK_CONTACT_EMAIL__"] }
+    }
+    fail_validation("#{name}：审批路由必须使用脱敏的 batch_get_id 只读契约") unless contact_contract_ok
+
+    result_template = steps_by_id.fetch("evaluate_preview").fetch("template")
+    required_result_tokens = %w[
+      execution_mode exact_duplicate_found same_vendor_history_verified approval_route_resolved
+      identifiers_redacted approval_created message_sent external_writes side_effects
+    ]
+    unless required_result_tokens.all? { |token| result_template.include?(token) } &&
+           result_template.include?("approval_created: false") &&
+           result_template.include?("message_sent: false") &&
+           result_template.include?("external_writes: false") &&
+           result_template.include?("side_effects: false")
+      fail_validation("#{name}：no-submit typed artifact 契约不完整")
+    end
+    forbidden_paths = capabilities.map { |capability| capability.fetch("path_template") }.grep(
+      %r{/open-apis/approval/v4/instances/\{?[^/]*\}?$}
+    )
+    fail_validation("#{name}：预览定义不得包含审批创建 call site") unless forbidden_paths.empty?
   end
   expected_codex_count = name == CODEX_EXEC_WORKFLOW ? 1 : 0
   fail_validation("#{name}：codex_exec 调用数应为 #{expected_codex_count}") unless codex_steps.length == expected_codex_count

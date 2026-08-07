@@ -11,11 +11,11 @@ safety:
   side_effects: false
   raw_identifiers_persisted: false
 required_evidence:
-  workflow_files: 25
-  skill_directories: 25
-  runtime_contracts: 25
-  readme_workflow_count: 25
-  report_workflow_count: 25
-  machine_summary_workflow_count: 25
+  workflow_files: 29
+  skill_directories: 29
+  runtime_contracts: 29
+  readme_workflow_count: 29
+  report_workflow_count: 29
+  machine_summary_workflow_count: 29
   stale_19_of_19_claims: 0
   raw_identifiers_persisted: false

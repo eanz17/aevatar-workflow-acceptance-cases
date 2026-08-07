@@ -20,12 +20,25 @@ required_evidence:
   workflow_start_calls: 1
   committed_terminal_observed: true
   terminal_status: completed
+  run_hash: 6fa89cd62b15
+  state_version: 31
+  completed_steps: 4
+  total_steps: 4
+  direct_run_hash: 6659aabee079
+  direct_same_success: true
+  sandbox_user_service_hash: 872833a52fc1
+  sandbox_health_healthy: true
+  sandbox_execute_success: true
+  sandbox_execute_exit_code: 0
+  sandbox_execute_output_verified: true
   forbidden_failure_codes_absent:
     - NYXID_PROXY_UNAUTHORIZED
+  final_artifact_present: true
   final_artifact:
     case: safe_code_execute_validation
     success: true
     structured_receipt: true
     total_cents: 16623
     side_effects: false
+  side_effects: false
   raw_identifiers_persisted: false

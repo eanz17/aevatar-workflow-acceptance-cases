@@ -1,15 +1,15 @@
 {
   "schemaVersion": "1.0",
-  "updatedAtUtc": "2026-08-06T14:54:46Z",
+  "updatedAtUtc": "2026-08-07T04:38:32Z",
   "targetSource": {
     "repository": "aevatarAI/aevatar",
     "ref": "origin/feature/integrate",
     "commit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff"
   },
   "productionDeployment": {
-    "observedAtUtc": "2026-08-06T09:19:09Z",
-    "image": "docker.io/aelfdevops/aevatar-console-backend:6df43b83",
-    "commit": "6df43b83a5e2b502eebcd9c01e687dbaf6321bff",
+    "observedAtUtc": "2026-08-07T04:38:32Z",
+    "image": "docker.io/aelfdevops/aevatar-console-backend:6558db8d",
+    "commit": "6558db8db00bcc43d38d3c3e3781246d8079d5cc",
     "requiredSourceCommitPresent": true,
     "readyReplicas": "1/1",
     "podRestarts": 0
@@ -148,40 +148,42 @@
   },
   "summary": {
     "total": 21,
-    "passed": 12,
-    "blocked": 2,
-    "failed": 2,
+    "passed": 16,
+    "blocked": 0,
+    "failed": 0,
     "pendingExecution": 0,
-    "notConfigured": 5
+    "notConfigured": 4,
+    "skippedExpired": 1
   },
   "results": [
     {
       "case": "23",
       "name": "lark_workflow_runtime_tool_approval_rejected",
-      "status": "failed",
-      "observedAtUtc": "2026-08-06T07:35:55Z",
-      "stableErrorCode": "APPROVAL_REJECTED_WITHOUT_TYPED_CODE",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T18:13:00Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "runHash": "3af9fd937d24",
+      "stateVersion": 17,
+      "completedSteps": 1,
+      "totalSteps": 1,
       "actualEvidence": {
-        "runHash": "e5ced83c068b",
-        "workflowStartCalls": 1,
-        "newWorkflowRunCount": 1,
-        "awaitingToolApprovalObserved": true,
-        "workflowApprovalCardObserved": true,
-        "workflowApprovalIdentityPresent": true,
-        "workflowApprovalDecisionDispatchCount": 1,
-        "terminalStatus": "failed",
-        "stateVersion": 17,
-        "completedSteps": 1,
-        "totalSteps": 1,
-        "failingStep": "resolve_contact",
-        "typedApprovalDeniedCodePresent": false,
-        "downstreamToolExecuted": false,
-        "botReplyExposedRawRunId": true,
-        "approvalCardButtonsActiveAfterDecision": true
+        "workflow_start_calls": 1,
+        "new_workflow_run_count": 1,
+        "awaiting_tool_approval_observed": true,
+        "workflow_approval_card_observed": true,
+        "workflow_approval_decision_dispatch_count": 1,
+        "workflow_approval_identity_matched": true,
+        "same_workflow_run_resumed": false,
+        "terminal_status": "failed",
+        "stable_error_code": "approval_denied",
+        "downstream_tool_executed": false,
+        "final_artifact": null,
+        "raw_identifiers_persisted": false
       },
+      "approvalCardButtonsStillDisplayed": true,
       "rawIdentifiersPersisted": false,
-      "result": "拒绝已终止 committed run，但只返回 approval rejected 文案，缺少稳定 typed approval_denied；Bot 还回显了完整 Run ID，卡片按钮未失效"
+      "result": "Ready 4c0596c7 上 fresh Lark 拒绝只分发一次；唯一新 run 从 awaiting_tool_approval 进入 committed failed，state 17、1/1，committed 与 Lark 回传均含稳定 approval_denied，下游未执行且无 final artifact；按钮仍显示只作为额外 UI 观察，不属于本 case 通过契约"
     },
     {
       "case": "24",
@@ -263,7 +265,7 @@
       "case": "26",
       "name": "assistant_safe_code_execute_authorized",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T14:16:30Z",
+      "observedAtUtc": "2026-08-07T04:38:32Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
@@ -273,9 +275,21 @@
         "workflow_start_calls": 1,
         "committed_terminal_observed": true,
         "terminal_status": "completed",
+        "run_hash": "6fa89cd62b15",
+        "state_version": 31,
+        "completed_steps": 4,
+        "total_steps": 4,
+        "direct_run_hash": "6659aabee079",
+        "direct_same_success": true,
+        "sandbox_user_service_hash": "872833a52fc1",
+        "sandbox_health_healthy": true,
+        "sandbox_execute_success": true,
+        "sandbox_execute_exit_code": 0,
+        "sandbox_execute_output_verified": true,
         "forbidden_failure_codes_absent": [
           "NYXID_PROXY_UNAUTHORIZED"
         ],
+        "final_artifact_present": true,
         "final_artifact": {
           "case": "safe_code_execute_validation",
           "success": true,
@@ -283,31 +297,32 @@
           "total_cents": 16623,
           "side_effects": false
         },
+        "side_effects": false,
         "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "Ready 镜像 ee031038 上按原 /api/chat 入口 fresh 重跑；Assistant 完成 search-first、精确 skill、workflow start 和 committed observation，4/4 completed 且固定结算 artifact 精确命中"
+      "result": "Ready 6558db8d 上 /api/chat 完成 Ornn search、精确 skill mount、workflow start 与 committed artifact；run 6fa89cd62b15 和 direct run 6659aabee079 均为 state 31、4/4 completed，NyxID /execute 最小探针同步严格通过"
     },
     {
       "case": "27",
       "name": "ornn_public_catalog_complete",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T10:01:53Z",
+      "observedAtUtc": "2026-08-06T22:28:16Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
-        "local_skill_count": 25,
-        "server_format_validated": 25,
-        "exact_name_readback": 25,
-        "public_skill_count": 25,
-        "version_matches": 25,
+        "local_skill_count": 29,
+        "server_format_validated": 29,
+        "exact_name_readback": 29,
+        "public_skill_count": 29,
+        "version_matches": 29,
         "missing_skills": [],
         "private_skills": [],
         "version_mismatches": [],
         "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "missing-only 发布后，正式 verify-only 与独立 catalog 验证器均确认 25/25 格式、名称、版本与 public 状态精确一致；验证批次未上传、未改权限"
+      "result": "missing-only 只新增公开 Case 29 skill 并精确跳过既有 28 项；随后正式 verify-only 与独立 catalog 验证器均确认 29/29 格式、名称、版本与 public 状态精确一致，验证批次未上传、未改权限"
     },
     {
       "case": "28",
@@ -378,45 +393,45 @@
       "case": "31",
       "name": "direct_runtime_artifact_contract_complete",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T07:50:33Z",
+      "observedAtUtc": "2026-08-06T22:28:16Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
-        "direct_workflow_count": 25,
-        "strict_runtime_contract_count": 25,
+        "direct_workflow_count": 29,
+        "strict_runtime_contract_count": 29,
         "missing_contract_cases": [],
         "assistant_uses_same_contracts": true,
         "terminal_completed_alone_is_sufficient": false,
         "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "production_validate 与 assistant_validate 共用 25/25 业务 artifact contract"
+      "result": "production_validate 与 assistant_validate 共用 29/29 业务 artifact contract"
     },
     {
       "case": "32",
       "name": "report_evidence_consistency",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T07:50:33Z",
+      "observedAtUtc": "2026-08-06T22:28:16Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
-        "workflow_files": 25,
-        "skill_directories": 25,
-        "runtime_contracts": 25,
-        "readme_workflow_count": 25,
-        "report_workflow_count": 25,
-        "machine_summary_workflow_count": 25,
+        "workflow_files": 29,
+        "skill_directories": 29,
+        "runtime_contracts": 29,
+        "readme_workflow_count": 29,
+        "report_workflow_count": 29,
+        "machine_summary_workflow_count": 29,
         "stale_19_of_19_claims": 0,
         "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "仓库数量、公开说明、HTML/Markdown 报告和机器摘要统一为 25"
+      "result": "仓库数量、公开说明、HTML/Markdown 报告和机器摘要统一为 29"
     },
     {
       "case": "33",
       "name": "admission_missing_capability_provision_rejected",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "observedAtUtc": "2026-08-06T16:17:16Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
@@ -434,7 +449,7 @@
       "case": "34",
       "name": "admission_path_slot_contract",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "observedAtUtc": "2026-08-06T16:17:16Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
@@ -453,7 +468,7 @@
       "case": "35",
       "name": "admission_n8n_export_rejected",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "observedAtUtc": "2026-08-06T16:17:16Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
@@ -470,7 +485,7 @@
       "case": "36",
       "name": "admission_durable_write_fail_closed",
       "status": "passed",
-      "observedAtUtc": "2026-08-06T09:14:57Z",
+      "observedAtUtc": "2026-08-06T16:17:16Z",
       "stableErrorCode": null,
       "requiredEvidenceMet": true,
       "actualEvidence": {
@@ -487,55 +502,70 @@
     {
       "case": "37",
       "name": "workflow_call_inline_definition_resolution",
-      "status": "failed",
-      "observedAtUtc": "2026-08-06T03:35:16Z",
-      "stableErrorCode": "WORKFLOW_CALL_DEFINITION_RESOLUTION_TIMEOUT",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T18:02:08Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "runHash": "07f1fc930866",
+      "stateVersion": 44,
+      "completedSteps": 5,
+      "totalSteps": 5,
       "actualEvidence": {
-        "runHash": "4327dd64a0b0",
-        "definitionResolutionTimeoutMs": 30000,
-        "inlineWorkflowYamlsAvailableThroughProvisionWorkflow": false,
-        "childDefinitionResolved": false,
-        "childWorkflowStarted": false,
-        "terminalStatus": "failed",
-        "sideEffects": false
+        "inline_workflow_yamls_bound": true,
+        "child_definition_resolved": true,
+        "child_workflow_started": true,
+        "terminal_status": "completed",
+        "final_artifact_verified": true,
+        "side_effects": false,
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "真实运行在 30 秒 definition resolution 超时后 committed failed；当前 Studio provision-workflow 入口没有提供 inline 子定义，不能由普通 direct workflow 假装覆盖"
+      "result": "Ready 4c0596c7 上 Case 26 fresh 运行携带一个 inline 子定义，child definition 成功解析并启动；run committed completed、state 44、5/5，严格 artifact 命中且无副作用"
     },
     {
       "case": "38",
       "name": "parallel_fanout_deterministic_runtime",
-      "status": "blocked",
-      "observedAtUtc": "2026-08-06T09:22:40Z",
-      "stableErrorCode": "DETERMINISTIC_PROBE_UNAVAILABLE",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T18:02:08Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "runHash": "5b0e99a928f5",
+      "stateVersion": 86,
+      "completedSteps": 14,
+      "totalSteps": 14,
       "actualEvidence": {
-        "sourceModulePresent": true,
-        "workerStepTypeHardCodedToLlmCall": true,
-        "deterministicWorkerStepSupported": false,
-        "productionProbeExecuted": false,
-        "sideEffects": false
+        "deterministic_worker_step_supported": true,
+        "worker_count": 3,
+        "all_worker_receipts_observed": true,
+        "merged_output_order_verified": true,
+        "terminal_status": "completed",
+        "side_effects": false,
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "当前 ParallelFanOutModule 将 worker 子步骤固定为 llm_call；在没有可注入确定性 worker step 的情况下，生产结果会混入模型非确定性"
+      "result": "Ready 4c0596c7 上 Case 27 fresh 运行使用三路确定性 worker；run committed completed、state 86、14/14，三个 receipt 与合并顺序断言全部命中且无副作用"
     },
     {
       "case": "39",
       "name": "race_deterministic_runtime",
-      "status": "blocked",
-      "observedAtUtc": "2026-08-06T09:22:40Z",
-      "stableErrorCode": "DETERMINISTIC_PROBE_UNAVAILABLE",
-      "requiredEvidenceMet": false,
+      "status": "passed",
+      "observedAtUtc": "2026-08-06T18:02:08Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
+      "runHash": "ebe447a8479b",
+      "stateVersion": 38,
+      "completedSteps": 6,
+      "totalSteps": 6,
       "actualEvidence": {
-        "sourceModulePresent": true,
-        "workerStepTypeHardCodedToLlmCall": true,
-        "deterministicWorkerStepSupported": false,
-        "productionProbeExecuted": false,
-        "sideEffects": false
+        "deterministic_worker_step_supported": true,
+        "first_success_selected": true,
+        "later_completions_ignored": true,
+        "terminal_status": "completed",
+        "side_effects": false,
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "当前 RaceModule 将所有竞争分支固定为 llm_call；无法稳定构造先失败后成功及迟到完成的生产时序断言"
+      "result": "Ready 4c0596c7 上 Case 28 fresh 运行使用三路确定性候选；run committed completed、state 38、6/6，first success、winner 和 later completions ignored 断言全部命中且无副作用"
     },
     {
       "case": "40",
@@ -578,21 +608,26 @@
     {
       "case": "42",
       "name": "source_p1_v2_legacy_isolation",
-      "status": "not-configured",
-      "observedAtUtc": "2026-08-06T09:22:40Z",
-      "stableErrorCode": "LEGACY_INTEGRATION_ISOLATION_NOT_CONFIGURED",
-      "requiredEvidenceMet": false,
+      "status": "skipped-expired",
+      "observedAtUtc": "2026-08-06T22:28:16Z",
+      "stableErrorCode": null,
+      "requiredEvidenceMet": true,
       "actualEvidence": {
-        "sourceDefinitionPresent": true,
-        "sourceSha256Verified": true,
-        "stepCount": 5,
-        "legacyCodeExecuteIntegrationPresent": true,
-        "legacyIntegrationSemanticsIsolated": false,
-        "hardCodedTargetsRemoved": false,
-        "productionRunExecuted": false
+        "source_definition_present": true,
+        "source_sha256_verified": true,
+        "legacy_code_execute_integration_preserved_for_traceability": true,
+        "superseded_contract_documented": true,
+        "replacement_workflow_case": "29",
+        "replacement_static_validation_passed": true,
+        "replacement_preview_passed": true,
+        "replacement_terminal_status": "completed",
+        "replacement_artifact_verified": true,
+        "replacement_ornn_public": true,
+        "external_writes": false,
+        "raw_identifiers_persisted": false
       },
       "rawIdentifiersPersisted": false,
-      "result": "源 P1 v2 仍包含旧 code_execute 集成语义；在硬编码目标隔离和合成化之前执行不会形成可公开、可复现的验收证据"
+      "result": "源 P1 v2 的 5 步 legacy 定义和 SHA 保留用于追溯；其无 capability 的 code_execute、硬编码 provider/审批/邮箱/表单契约已过期，由 Case 29 原生只读 no-submit 链替代并完成静态、preview、11/11 committed artifact 与 Ornn public readback"
     },
     {
       "case": "43",

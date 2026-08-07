@@ -1,0 +1,163 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAtUtc": "2026-08-06T19:36:20Z",
+  "case": "15",
+  "feature": "durable schedule",
+  "result": "passed",
+  "ingress": "nyxid proxy request aevatar",
+  "targetSource": {
+    "repository": "aevatarAI/aevatar",
+    "branch": "origin/feature/integrate",
+    "commit": "4c0596c764b45abc36d00e27577cd5a949796f79"
+  },
+  "productionDeployment": {
+    "image": "docker.io/aelfdevops/aevatar-console-backend:4c0596c7",
+    "digest": "sha256:7cdca8d5038e2593c5583eba28d77e8bc4398baad4f10e77cd4a814ab04494e6",
+    "generation": 2721,
+    "observedGeneration": 2721,
+    "readyReplicas": "1/1",
+    "podRestarts": 0
+  },
+  "successfulRound": {
+    "startedAtUtc": "2026-08-06T19:34:33Z",
+    "completedAtUtc": "2026-08-06T19:36:20Z",
+    "endpoint": "/api/workflow/skills/{guid}/schedule",
+    "confirmation": {
+      "status": "confirmation_required",
+      "httpStatusByDeployedRouteContract": 200,
+      "httpStatusObservedDirectly": false,
+      "typedBodyObserved": true,
+      "workflowCount": 1,
+      "explicitRequestCount": 6,
+      "allRequestsGet": true,
+      "allRequestsReadOnly": true,
+      "allRequestsAllowDurable": true,
+      "runtimeApprovalRequired": false,
+      "confirmationTokenPresent": true,
+      "confirmationTokenPersisted": false
+    },
+    "admissionReceipt": {
+      "httpStatusByDeployedRouteContract": 202,
+      "httpStatusObservedDirectly": false,
+      "typedBodyObserved": true,
+      "bindingStatus": "accepted",
+      "scheduleProvisioningStatus": "pending_binding",
+      "scheduleIdPresent": false,
+      "memberIdHash": "973e89ab5a5d",
+      "bindingRunIdHash": "cc23d56d43b4",
+      "scheduleProvisioningIdHash": "9df1921559a5"
+    },
+    "memberReadModel": {
+      "bindingStatus": "succeeded",
+      "bindingStateVersion": 7,
+      "provisioningStatus": "succeeded",
+      "provisioningStateVersion": 11,
+      "attemptCount": 2,
+      "scheduleIdPresent": true,
+      "operationIdPresent": true,
+      "scheduleIdHash": "4265fedf27e5",
+      "operationIdHash": "47e80cd8aa06"
+    },
+    "scheduleRead": {
+      "readModel": "owner-scoped detail",
+      "found": true,
+      "enabled": true,
+      "cronExpression": "* * * * *",
+      "timezone": "Asia/Singapore",
+      "deleted": false
+    },
+    "cronFire": {
+      "manual": false,
+      "fireCountBeforeDelete": 1,
+      "failureCount": 0,
+      "observedRunCount": 1,
+      "allObservedRunsCompleted": true
+    },
+    "workflowTerminal": {
+      "runIdHash": "b9859494e2a9",
+      "terminalStatus": "completed",
+      "success": true,
+      "completedSteps": 11,
+      "totalSteps": 11,
+      "stateVersion": 73,
+      "finalArtifact": {
+        "case": "weekly_budget_variance_digest",
+        "success": true,
+        "live_base_reads_ok": true,
+        "weekly_actual": 2340,
+        "weekly_budget": 2400,
+        "monthly_projected_actual": 9360,
+        "monthly_budget": 9600,
+        "over_count": 1,
+        "watch_count": 1,
+        "side_effects": false
+      }
+    },
+    "cleanup": {
+      "method": "DELETE",
+      "httpStatusByDeployedRouteContract": 202,
+      "httpStatusObservedDirectly": false,
+      "typedBodyObserved": true,
+      "typedReceiptAccepted": true,
+      "receiptStatus": "pending",
+      "scheduleIdMatched": true,
+      "operationIdHash": "36486344f818",
+      "commandIdHash": "fe5c1f31ec94",
+      "detailAbsentAfterDelete": true,
+      "ownerListCountAfterDelete": 0,
+      "crossedNextMinute": true,
+      "runCountBeforeDelete": 1,
+      "runCountAfterNextMinute": 1,
+      "runCountUnchanged": true
+    }
+  },
+  "diagnosticAttempts": [
+    {
+      "attempt": 1,
+      "result": "acceptance-query-path-failed",
+      "platformProvisioningSucceeded": true,
+      "reason": "team-owned schedule was polled through the unowned catalog",
+      "scheduleIdHash": "52207df9684e",
+      "typedCleanupAccepted": true,
+      "ownerListCountAfterDelete": 0,
+      "runCountBeforeDelete": 3,
+      "runCountAfterNextMinute": 3,
+      "runCountUnchanged": true
+    },
+    {
+      "attempt": 2,
+      "result": "acceptance-list-visibility-failed",
+      "platformProvisioningSucceeded": true,
+      "reason": "owner list did not project the active schedule within the bounded window",
+      "scheduleIdHash": "ac04dd243c51",
+      "typedCleanupAccepted": true,
+      "ownerListCountAfterDelete": 0,
+      "runCountBeforeDelete": 2,
+      "runCountAfterNextMinute": 2,
+      "runCountUnchanged": true
+    },
+    {
+      "attempt": 3,
+      "result": "acceptance-extra-assertion-failed",
+      "platformProvisioningSucceeded": true,
+      "reason": "displayName was incorrectly treated as a Case 15 runtime assertion",
+      "scheduleIdHash": "9d6017f48fdc",
+      "typedCleanupAccepted": true,
+      "ownerListCountAfterDelete": 0,
+      "runCountBeforeDelete": 0,
+      "runCountAfterNextMinute": 0,
+      "runCountUnchanged": true
+    }
+  ],
+  "safety": {
+    "confirmedMutationCountInSuccessfulRound": 1,
+    "diagnosticScheduleCount": 3,
+    "diagnosticCleanupCount": 3,
+    "allCreatedSchedulesDeleted": true,
+    "allCleanupWindowsCrossedNextMinute": true,
+    "rawIdentifiersPersisted": false,
+    "confirmationTokensPersisted": false,
+    "responseHeadersCaptured": false,
+    "businessPayloadsPersisted": false
+  }
+}

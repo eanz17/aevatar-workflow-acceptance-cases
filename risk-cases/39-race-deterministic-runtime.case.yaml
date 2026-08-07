@@ -2,7 +2,7 @@ schema_version: "1.0"
 case: "39"
 name: race_deterministic_runtime
 title: race 需要不依赖模型随机性的首个成功分支生产探针
-status: blocked
+status: passed
 surface: workflow_runtime_capability
 target:
   source_commit: 6df43b83a5e2b502eebcd9c01e687dbaf6321bff
